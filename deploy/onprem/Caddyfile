@@ -1,0 +1,25 @@
+# Reverse proxy HTTPS du SMSI.
+# Certificat fourni par le client (PKI interne) ou auto-signé par install.sh :
+#   certs/smsi.crt (certificat + chaîne) et certs/smsi.key (clé privée).
+{
+	admin off
+}
+
+{$SMSI_DOMAIN} {
+	tls /certs/smsi.crt /certs/smsi.key
+
+	encode gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	request_body {
+		max_size 20MB
+	}
+
+	reverse_proxy web:5000
+}

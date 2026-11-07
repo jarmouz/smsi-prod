@@ -4,6 +4,29 @@ Application de pilotage d'un **SMSI** pour une entreprise. Six modules reliés
 entre eux, pensés pour l'audit de certification : la valeur n'est pas dans six
 listes séparées mais dans le **maillage** entre elles.
 
+## Ce dépôt
+
+Dépôt **principal** de l'application (il remplace `jarmouz/SMSI`, archivé).
+
+| Chemin | Rôle |
+|---|---|
+| `app/` | code de l'application (multi-organisation) |
+| `docker-compose.yml` | **production** `smsi.kaizen-intelligence.tn` (nginx → `127.0.0.1:5001`) |
+| `deploy/onprem/` | kit d'installation **chez un client** (voir son README) |
+| `scripts/build-release.sh` | construit le paquet de livraison `dist/smsi-<VERSION>.tar.gz` |
+| `VERSION` | version livrée par le kit |
+
+Mise en production (serveur Kaizen, dossier `/opt/smsi-prod`) :
+
+```bash
+docker compose build web && docker compose up -d --no-deps web   # jamais la base
+git commit -am "…" && git push
+```
+
+Au démarrage, le conteneur met à jour le schéma (`flask upgrade-db`, sans perte).
+Une base neuve s'initialise avec `flask init-platform` (organisation + RSSI) ;
+`flask init-db` est réservé au développement (il efface tout).
+
 ## Modules
 
 1. **Déclaration d'applicabilité (DdA / SoA)** — catalogue complet de l'**Annexe A

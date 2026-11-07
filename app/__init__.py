@@ -11,6 +11,12 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
 
+    # Derrière un reverse proxy (kit sur site : Caddy) : schéma et IP réels
+    import os
+    if os.environ.get("TRUST_PROXY") == "1":
+        from werkzeug.middleware.proxy_fix import ProxyFix
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+
     db.init_app(app)
     login_manager.init_app(app)
     csrf.init_app(app)
@@ -36,6 +42,17 @@ def create_app(config_class=Config):
         resp.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
         resp.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
         return resp
+
+    @app.route("/healthz")
+    def healthz():
+        """Sonde de supervision (sans authentification) : application et base joignables."""
+        from sqlalchemy import text
+        try:
+            db.session.execute(text("SELECT 1"))
+            return {"status": "ok"}, 200
+        except Exception:  # noqa: BLE001
+            db.session.rollback()
+            return {"status": "db-unavailable"}, 503
 
     @app.route("/")
     def index():

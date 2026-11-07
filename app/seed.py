@@ -364,10 +364,56 @@ def register_seed_command(app):
         db.session.commit()
         click.echo(f"{u.email} est super-admin.")
 
+    @app.cli.command("init-platform")
+    @click.option("--org-name", default=None, help="Nom de l'organisation du client.")
+    @click.option("--admin-email", default=None, help="E-mail du premier RSSI (super-administrateur).")
+    @click.option("--admin-name", default="Responsable SMSI", show_default=True)
+    def init_platform(org_name, admin_email, admin_name):
+        """Installation : crée le schéma, l'organisation et son RSSI (mot de passe saisi).
+        Refuse de s'exécuter si la base contient déjà des utilisateurs."""
+        from sqlalchemy import inspect
+        from app.services import totp
+        from app.services.organizations import create_organization
+
+        if inspect(db.engine).has_table("users") and \
+                db.session.query(User).execution_options(all_tenants=True).count() > 0:
+            raise click.ClickException("La base contient déjà des utilisateurs : rien n'a été modifié. "
+                                       "Pour mettre le schéma à jour : flask upgrade-db")
+        org_name = (org_name or click.prompt("Nom de l'organisation")).strip()
+        admin_email = (admin_email or click.prompt("E-mail du compte RSSI")).strip().lower()
+        while True:
+            password = click.prompt("Mot de passe du compte RSSI", hide_input=True,
+                                    confirmation_prompt="Confirmation")
+            err = totp.password_problem(password, admin_email)
+            if not err:
+                break
+            click.secho(err, fg="yellow")
+
+        db.create_all()
+        for k, v in [("smtp_from_name", "SMSI"), ("smtp_port", "587"),
+                     ("smtp_use_tls", "1"), ("notifications_enabled", "1")]:
+            db.session.add(Setting(key=k, value=v))
+        db.session.commit()
+        org, user = create_organization(org_name, admin_email=admin_email, admin_name=admin_name,
+                                        admin_password=password)
+        user.must_change_password = False      # choisi à l'instant par le RSSI
+        user.is_superadmin = True
+        db.session.commit()
+        click.echo(f"Organisation « {org.name} » créée ({Control.query.execution_options(all_tenants=True).filter_by(organization_id=org.id).count()} mesures de l'Annexe A).")
+        click.echo(f"Compte RSSI (super-administrateur) : {user.email}")
+
     @app.cli.command("init-db")
     @click.option("--demo/--no-demo", default=True, help="Injecter un jeu de démonstration.")
-    def init_db(demo):
-        """Crée le schéma, le catalogue Annexe A et les données initiales."""
+    @click.option("--yes", is_flag=True, help="Ne pas demander confirmation si la base contient des données.")
+    def init_db(demo, yes):
+        """DÉVELOPPEMENT : EFFACE la base, recrée le schéma et des comptes de test (mot de passe smsi123).
+        Pour une installation réelle : flask init-platform."""
+        from sqlalchemy import inspect
+        if inspect(db.engine).has_table("users") and \
+                db.session.query(User).execution_options(all_tenants=True).count() > 0 and not yes:
+            click.secho("ATTENTION : init-db va EFFACER toutes les données de toutes les organisations.",
+                        fg="red", bold=True)
+            click.confirm("Tapez y pour effacer définitivement la base", abort=True)
         db.drop_all()
         db.create_all()
 

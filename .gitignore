@@ -5,3 +5,9 @@ __pycache__/
 venv/
 *.sqlite
 *.sql
+dist/
+deploy/onprem/.env
+deploy/onprem/backups/
+deploy/onprem/images/
+deploy/onprem/certs/*.crt
+deploy/onprem/certs/*.key

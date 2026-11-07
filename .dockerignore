@@ -4,5 +4,8 @@ __pycache__/
 .venv/
 venv/
 *.sqlite
+*.sql
 .git/
-.env
+dist/
+deploy/
+scripts/
