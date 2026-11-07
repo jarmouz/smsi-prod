@@ -79,8 +79,7 @@
   {% if current_user.is_authenticated %}
   <aside class="rail" id="rail">
     <div class="rail__brand">
-      <a href="{{ url_for('dashboard.home') }}" class="rail__home" aria-label="{{ APP_NAME }} - tableau de bord">{{ integra_lockup('rail') }}</a>
-      <div class="rail__by">par <b>Kaizen Intelligence</b></div>
+      <a href="{{ url_for('dashboard.home') }}" class="rail__home" aria-label="{{ APP_NAME }} - tableau de bord" title="{{ APP_NAME }}, une solution Kaizen Intelligence">{{ integra_lockup('rail') }}</a>
       {% if current_org %}
       <div class="rail__org">
         <span class="rail__org-label">Organisation</span>

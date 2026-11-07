@@ -440,16 +440,16 @@ input:focus, select:focus, textarea:focus {
 
 /* ------------------------------------------------------------ Responsive */
 @media (max-width: 1000px) {
-  .kpis { grid-template-columns: repeat(2, 1fr); }
+  .kpis { grid-template-columns: repeat(2, 1fr) !important; }   /* l'emporte sur les styles en ligne des pages */
   .detail-grid, .two-col { grid-template-columns: 1fr; }
   .login-wrap { grid-template-columns: 1fr; }
   .login-aside { display: none; }
 }
 @media (max-width: 720px) {
-  .rail { position: fixed; z-index: 100; height: 100dvh; transform: translateX(-100%); transition: transform .2s; box-shadow: var(--shadow-md); }
-  .rail.open { transform: none; }
+  .rail { position: fixed; z-index: 100; height: 100dvh; transform: translateX(-100%); transition: transform .2s; box-shadow: none; }
+  .rail.open { transform: none; box-shadow: var(--shadow-md); }
   .form-grid { grid-template-columns: 1fr; }
-  .kpis { grid-template-columns: 1fr 1fr; }
+  .kpis { grid-template-columns: 1fr 1fr !important; }
   .content { padding: 18px 16px 40px; }
   .topbar { padding: 0 16px; }
   .menu-toggle { display: inline-grid !important; }
@@ -735,14 +735,20 @@ table.grid tbody tr.imp-row--error td { background: #fdf6f4; }
 .integra__name { font-family: var(--font-display); font-weight: 800; color: var(--ink-900); letter-spacing: -.02em; line-height: 1; }
 .integra__tagline { font-family: var(--font-display); font-weight: 600; color: var(--ink-500); text-transform: uppercase; letter-spacing: .08em; line-height: 1.35; }
 .integra--rail { gap: 10px; }
-.integra--rail .integra__name { font-size: 21px; }
-.integra--rail .integra__tagline { font-size: 8.5px; margin-top: 4px; max-width: 150px; }
+.integra--rail .integra__name { font-size: 19px; }
+.integra--rail .integra__tagline { font-size: 8px; margin-top: 3px; max-width: 160px; letter-spacing: .07em; }
 .integra--login .integra__name { font-size: 34px; }
 .integra--login .integra__tagline { font-size: 11px; margin-top: 6px; letter-spacing: .1em; }
 .rail__by { font-size: 10.5px; color: var(--ink-500); margin-top: 2px; }
 .rail__by b { font-weight: 600; color: var(--ink-700); }
-.rail__org { width: 100%; margin-top: 6px; padding-top: 10px; border-top: 1px solid var(--line); }
-.rail__org-label { display: block; font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--kicker); margin-bottom: 4px; }
+.rail__org { width: 100%; margin-top: 2px; padding-top: 8px; border-top: 1px solid var(--line); }
+.rail__org-label { display: block; font-size: 9.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--kicker); margin-bottom: 3px; }
+.rail__org select { padding-top: 5px; padding-bottom: 5px; }
 .rail__org-name { font-family: var(--font-display); font-size: 13.5px; font-weight: 700; color: var(--ink-900); line-height: 1.3; }
 .rail__org select { width: 100%; font-size: 12.5px; font-weight: 600; }
 .rail__home { text-decoration: none; color: inherit; display: block; }
+.rail__brand { padding-top: 14px; padding-bottom: 10px; gap: 6px; }
+/* Menu : défilement conservé (molette, tactile, clavier) mais sans barre visible entre le menu et le contenu ;
+   les ombres en haut et en bas du menu signalent le contenu masqué. */
+.rail__nav { scrollbar-width: none; }
+.rail__nav::-webkit-scrollbar { display: none; width: 0; height: 0; }
