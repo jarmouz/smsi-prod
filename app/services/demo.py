@@ -19,7 +19,7 @@ from app.models import (
     NonConformity, Supplier, Requirement, IssueKind, IssueCategory, PartyCategory, ObjectiveStatus, Frequency,
     Direction, NcSource, NcSeverity, NcStatus, SupplierCategory, Criticality, DataAccess, AssessmentResult,
     SupplierStatus, RequirementType, ComplianceStatus,
-    Organization, User, Setting, Control, Risk, Audit, Finding, CorrectiveAction,
+    Organization, User, Setting, Control, Risk, RiskAction, Audit, Finding, CorrectiveAction,
     ManagementReview, ReviewAction, Document, Evidence, Attachment, Asset, Incident,
     AwarenessAction, Role, ControlStatus, Treatment, RiskStatus, AuditStatus, FindingType,
     ActionStatus, ReviewStatus, DocType, DocStatus, AssetCategory, Classification, AssetStatus,
@@ -87,7 +87,7 @@ def _wipe(org, log):
     for model in (ActivityLog, Attachment, CorrectiveAction, NonConformity, AuditPlanItem, CompetenceRecord,
                   CompetenceRequirement, ContinuityTest, BusinessProcess, ChangeRequest, Measurement, Indicator, Objective,
                   Requirement, InterestedParty, ContextIssue, Supplier, Finding, Audit, ReviewAction, ManagementReview,
-                  Incident, Asset, AwarenessAction, DocumentVersion, Document, Evidence, Risk, Control, User):
+                  Incident, Asset, AwarenessAction, DocumentVersion, Document, Evidence, RiskAction, Risk, Control, User):
         model.query.filter(model.organization_id == oid).delete(synchronize_session=False)
     Setting.query.filter(Setting.organization_id == oid, Setting.key.notin_(["org_name", DEMO_FLAG])).delete(synchronize_session=False)
     db.session.commit()
@@ -153,6 +153,16 @@ def _seed(org, log):
                  review_date=_d(60 + 15 * (i % 6)))
         r.controls = [ctrl[x] for x in refs]
         db.session.add(r)
+
+    db.session.flush()
+    from app.models import RiskActionStatus
+    risks_by_n = {int(r.ref[-4:]): r for r in Risk.query.all()}
+    for n, title, cref, owner, j, st, prog, res, note in C.RISK_ACTIONS:
+        a = RiskAction(risk=risks_by_n[n], title=title, control=ctrl.get(cref), owner_id=uid(owner), due_date=_d(j),
+                       resources=res, note=note, progress=prog)
+        a.set_status(RiskActionStatus(st))
+        a.progress = prog
+        db.session.add(a)
 
     incidents = []
     for i, (title, cat, sev, st, j, reporter, owner, cref, desc, impact, resol, jc) in enumerate(C.INCIDENTS, 1):

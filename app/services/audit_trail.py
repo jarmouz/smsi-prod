@@ -24,7 +24,7 @@ SECRET = {"password_hash": "mot de passe modifié", "totp_secret": "double authe
 MAX_LEN = 400
 
 ENTITY_LABELS = {
-    "Risk": "Risque", "Control": "Mesure", "Audit": "Audit", "Finding": "Constat",
+    "Risk": "Risque", "RiskAction": "Action de traitement", "Control": "Mesure", "Audit": "Audit", "Finding": "Constat",
     "CorrectiveAction": "Action corrective", "ManagementReview": "Revue de direction",
     "ReviewAction": "Action de revue", "Document": "Document", "DocumentVersion": "Version de document",
     "Evidence": "Preuve", "Attachment": "Pièce jointe", "Asset": "Actif", "Incident": "Incident",
@@ -47,6 +47,7 @@ FIELD_LABELS = {
     "title": "Titre", "name": "Nom", "description": "Description", "status": "Statut", "owner_id": "Propriétaire",
     "applicable": "Applicable", "justification": "Justification", "implementation": "Mise en œuvre",
     "inherit": "Évaluée dans le socle commun", "common_id": "Exigence du socle commun",
+    "note": "Note", "progress": "Avancement (%)", "control_id": "Mesure", "risk_id": "Risque", "completed_at": "Réalisée le",
     "likelihood": "Vraisemblance", "impact": "Impact", "residual_likelihood": "Vraisemblance résiduelle",
     "residual_impact": "Impact résiduel", "treatment": "Traitement", "controls": "Mesures",
     "version": "Version", "approved_at": "Date d'approbation", "next_review_at": "Prochaine revue",

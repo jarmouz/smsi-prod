@@ -46,6 +46,7 @@
           <div><span>Risques ouverts</span><b>{{ digest.risks_open }}</b></div>
           <div><span>dont élevés</span><b>{{ digest.risks_high }}</b></div>
           <div><span>Opportunités ouvertes</span><b>{{ digest.opps_open|default(0) }}</b></div>
+          <div><span>Actions de traitement ouvertes</span><b>{{ digest.rtp_open|default(0) }}{% if digest.rtp_overdue %} <span style="color:var(--red-600);">dont {{ digest.rtp_overdue }} en retard</span>{% endif %}</b></div>
           <div><span>Non-conformités ouvertes (10.2)</span><b>{{ digest.nc_open }} dont {{ digest.nc_major }} majeure(s) - {{ digest.nc_closed }} clôturée(s)</b></div>
           <div><span>Indicateurs (9.1)</span><b>{{ digest.kpi_ok }}/{{ digest.kpi_total }} dans la cible, {{ digest.kpi_off }} hors cible</b></div>
           <div><span>Objectifs (6.2)</span><b>{{ digest.obj_reached }}/{{ digest.obj_total }} atteints, {{ digest.obj_overdue }} en retard</b></div>

@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block title %}Action de traitement - {{ APP_NAME }}{% endblock %}
+{% block heading %}Action du plan de traitement - {{ r.ref }}{% endblock %}
+{% block topactions %}<a href="{{ url_for('risks.detail', risk_id=r.id) }}#plan" class="btn btn--ghost btn--sm">Retour</a>{% endblock %}
+
+{% block content %}
+<form method="post" class="detail-grid">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  {% if request.args.get('next') %}<input type="hidden" name="next" value="{{ request.args.get('next') }}">{% endif %}
+  <div class="stack">
+    <div class="panel">
+      <div class="panel__head"><h2>Action</h2></div>
+      <div class="panel__body stack">
+        <p class="muted" style="font-size:12px;margin:0;">{{ 'Opportunité' if r.is_opportunity else 'Risque' }} <a href="{{ url_for('risks.detail', risk_id=r.id) }}">{{ r.ref }} - {{ r.title }}</a> (traitement : {{ r.treatment.label|lower }})</p>
+        <div class="field"><label>Intitulé *</label><input type="text" name="title" required maxlength="300" value="{{ a.title }}"></div>
+        <div class="field"><label>Mesure mise en œuvre</label>
+          <select name="control_id"><option value="">-</option>{% for c in r.controls %}<option value="{{ c.id }}" {{ 'selected' if a.control_id == c.id }}>{{ (c.framework.short_name ~ ' ') if c.framework.code != 'ISO27001' }}{{ c.annex_ref }} - {{ c.title }}</option>{% endfor %}</select>
+          <div class="hint">Parmi les mesures rattachées au risque.</div></div>
+        <div class="field"><label>Ressources nécessaires</label><textarea name="resources" rows="2" placeholder="Budget, moyens humains et techniques, prestataire">{{ a.resources or '' }}</textarea></div>
+        <div class="field"><label>Résultat, blocage ou preuve</label><textarea name="note" rows="3">{{ a.note or '' }}</textarea></div>
+      </div>
+    </div>
+  </div>
+  <div class="stack">
+    <div class="panel">
+      <div class="panel__head"><h2>Suivi</h2></div>
+      <div class="panel__body stack">
+        <div class="field"><label>Responsable</label>
+          <select name="owner_id"><option value="">-</option>{% for u in users %}<option value="{{ u.id }}" {{ 'selected' if a.owner_id == u.id }}>{{ u.name }}</option>{% endfor %}</select></div>
+        <div class="field"><label>Échéance</label><input type="date" name="due_date" value="{{ a.due_date.isoformat() if a.due_date else '' }}"></div>
+        <div class="field"><label>Statut</label>
+          <select name="status">{% for st in RiskActionStatus %}<option value="{{ st.value }}" {{ 'selected' if a.status == st }}>{{ st.label }}</option>{% endfor %}</select></div>
+        <div class="field"><label>Avancement (%)</label><input type="number" name="progress" min="0" max="100" step="5" value="{{ a.progress }}">
+          <div class="hint">Passe à 100 % quand l'action est réalisée.</div></div>
+        {% if a.completed_at %}<p class="muted" style="font-size:12px;margin:0;">Réalisée le {{ a.completed_at|d }}.</p>{% endif %}
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button class="btn btn--primary" type="submit">Enregistrer</button>
+    </div>
+  </div>
+</form>
+<form method="post" action="{{ url_for('risks.delete_action', action_id=a.id) }}" style="margin-top:12px;" onsubmit="return confirm('Supprimer cette action du plan de traitement ?');">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <button class="btn btn--ghost btn--sm" type="submit">Supprimer l'action</button>
+</form>
+{% endblock %}

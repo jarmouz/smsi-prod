@@ -147,7 +147,7 @@ def socle(control_id):
 @bp.route("/export/<kind>.<fmt>")
 @login_required
 def export(kind, fmt):
-    """Livrables pour l'auditeur : dda | registre-risques | plan-traitement, en xlsx | docx | pdf."""
+    """Livrables pour l'auditeur : dda | registre-risques | plan-traitement | actions-traitement..., en xlsx | docx | pdf."""
     from app.services import exports
     if kind not in exports.DOCS or fmt not in exports.MIMES:
         abort(404)

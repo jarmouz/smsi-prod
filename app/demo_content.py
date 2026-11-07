@@ -242,6 +242,26 @@ RISKS = [
      "Traitement à planifier : sélection d'une solution DLP (budget validé)."),
 ]
 
+# Plan de traitement (3.7) : (n° du risque, action, mesure, responsable, échéance en jours, statut, avancement,
+# ressources, résultat)
+RISK_ACTIONS = [
+    (1, "Sauvegardes immuables hors ligne de la production", "8.13", "infra", -20, "REALISEE", 100,
+     "Stockage objet verrouillé (WORM), 4 000 DT/an", "Restauration complète testée le mois dernier"),
+    (1, "EDR sur les serveurs de production et le bastion", "8.7", "infra", 25, "EN_COURS", 60,
+     "Licences EDR (60 serveurs), prestataire SOC", None),
+    (1, "Exercice de crise rançongiciel avec la direction", "5.26", "rssi", 70, "PREVUE", 0, "Demi-journée, prestataire", None),
+    (2, "Tests d'intrusion du cloisonnement multi-tenant", "8.29", "dev", -10, "EN_COURS", 40,
+     "Prestataire PASSI, 9 000 DT", "Rapport intermédiaire reçu, 2 vulnérabilités moyennes"),
+    (2, "Analyse de code statique dans la chaîne CI", "8.28", "dev", 45, "PREVUE", 0, None, None),
+    (4, "Bascule automatique vers une seconde région", "8.14", "infra", 120, "PREVUE", 0,
+     "Budget infra +15 %, 2 jours/homme par mois", None),
+    (5, "Revue trimestrielle des comptes à privilèges", "5.18", "dsi", -35, "EN_COURS", 50, None,
+     "Revue du T3 en retard : extraction des droits à refaire"),
+    (6, "Outil d'anonymisation des jeux de recette", "8.33", "dev", 15, "EN_COURS", 70, "Outil open source, 10 j/h", None),
+    (9, "Tableau de suivi des correctifs avec délais par criticité", "8.8", "infra", -5, "REALISEE", 100, None,
+     "Délai moyen des critiques ramené à 6 jours"),
+]
+
 # ---------------------------------------------------------------------------
 # Incidents : (titre, catégorie, gravité, statut, J détection, déclarant, responsable,
 #              mesure, description, impact, résolution, J clôture)

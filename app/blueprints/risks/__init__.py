@@ -189,8 +189,11 @@ def create():
 @bp.route("/<int:risk_id>")
 @login_required
 def detail(risk_id):
+    from app.models import RiskActionStatus
     r = db.session.get(Risk, risk_id) or abort(404)
-    return render_template("risks/detail.html", r=r, can_accept=_can_accept(r))
+    users = User.query.filter_by(is_active_flag=True).order_by(User.name).all()
+    return render_template("risks/detail.html", r=r, can_accept=_can_accept(r), users=users,
+                           RiskActionStatus=RiskActionStatus)
 
 
 @bp.route("/<int:risk_id>/modifier", methods=["GET", "POST"])
@@ -263,3 +266,130 @@ def revoke_acceptance(risk_id):
     log_event("accept", "Acceptation du risque résiduel retirée", entity=r)
     flash("Acceptation retirée.", "success")
     return redirect(url_for("risks.detail", risk_id=r.id))
+
+
+# --- Plan de traitement (3.7) : actions datées par risque -------------------------------
+def _next(default):
+    """Retour après une action : chemin interne seulement (pas de redirection ouverte)."""
+    nxt = request.values.get("next") or ""
+    return nxt if nxt.startswith("/") and not nxt.startswith("//") and "\\" not in nxt else default
+
+
+def _action_fields(a, r):
+    from app.models import RiskActionStatus
+    f = request.form
+    a.title = (f.get("title") or a.title or "").strip()[:300]
+    cid = f.get("control_id", type=int)
+    a.control_id = cid if cid in {c.id for c in r.controls} else None
+    a.owner_id = f.get("owner_id", type=int) or None
+    a.due_date = _parse_date(f.get("due_date"))
+    if "resources" in f:
+        a.resources = (f.get("resources") or "").strip() or None
+    if "note" in f:
+        a.note = (f.get("note") or "").strip() or None
+    if f.get("status"):                     # statut d'abord : l'avancement saisi prime ensuite
+        try:
+            a.set_status(RiskActionStatus(f.get("status")))
+        except ValueError:
+            pass
+    if "progress" in f:
+        try:
+            a.progress = max(0, min(100, int(f.get("progress"))))
+        except (TypeError, ValueError):
+            pass
+
+
+@bp.route("/<int:risk_id>/actions", methods=["POST"])
+@editor_required
+def add_action(risk_id):
+    from app.models import RiskAction
+    r = db.session.get(Risk, risk_id) or abort(404)
+    if not (request.form.get("title") or "").strip():
+        flash("L'intitulé de l'action est obligatoire.", "danger")
+        return redirect(url_for("risks.detail", risk_id=r.id) + "#plan")
+    a = RiskAction(title="")
+    _action_fields(a, r)
+    r.actions.append(a)
+    if r.status == RiskStatus.IDENTIFIE:          # un plan existe : le risque est en traitement
+        r.status = RiskStatus.EN_TRAITEMENT
+    db.session.commit()
+    flash("Action ajoutée au plan de traitement.", "success")
+    return redirect(url_for("risks.detail", risk_id=r.id) + "#plan")
+
+
+@bp.route("/actions/<int:action_id>/modifier", methods=["GET", "POST"])
+@editor_required
+def edit_action(action_id):
+    from app.models import RiskAction, RiskActionStatus
+    a = db.session.get(RiskAction, action_id) or abort(404)
+    r = a.risk
+    if request.method == "POST":
+        if not (request.form.get("title") or "").strip():
+            flash("L'intitulé de l'action est obligatoire.", "danger")
+        else:
+            _action_fields(a, r)
+            db.session.commit()
+            flash("Action mise à jour.", "success")
+            return redirect(_next(url_for("risks.detail", risk_id=r.id) + "#plan"))
+    users = User.query.filter_by(is_active_flag=True).order_by(User.name).all()
+    return render_template("risks/action_form.html", a=a, r=r, users=users, RiskActionStatus=RiskActionStatus)
+
+
+@bp.route("/actions/<int:action_id>/statut", methods=["POST"])
+@editor_required
+def action_status(action_id):
+    from app.models import RiskAction, RiskActionStatus
+    a = db.session.get(RiskAction, action_id) or abort(404)
+    try:
+        a.set_status(RiskActionStatus(request.form.get("status")))
+    except ValueError:
+        abort(400)
+    db.session.commit()
+    if a.risk.plan_done:
+        flash(f"Toutes les actions de {a.risk.ref} sont terminées : réévaluez le risque résiduel.", "warning")
+    return redirect(_next(url_for("risks.detail", risk_id=a.risk_id) + "#plan"))
+
+
+@bp.route("/actions/<int:action_id>/supprimer", methods=["POST"])
+@editor_required
+def delete_action(action_id):
+    from app.models import RiskAction
+    a = db.session.get(RiskAction, action_id) or abort(404)
+    rid = a.risk_id
+    db.session.delete(a)
+    db.session.commit()
+    flash("Action supprimée du plan de traitement.", "success")
+    return redirect(url_for("risks.detail", risk_id=rid) + "#plan")
+
+
+@bp.route("/plan-de-traitement")
+@login_required
+def plan():
+    """Toutes les actions du plan de traitement : suivi, retards, échéances."""
+    from datetime import date as _date
+    from app.models import RiskAction, RiskActionStatus
+    from app.services import frameworks as fw_svc
+    f_state = request.args.get("etat", "ouvertes")
+    f_owner = request.args.get("responsable", type=int)
+    f_norm = request.args.get("norme")
+    acts = RiskAction.query.all()
+    active = fw_svc.active()
+    if f_norm in {f.code for f in active}:
+        acts = [a for a in acts if a.risk.concerns(f_norm)]
+    stats = {"open": sum(a.status.is_open for a in acts), "overdue": sum(a.is_overdue for a in acts),
+             "soon": sum(a.due_soon for a in acts), "done": sum(a.status == RiskActionStatus.REALISEE for a in acts),
+             "noowner": sum(a.status.is_open and not a.owner_id for a in acts)}
+    if f_state == "ouvertes":
+        acts = [a for a in acts if a.status.is_open]
+    elif f_state == "retard":
+        acts = [a for a in acts if a.is_overdue]
+    elif f_state == "echeance":
+        acts = [a for a in acts if a.due_soon]
+    elif f_state == "terminees":
+        acts = [a for a in acts if not a.status.is_open]
+    if f_owner:
+        acts = [a for a in acts if a.owner_id == f_owner]
+    acts.sort(key=lambda a: (not a.status.is_open, a.due_date is None, a.due_date or _date.max, a.risk.ref))
+    users = User.query.filter_by(is_active_flag=True).order_by(User.name).all()
+    return render_template("risks/plan.html", acts=acts, stats=stats, f_state=f_state, f_owner=f_owner,
+                           f_norm=f_norm, fw_list=active, users=users, RiskActionStatus=RiskActionStatus)

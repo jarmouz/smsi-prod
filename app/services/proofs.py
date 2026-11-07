@@ -13,12 +13,12 @@ from app.models import Control, Risk
 _MAP = {
     ("ISO27001", "6.1.2"): ("criteres", "registre"),
     ("ISO27001", "8.2"): ("registre", "export_registre"),
-    ("ISO27001", "6.1.3"): ("plan", "dda", "acceptation"),
-    ("ISO27001", "8.3"): ("plan", "traitement", "acceptation"),
+    ("ISO27001", "6.1.3"): ("plan", "actions", "dda", "acceptation"),
+    ("ISO27001", "8.3"): ("plan", "actions", "traitement", "acceptation"),
     ("ISO42001", "6.1.2"): ("criteres", "registre", "systemes_ia"),
     ("ISO42001", "8.2"): ("registre", "systemes_ia"),
-    ("ISO42001", "6.1.3"): ("plan", "dda", "acceptation"),
-    ("ISO42001", "8.3"): ("plan", "traitement", "acceptation"),
+    ("ISO42001", "6.1.3"): ("plan", "actions", "dda", "acceptation"),
+    ("ISO42001", "8.3"): ("plan", "actions", "traitement", "acceptation"),
     ("ISO42001", "6.1.4"): ("etudes_impact",),
     ("ISO42001", "8.4"): ("etudes_impact", "systemes_ia"),
 }
@@ -61,6 +61,18 @@ def _item(key, code):
         return {"label": "Plan de traitement des risques (export Excel)",
                 "url": url_for("soa.export", kind="plan-traitement", fmt="xlsx"),
                 "info": "options de traitement, mesures retenues, propriétaires, risques résiduels"}
+    if key == "actions":
+        rs = _risks(code)
+        acts = [a for r in rs for a in r.actions]
+        open_ = sum(a.status.is_open for a in acts)
+        late = sum(a.is_overdue for a in acts)
+        noplan = sum(1 for r in rs if r.status.value in ("IDENTIFIE", "EN_TRAITEMENT")
+                     and r.treatment.value in ("REDUIRE", "EVITER", "PARTAGER") and not r.actions)
+        info = f"{len(acts)} action(s) datée(s), {open_} ouverte(s), {late} en retard"
+        if noplan:
+            info += f" ; {noplan} risque(s) à traiter sans action"
+        return {"label": "Actions du plan de traitement", "url": url_for("risks.plan", norme=code, etat="toutes"),
+                "info": info, "warn": bool(late or noplan)}
     if key == "traitement":
         rs = [r for r in _risks(code) if r.treatment.value == "REDUIRE"]
         own = [r for r in rs if any(c.framework.code == code for c in r.controls)]

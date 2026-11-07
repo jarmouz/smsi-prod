@@ -2,7 +2,7 @@
 registre des risques, plan de traitement des risques (Excel, Word, PDF).
 Chaque export porte l'organisation, la date, l'auteur et un cadre d'approbation."""
 import re
-from datetime import datetime
+from datetime import date, datetime
 
 from flask import Response
 from flask_login import current_user
@@ -80,16 +80,38 @@ def risk_rows():
 
 def plan_rows():
     rows = [["Réf.", "Risque", "Niveau inhérent", "Option de traitement", "Mesures d'annexe et état",
-             "Propriétaire", "Niveau résiduel", "Acceptation du risque résiduel", "Échéance de revue"]]
+             "Actions (responsable, échéance, état)", "Ressources", "Avancement", "Propriétaire",
+             "Niveau résiduel", "Acceptation du risque résiduel", "Échéance de revue"]]
     for r in _risks():
         if r.status.value == "CLOTURE" and r.treatment.value != "EVITER":
             continue
         measures = "; ".join(f"{_measure_ref(c)} {c.status.label.lower()}" for c in r.controls) or "-"
         title = f"{r.title} (opportunité)" if r.is_opportunity else r.title
+        acts = [a for a in r.actions if a.status.value != "ABANDONNEE"]
+        actions = "\n".join(f"- {a.title} ({a.owner.name if a.owner else 'sans responsable'}, "
+                             f"{a.due_date.strftime('%d/%m/%Y') if a.due_date else 'sans échéance'}, "
+                             f"{a.status.label.lower()}{', en retard' if a.is_overdue else ''})" for a in acts) or "-"
+        resources = "\n".join(f"- {a.resources}" for a in acts if a.resources) or ""
+        progress = f"{r.plan_progress} %" if r.plan_progress is not None else "-"
         rows.append([r.ref, title, f"{r.inherent_score} - {risk_criteria.label_of(r.display_inherent_level)}",
-                     r.treatment.label, measures, r.owner.name if r.owner else "",
+                     r.treatment.label, measures, actions, resources, progress, r.owner.name if r.owner else "",
                      f"{r.effective_score} - {risk_criteria.label_of(r.display_level)}", _acceptance(r),
                      r.review_date.strftime("%d/%m/%Y") if r.review_date else ""])
+    return rows
+
+
+def action_rows():
+    """Suivi des actions du plan de traitement (une ligne par action)."""
+    from app.models import RiskAction
+    rows = [["Risque", "Intitulé du risque", "Action", "Mesure", "Responsable", "Échéance", "Statut",
+             "Avancement", "Ressources", "Résultat / preuve", "Réalisée le"]]
+    acts = sorted(RiskAction.query.all(), key=lambda a: (not a.status.is_open, a.due_date is None,
+                                                         a.due_date or date.max, a.risk.ref))
+    for a in acts:
+        rows.append([a.risk.ref, a.risk.title, a.title, _measure_ref(a.control) if a.control else "",
+                     a.owner.name if a.owner else "", a.due_date.strftime("%d/%m/%Y") if a.due_date else "",
+                     a.status.label + (" (en retard)" if a.is_overdue else ""), f"{a.progress} %", a.resources or "",
+                     a.note or "", a.completed_at.strftime("%d/%m/%Y") if a.completed_at else ""])
     return rows
 
 
@@ -98,9 +120,17 @@ DOCS = {
     "dda": {"title": "Déclaration d'applicabilité", "rows": soa_rows, "clause": "ISO/IEC 27001:2022, 6.1.3 d)",
             "widths": [900, 2600, 900, 3300, 1100, 3300, 1300, 1170], "approver": "Direction / RSSI"},
     "registre-risques": {"title": "Registre des risques", "rows": risk_rows, "clause": "Chapitres 6.1 et 8 des normes de systèmes de management (ISO/IEC 27001:2022, 6.1.2 et 8.2)",
-                         "widths": None, "approver": "RSSI"},
+                         "widths": None, "approver": "RSSI",
+                         # Réf., Risque, Normes, Score inh., Traitement, Score rés., Niveau rés., Acceptation, Statut, Propriétaire
+                         "pdf_keep": ([0, 1, 4, 10, 12, 15, 16, 17, 18, 19],
+                                      [1150, 2800, 1700, 850, 1250, 850, 1100, 2000, 1100, 1770])},
+    "actions-traitement": {"title": "Suivi des actions de traitement des risques", "rows": action_rows,
+                           "clause": "Chapitres 6.1 et 8 des normes de systèmes de management (ISO/IEC 27001:2022, 6.1.3 e) et 8.3)",
+                           "widths": None, "approver": "RSSI",
+                           # Risque, Action, Mesure, Responsable, Échéance, Statut, Avancement, Résultat
+                           "pdf_keep": ([0, 2, 3, 4, 5, 6, 7, 9], [1000, 3600, 1300, 1500, 1100, 1500, 900, 3670])},
     "plan-traitement": {"title": "Plan de traitement des risques", "rows": plan_rows, "clause": "Chapitres 6.1 et 8 des normes de systèmes de management (ISO/IEC 27001:2022, 6.1.3 e) et f), 8.3)",
-                        "widths": [1150, 2500, 1150, 1150, 3200, 1400, 1150, 1650, 1220],
+                        "widths": [900, 1780, 950, 1000, 1650, 2200, 1100, 640, 1100, 950, 1300, 1000],
                         "approver": "Propriétaires des risques"},
 }
 
@@ -271,10 +301,9 @@ def _sections(spec, for_pdf):
     if "sections" in spec:
         return spec["sections"]()
     rows, widths = spec["rows"](), spec["widths"]
-    if not widths and for_pdf:   # registre complet : colonnes essentielles en format paysage
-        keep = [0, 1, 2, 7, 9, 12, 13, 14, 15, 16]
+    if not widths and for_pdf and "pdf_keep" in spec:   # colonnes essentielles en format paysage
+        keep, widths = spec["pdf_keep"]
         rows = [[row[i] for i in keep] for row in rows]
-        widths = [1150, 2800, 1700, 850, 1250, 850, 1100, 2000, 1100, 1770]
     return [(spec["title"], rows, widths)]
 
 

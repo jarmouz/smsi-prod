@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% from 'partials/macros.html' import export_menu, risk_chip with context %}
+{% block title %}Plan de traitement des risques - {{ APP_NAME }}{% endblock %}
+{% block heading %}Plan de traitement des risques{% endblock %}
+{% block topactions %}{{ export_menu([('plan-traitement', 'Plan de traitement des risques'), ('actions-traitement', 'Actions de traitement (suivi)')]) }} <a href="{{ url_for('risks.index') }}" class="btn btn--ghost btn--sm">Registre des risques</a>{% endblock %}
+
+{% block content %}
+{% set here = request.full_path %}
+<div class="kpis" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px;">
+  <a class="kpi kpi--sla" href="{{ url_for('risks.plan', etat='ouvertes', norme=f_norm) }}" style="text-decoration:none;color:inherit;"><div class="kpi__label">Actions ouvertes</div><div class="kpi__value">{{ stats.open }}</div><div class="kpi__sub">{{ stats.noowner }} sans responsable</div></a>
+  <a class="kpi kpi--retard" href="{{ url_for('risks.plan', etat='retard', norme=f_norm) }}" style="text-decoration:none;color:inherit;"><div class="kpi__label">En retard</div><div class="kpi__value">{{ stats.overdue }}</div></a>
+  <a class="kpi kpi--ouvert" href="{{ url_for('risks.plan', etat='echeance', norme=f_norm) }}" style="text-decoration:none;color:inherit;"><div class="kpi__label">Échéance sous 30 jours</div><div class="kpi__value">{{ stats.soon }}</div></a>
+  <a class="kpi kpi--total" href="{{ url_for('risks.plan', etat='terminees', norme=f_norm) }}" style="text-decoration:none;color:inherit;"><div class="kpi__label">Réalisées</div><div class="kpi__value">{{ stats.done }}</div></a>
+</div>
+<form class="toolbar" method="get">
+  <select name="etat" onchange="this.form.submit()">
+    {% for k, l in [('ouvertes', 'Actions ouvertes'), ('retard', 'En retard'), ('echeance', 'Échéance sous 30 jours'), ('terminees', 'Terminées'), ('toutes', 'Toutes les actions')] %}<option value="{{ k }}" {{ 'selected' if f_state==k }}>{{ l }}</option>{% endfor %}</select>
+  <select name="responsable" onchange="this.form.submit()"><option value="">Tous responsables</option>{% for u in users %}<option value="{{ u.id }}" {{ 'selected' if f_owner==u.id }}>{{ u.name }}</option>{% endfor %}</select>
+  {%- if fw_list|length > 1 %}
+  <select name="norme" onchange="this.form.submit()"><option value="">Toutes normes</option>{% for f in fw_list %}<option value="{{ f.code }}" {{ 'selected' if f_norm==f.code }}>{{ f.short_name }}</option>{% endfor %}</select>
+  {%- endif %}
+  {% if f_state != 'ouvertes' or f_owner or f_norm %}<a href="{{ url_for('risks.plan') }}" class="btn btn--ghost btn--sm">Réinitialiser</a>{% endif %}
+</form>
+
+<div class="panel" style="margin-top:16px;"><div class="panel__body--flush"><div class="table-wrap">
+  <table class="grid">
+    <thead><tr><th style="width:110px;">Risque</th><th>Action</th><th style="width:140px;">Responsable</th><th style="width:100px;">Échéance</th><th style="width:90px;">Avancement</th><th style="width:140px;">Statut</th></tr></thead>
+    <tbody>
+    {% for a in acts %}
+      <tr>
+        <td class="ref"><a href="{{ url_for('risks.detail', risk_id=a.risk_id) }}#plan">{{ a.risk.ref }}</a><div>{{ risk_chip(a.risk.display_level) }}</div></td>
+        <td class="subj">{% if current_user.can_edit %}<a href="{{ url_for('risks.edit_action', action_id=a.id, next=here) }}">{{ a.title }}</a>{% else %}{{ a.title }}{% endif %}
+          {% if a.control %}<span class="chip" style="font-size:11px;">{{ (a.control.framework.short_name ~ ' ') if a.control.framework.code != 'ISO27001' }}{{ a.control.annex_ref }}</span>{% endif %}
+          <div class="muted" style="font-size:11.5px;">{{ a.risk.title|truncate(80) }}{{ ' (opportunité)' if a.risk.is_opportunity }}</div></td>
+        <td class="muted">{{ a.owner.name if a.owner else '-' }}</td>
+        <td class="due-cell"{% if a.is_overdue %} style="color:var(--red-600);font-weight:600;"{% endif %}>{{ a.due_date|d if a.due_date else '-' }}</td>
+        <td><div style="height:6px;background:var(--line);border-radius:3px;"><div style="width:{{ a.progress }}%;height:6px;border-radius:3px;background:{{ '#2A7E4F' if a.progress == 100 else '#2F6FA3' }};"></div></div><span class="muted" style="font-size:11px;">{{ a.progress }} %</span></td>
+        <td>{% if current_user.can_edit %}
+          <form method="post" action="{{ url_for('risks.action_status', action_id=a.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="next" value="{{ here }}">
+            <select name="status" onchange="this.form.submit()" style="font-size:11.5px;padding:2px 6px;width:auto;">{% for st in RiskActionStatus %}<option value="{{ st.value }}" {{ 'selected' if a.status==st }}>{{ st.label }}</option>{% endfor %}</select></form>
+          {% else %}<span class="muted" style="font-size:11.5px;">{{ a.status.label }}</span>{% endif %}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="6"><div class="empty" style="padding:30px;"><h3>Aucune action</h3><p>Les actions se créent depuis la fiche de chaque risque, panneau « Plan de traitement ».</p></div></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div></div></div>
+{% endblock %}

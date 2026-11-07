@@ -57,7 +57,7 @@ communs (audits, revues, documents, objectifs, non-conformités) peuvent être
 rattachés à une ou plusieurs normes. Les écrans historiques restent limités à
 l'ISO 27001 (`Control.of()`).
 
-Normes disponibles (3.6) :
+Normes disponibles (3.7) :
 
 | Norme | Type | Module propre |
 |---|---|---|
@@ -158,6 +158,33 @@ limité à la sécurité de l'information (`app/models/risk.py`) :
   VARCHAR(16). Les risques existants gardent le domaine sécurité ; les risques
   IA, vie privée, etc. sont à reclasser pour apparaître dans les preuves de
   leur norme.
+
+### Plan de traitement des risques (3.7)
+
+Chaque risque porte des **actions datées** (`RiskAction`, table `risk_actions`) :
+intitulé, mesure mise en œuvre (parmi les mesures du risque), responsable,
+échéance, ressources, statut (prévue, en cours, réalisée, abandonnée),
+avancement en %, résultat ou preuve. Exigences couvertes : 6.1.3 e) et 8.3 de
+l'ISO/IEC 27001 et de l'ISO/IEC 42001, 6.1 des autres normes (pour une
+opportunité : plan d'action pour la saisir).
+
+- Fiche du risque, panneau **Plan de traitement** : ajout rapide, statut en un
+  clic, retards signalés ; quand toutes les actions sont terminées, invitation
+  à réévaluer le risque résiduel. Une première action fait passer le risque de
+  « Identifié » à « En traitement ».
+- **Gestion des risques › Plan de traitement** (`/risques/plan-de-traitement`) :
+  toutes les actions, compteurs (ouvertes, en retard, échéance sous 30 jours,
+  réalisées), filtres par état, responsable et norme.
+- Exports : le plan de traitement liste les actions, ressources et avancement
+  par risque ; nouvel export **Suivi des actions de traitement**
+  (`actions-traitement`, une ligne par action). Colonnes du PDF choisies par
+  `pdf_keep` (corrige le décalage du registre PDF introduit en 3.6).
+- Relances : actions à échéance sous 7 jours ou en retard, au responsable.
+- Revue de direction : actions de traitement ouvertes et en retard.
+- Preuves des exigences 6.1.3 et 8.3 : actions datées, ouvertes, en retard et
+  risques à traiter sans action.
+- Démo : 9 actions sur les risques de Fictivia.
+- Migration : table créée par `flask upgrade-db` (`db.create_all()`).
 
 ## Modules
 

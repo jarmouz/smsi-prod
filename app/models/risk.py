@@ -1,4 +1,5 @@
-from datetime import datetime
+import enum
+from datetime import date, datetime, timedelta
 
 from app.extensions import db
 from app.models.organization import TenantMixin
@@ -85,6 +86,8 @@ class Risk(TenantMixin, db.Model):
     accepted_by = db.relationship("User", foreign_keys=[accepted_by_id])
     controls = db.relationship("Control", secondary=risk_controls, back_populates="risks")
     assets = db.relationship("Asset", secondary="asset_risks", back_populates="risks", order_by="Asset.ref")
+    actions = db.relationship("RiskAction", back_populates="risk", cascade="all, delete-orphan",
+                              order_by=lambda: [RiskAction.due_date.asc().nulls_last(), RiskAction.id])
 
     # --- domaine, nature, normes ------------------------------------------------
     @property
@@ -110,6 +113,26 @@ class Risk(TenantMixin, db.Model):
 
     def concerns(self, code):
         return code in self.framework_codes
+
+    # --- plan de traitement ------------------------------------------------------
+    @property
+    def open_actions(self):
+        return [a for a in self.actions if a.status.is_open]
+
+    @property
+    def overdue_actions(self):
+        return [a for a in self.actions if a.is_overdue]
+
+    @property
+    def plan_progress(self):
+        """Avancement moyen des actions non abandonnées (None sans action)."""
+        acts = [a for a in self.actions if a.status.value != "ABANDONNEE"]
+        return round(sum(a.progress for a in acts) / len(acts)) if acts else None
+
+    @property
+    def plan_done(self):
+        """Toutes les actions terminées, au moins une réalisée : le risque résiduel est à réévaluer."""
+        return bool(self.actions) and not self.open_actions and any(a.status.value == "REALISEE" for a in self.actions)
 
     @property
     def inherent_score(self):
@@ -180,3 +203,72 @@ class Risk(TenantMixin, db.Model):
 
     def __repr__(self):
         return f"<Risk {self.ref} {self.inherent_score}>"
+
+
+# --- Plan de traitement des risques (3.7) ----------------------------------------------
+class RiskActionStatus(str, enum.Enum):
+    PREVUE = "PREVUE"
+    EN_COURS = "EN_COURS"
+    REALISEE = "REALISEE"
+    ABANDONNEE = "ABANDONNEE"
+
+    @property
+    def label(self):
+        return {"PREVUE": "Prévue", "EN_COURS": "En cours", "REALISEE": "Réalisée",
+                "ABANDONNEE": "Abandonnée"}[self.value]
+
+    @property
+    def is_open(self):
+        return self.value in ("PREVUE", "EN_COURS")
+
+
+class RiskAction(TenantMixin, db.Model):
+    """Action du plan de traitement d'un risque (27001 / 42001 6.1.3 e) et 8.3, 6.1 des autres
+    normes) : quoi, avec quelle mesure, qui, pour quand, avec quelles ressources, où en est-on.
+    Pour une opportunité : action pour la saisir (plan d'action)."""
+
+    __tablename__ = "risk_actions"
+
+    id = db.Column(db.Integer, primary_key=True)
+    risk_id = db.Column(db.Integer, db.ForeignKey("risks.id", ondelete="CASCADE"), nullable=False, index=True)
+    title = db.Column(db.String(300), nullable=False)
+    control_id = db.Column(db.Integer, db.ForeignKey("controls.id", ondelete="SET NULL"), nullable=True)
+    owner_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True, index=True)
+    due_date = db.Column(db.Date, nullable=True)
+    resources = db.Column(db.Text, nullable=True)                   # budget, moyens, prestataire
+    status = db.Column(db.Enum(RiskActionStatus, native_enum=False, length=16),
+                       default=RiskActionStatus.PREVUE, nullable=False, index=True)
+    progress = db.Column(db.Integer, default=0, nullable=False)     # 0 à 100 %
+    note = db.Column(db.Text, nullable=True)                        # résultat, blocage, preuve
+    completed_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    risk = db.relationship("Risk", back_populates="actions")
+    control = db.relationship("Control")
+    owner = db.relationship("User")
+
+    @property
+    def is_overdue(self):
+        return bool(self.status.is_open and self.due_date and self.due_date < date.today())
+
+    @property
+    def due_soon(self):
+        return bool(self.status.is_open and self.due_date and not self.is_overdue
+                    and self.due_date <= date.today() + timedelta(days=30))
+
+    def set_status(self, status):
+        """Change le statut et met l'avancement en cohérence (sans effet si le statut ne change pas)."""
+        if status == self.status:
+            return
+        self.status = status
+        if status == RiskActionStatus.REALISEE:
+            self.progress = 100
+            self.completed_at = self.completed_at or datetime.utcnow()
+        else:
+            self.completed_at = None
+            if self.progress == 100:
+                self.progress = 90
+
+    def __repr__(self):
+        return f"<RiskAction {self.id} {self.status.value}>"

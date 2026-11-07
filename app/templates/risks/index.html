@@ -2,7 +2,7 @@
 {% from 'partials/macros.html' import risk_chip, score_badge, acceptance_chip, export_menu with context %}
 {% block title %}Gestion des risques - {{ APP_NAME }}{% endblock %}
 {% block heading %}Gestion des risques{% endblock %}
-{% block topactions %}{{ export_menu([('registre-risques', 'Registre des risques'), ('plan-traitement', 'Plan de traitement des risques')]) }} {% if current_user.can_edit %}<a href="{{ url_for('imports.upload', kind='risques') }}" class="btn btn--subtle btn--sm">Importer</a> <a href="{{ url_for('risks.create') }}" class="btn btn--primary btn--sm">+ Nouveau risque</a>{% endif %}{% endblock %}
+{% block topactions %}{{ export_menu([('registre-risques', 'Registre des risques'), ('plan-traitement', 'Plan de traitement des risques')]) }} <a href="{{ url_for('risks.plan') }}" class="btn btn--subtle btn--sm">Plan de traitement</a> {% if current_user.can_edit %}<a href="{{ url_for('imports.upload', kind='risques') }}" class="btn btn--subtle btn--sm">Importer</a> <a href="{{ url_for('risks.create') }}" class="btn btn--primary btn--sm">+ Nouveau risque</a>{% endif %}{% endblock %}
 
 {% block content %}
 <form class="toolbar" method="get">
@@ -34,7 +34,7 @@
   <div class="panel__body--flush"><div class="table-wrap">
     <table class="grid">
       <thead><tr>
-        <th style="width:96px;">Réf.</th><th>Risque</th><th style="width:120px;">Traitement</th>
+        <th style="width:96px;">Réf.</th><th>Risque</th><th style="width:130px;">Traitement</th>
         <th style="width:80px;text-align:center;">Inhérent</th><th style="width:80px;text-align:center;">Résiduel</th>
         <th style="width:100px;">Niveau</th><th style="width:110px;">Acceptation</th><th style="width:120px;">Statut</th>
       </tr></thead>
@@ -46,7 +46,7 @@
             {% if r.controls %}<span class="muted" style="font-size:11px;"> - {{ r.controls|length }} mesure(s)</span>{% endif %}
             <div class="muted" style="font-size:11.5px;">{{ r.asset or '' }}</div>
           </td>
-          <td class="muted">{{ r.treatment.label }}</td>
+          <td class="muted">{{ r.treatment.label }}{% if r.actions %}<div style="font-size:11px;">{{ r.actions|length }} action(s){% if r.overdue_actions %} · <span style="color:var(--red-600);">{{ r.overdue_actions|length }} en retard</span>{% elif r.plan_progress is not none %} · {{ r.plan_progress }} %{% endif %}</div>{% endif %}</td>
           <td style="text-align:center;">{{ score_badge(r.inherent_score, r.display_inherent_level) }}</td>
           <td style="text-align:center;">{{ score_badge(r.residual_score, r.display_level) }}</td>
           <td>{{ risk_chip(r.display_level) }}</td>

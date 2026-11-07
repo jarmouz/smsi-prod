@@ -129,6 +129,8 @@ def _digest():
         "risks_open": len([r for r in risks if r.status.is_open and not r.is_opportunity]),
         "risks_high": len([r for r in risks if r.is_high]),
         "opps_open": len([r for r in risks if r.status.is_open and r.is_opportunity]),
+        "rtp_open": sum(len(r.open_actions) for r in risks),
+        "rtp_overdue": sum(len(r.overdue_actions) for r in risks),
         "open_ncs": open_ncs,
         **governance.summary(),
     }

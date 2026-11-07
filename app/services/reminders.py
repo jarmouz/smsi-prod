@@ -73,6 +73,12 @@ def collect(user, today=None):
         elif r.status.is_open and r.review_date and r.review_date <= soon7:
             add("Risques à réévaluer", f"{r.ref} : {r.title}", url_for("risks.detail", risk_id=r.id),
                 _due(r.review_date, t), r.review_date < t)
+    from app.models import RiskAction, RiskActionStatus
+    for a in RiskAction.query.filter(RiskAction.owner_id == user.id,
+                                     RiskAction.status.in_([RiskActionStatus.PREVUE, RiskActionStatus.EN_COURS]),
+                                     RiskAction.due_date.isnot(None), RiskAction.due_date <= soon7):
+        add("Actions de traitement des risques", f"{a.risk.ref} : {a.title}",
+            url_for("risks.detail", risk_id=a.risk_id) + "#plan", _due(a.due_date, t), a.due_date < t)
     for i in Indicator.query.filter(Indicator.owner_id == user.id, Indicator.active.is_(True)):
         if i.measurement_due:
             add("Mesures d'indicateurs attendues", f"{i.ref} : {i.name} ({i.frequency.label.lower()})",
