@@ -12,6 +12,8 @@ from app.services.access import auditor_required, editor_required
 from app.services.refs import next_ref
 from app.services import attachments as att_svc
 
+from app.services import frameworks as fw_svc
+
 bp = Blueprint("audits", __name__, url_prefix="/audits")
 
 
@@ -50,6 +52,8 @@ def create():
                       status=AuditStatus(request.form.get("status", "PLANIFIE")),
                       lead_auditor_id=request.form.get("lead_auditor_id", type=int) or None)
             db.session.add(a)
+            db.session.commit()
+            fw_svc.links_from_form(a, request.form)
             db.session.commit()
             att_svc.save_many(request.files.getlist("attachments"), "audit", a.id, current_user)
             flash(f"Audit {a.ref} créé.", "success")

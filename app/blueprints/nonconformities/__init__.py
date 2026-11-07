@@ -12,6 +12,8 @@ from app.services.access import editor_required
 from app.services.audit_trail import log_event
 from app.services.refs import next_ref
 
+from app.services import frameworks as fw_svc
+
 bp = Blueprint("nonconformities", __name__, url_prefix="/non-conformites")
 
 CAUSE_METHODS = ["5 pourquoi", "Ishikawa (5M)", "Arbre des causes", "Analyse de processus", "Autre"]
@@ -142,6 +144,7 @@ def _form(nc):
             nc.effectiveness_due = _date(request.form.get("effectiveness_due"))
             db.session.flush()
             _refresh_status(nc)
+            fw_svc.links_from_form(nc, request.form)
             db.session.commit()
             flash(f"Non-conformité {nc.ref} enregistrée.", "success")
             return redirect(url_for("nonconformities.detail", nc_id=nc.id))

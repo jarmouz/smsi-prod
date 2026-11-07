@@ -24,6 +24,13 @@ git commit -am "…" && git push
 ```
 
 Au démarrage, le conteneur met à jour le schéma (`flask upgrade-db`, sans perte).
+
+Depuis la 3.0, l'application est **multi-référentiels** : les normes et leurs
+catalogues sont décrits dans `app/services/frameworks.py` (`CATALOGUES`), chaque
+organisation active les siennes (Administration › Référentiels) et les éléments
+communs (audits, revues, documents, objectifs, non-conformités) peuvent être
+rattachés à une ou plusieurs normes. Les écrans historiques restent limités à
+l'ISO 27001 (`Control.of()`).
 Une base neuve s'initialise avec `flask init-platform` (organisation + RSSI) ;
 `flask init-db` est réservé au développement (il efface tout).
 

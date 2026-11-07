@@ -9,6 +9,8 @@ from app.models import (Objective, Indicator, Measurement, Control, User, Object
 from app.services.access import editor_required
 from app.services.refs import next_ref
 
+from app.services import frameworks as fw_svc
+
 bp = Blueprint("objectives", __name__, url_prefix="/objectifs")
 
 
@@ -74,6 +76,8 @@ def _objective_form(o):
             o.owner_id = request.form.get("owner_id", type=int) or None
             o.due_date = _date(request.form.get("due_date"))
             o.status = ObjectiveStatus(request.form.get("status", "EN_COURS"))
+            db.session.flush()
+            fw_svc.links_from_form(o, request.form)
             db.session.commit()
             flash(f"Objectif {o.ref} enregistré.", "success")
             return redirect(url_for("objectives.index"))

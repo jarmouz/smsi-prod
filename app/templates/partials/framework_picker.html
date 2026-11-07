@@ -1,0 +1,13 @@
+{#- Rattachement d'un élément commun à des normes : affiché seulement si plusieurs normes sont actives.
+    Variable attendue : fw_entity (None à la création). Aucune case cochée = toutes les normes. -#}
+{%- set _fws = fw_active() -%}
+{%- if _fws|length > 1 -%}
+{%- set _on = fw_codes_of(fw_entity) -%}
+<div class="field fw-picker"><label>Normes concernées</label>
+  <input type="hidden" name="fw_present" value="1">
+  <div class="fw-picker__opts">{% for f in _fws %}
+    <label><input type="checkbox" name="fw" value="{{ f.code }}" {{ 'checked' if f.code in _on }}> {{ f.short_name }}</label>{% endfor %}
+  </div>
+  <div class="hint">Aucune case cochée : l'élément concerne toutes les normes actives.</div>
+</div>
+{%- endif -%}

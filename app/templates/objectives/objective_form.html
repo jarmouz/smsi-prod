@@ -15,7 +15,7 @@
       <div class="field"><label>Échéance (6.2 i)</label><input type="date" name="due_date" value="{{ o.due_date.isoformat() if o and o.due_date else '' }}"></div>
     </div>
     <div class="field"><label>Évaluation des résultats (6.2 j)</label><textarea name="evaluation" rows="2" placeholder="Ex. indicateur KPI-003 mesuré chaque trimestre, analysé en comité sécurité">{{ o.evaluation if o else '' }}</textarea></div>
-    <div class="field"><label>Statut</label><select name="status">{% for x in ObjectiveStatus %}<option value="{{ x.value }}" {{ 'selected' if (o and o.status==x) or (not o and x.value=='EN_COURS') }}>{{ x.label }}</option>{% endfor %}</select></div>
+    <div class="field"><label>Statut</label><select name="status">{% for x in ObjectiveStatus %}<option value="{{ x.value }}" {{ 'selected' if (o and o.status==x) or (not o and x.value=='EN_COURS') }}>{{ x.label }}</option>{% endfor %}</select></div>{% with fw_entity=o %}{% include "partials/framework_picker.html" %}{% endwith %}
     <div><button class="btn btn--primary" type="submit">Enregistrer</button></div>
   </div></div>
 </form>

@@ -114,6 +114,21 @@ def _register_jinja(app):
     from app.models import (Theme, ControlStatus, RiskStatus, Treatment,
                             FindingType, ActionStatus, DocStatus, DocType, AuditStatus)
 
+    @app.context_processor
+    def _frameworks_ctx():
+        from app.services import frameworks as fw_svc
+
+        def fw_active():
+            from flask import g
+            if "_fw_active" not in g:
+                g._fw_active = fw_svc.active() if current_user.is_authenticated else []
+            return g._fw_active
+
+        def fw_codes_of(entity):
+            return {f.code for f in fw_svc.frameworks_of(entity)} if entity is not None and entity.id else set()
+
+        return {"fw_active": fw_active, "fw_codes_of": fw_codes_of, "fw_of": fw_svc.frameworks_of}
+
     @app.template_filter("dt")
     def _dt(value, fmt="%d/%m/%Y %H:%M"):
         return value.strftime(fmt) if value else "-"

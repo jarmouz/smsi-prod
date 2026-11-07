@@ -5,7 +5,7 @@
 <div class="detail-grid">
   <div class="stack">
     <div class="panel">
-      <div class="panel__head"><h2>Organisations clientes</h2><span class="rail__badge">{{ orgs|length }}</span></div>
+      <div class="panel__head"><h2>Organisations clientes</h2><span class="rail__badge">{{ orgs|length }}</span><div class="spacer"></div><a class="btn btn--ghost btn--sm" href="{{ url_for('platform.frameworks') }}">Référentiels</a></div>
       <div class="panel__body--flush"><div class="table-wrap">
         <table class="grid">
           <thead><tr><th>Organisation</th><th style="width:90px;">Utilisateurs</th><th style="width:70px;">Risques</th><th style="width:80px;">État</th><th style="width:210px;"></th></tr></thead>

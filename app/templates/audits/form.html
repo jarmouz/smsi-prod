@@ -17,7 +17,7 @@
       </div>
       <div class="field"><label>Auditeur responsable</label>
         <select name="lead_auditor_id"><option value="">-</option>{% for u in users %}<option value="{{ u.id }}">{{ u.name }}</option>{% endfor %}</select></div>
-      <div class="field"><label>Pièces jointes (optionnel)</label><input type="file" name="attachments" multiple><div class="muted" style="font-size:11.5px;margin-top:4px;">Plan d'audit, rapport… D'autres pourront être ajoutés ensuite.</div></div>
+      <div class="field"><label>Pièces jointes (optionnel)</label><input type="file" name="attachments" multiple><div class="muted" style="font-size:11.5px;margin-top:4px;">Plan d'audit, rapport… D'autres pourront être ajoutés ensuite.</div></div>{% with fw_entity=None %}{% include "partials/framework_picker.html" %}{% endwith %}
       <div><button class="btn btn--primary" type="submit">Créer l'audit</button></div>
     </div>
   </div>

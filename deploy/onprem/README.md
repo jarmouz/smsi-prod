@@ -135,6 +135,12 @@ les pièces jointes, puis redémarre l'application.
 Une sauvegarde est faite automatiquement avant la mise à jour ; les évolutions
 de la base sont appliquées au démarrage, sans perte de données.
 
+> **Passage de 2.x à 3.0** : la base est convertie au modèle multi-référentiels
+> (les mesures existantes sont rattachées à l'ISO/IEC 27001:2022, activée pour
+> chaque organisation). Rien ne change pour les utilisateurs ; le RSSI trouve une
+> nouvelle page **Administration › Référentiels** (périmètre et certification
+> par norme).
+
 ## Nextcloud / OnlyOffice (facultatif)
 
 Renseignez dans `.env` :

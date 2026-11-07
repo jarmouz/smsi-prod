@@ -32,7 +32,7 @@
         <div class="field"><textarea name="decisions" rows="5" placeholder="Décisions relatives aux opportunités d'amélioration, aux changements du SMSI, aux besoins en ressources…">{{ review.decisions if review else '' }}</textarea></div>
       </div>
     </div>
-    {% if not review %}<div class="panel"><div class="panel__head"><h2>Pièces jointes</h2></div><div class="panel__body"><div class="field"><input type="file" name="attachments" multiple><div class="muted" style="font-size:11.5px;margin-top:4px;">PV, présentation… D'autres pourront être ajoutés ensuite.</div></div></div></div>{% endif %}
+    {% if not review %}<div class="panel"><div class="panel__head"><h2>Pièces jointes</h2></div><div class="panel__body"><div class="field"><input type="file" name="attachments" multiple><div class="muted" style="font-size:11.5px;margin-top:4px;">PV, présentation… D'autres pourront être ajoutés ensuite.</div></div></div></div>{% endif %}{% with fw_entity=review %}{% include "partials/framework_picker.html" %}{% endwith %}
     <div><button class="btn btn--primary" type="submit">{{ 'Enregistrer' if review else 'Créer la revue' }}</button></div>
   </div>
 

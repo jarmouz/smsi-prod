@@ -22,7 +22,7 @@
       <div class="field"><label>Emplacement / lien</label><input type="text" name="location" value="{{ doc.location if doc else '' }}" placeholder="URL ou chemin du fichier"></div>
       <div class="field"><label>Prochaine revue</label><input type="date" name="next_review_at" value="{{ doc.next_review_at.isoformat() if doc and doc.next_review_at else '' }}"><div class="muted" style="font-size:11.5px;margin-top:4px;">Fixée automatiquement à 12 mois lors de l'approbation si elle est vide ou dépassée.</div></div>
       <div class="field"><label>Note</label><textarea name="note" rows="2">{{ doc.note if doc else '' }}</textarea></div>
-      {% if not doc %}<div class="field"><label>Pièces jointes (optionnel)</label><input type="file" name="attachments" multiple><div class="muted" style="font-size:11.5px;margin-top:4px;">Vous pouvez joindre le fichier du document dès maintenant. D'autres pourront être ajoutés ensuite.</div></div>{% endif %}
+      {% if not doc %}<div class="field"><label>Pièces jointes (optionnel)</label><input type="file" name="attachments" multiple><div class="muted" style="font-size:11.5px;margin-top:4px;">Vous pouvez joindre le fichier du document dès maintenant. D'autres pourront être ajoutés ensuite.</div></div>{% endif %}{% with fw_entity=doc %}{% include "partials/framework_picker.html" %}{% endwith %}
       <div><button class="btn btn--primary" type="submit">{{ 'Enregistrer' if doc else 'Créer le document' }}</button></div>
     </div>
   </div>

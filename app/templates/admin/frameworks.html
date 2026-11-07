@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block title %}Référentiels - {{ APP_NAME }}{% endblock %}
+{% block heading %}Référentiels{% endblock %}
+{% block content %}
+<p class="muted" style="font-size:12.5px;margin:0 0 14px;max-width:860px;">Normes de systèmes de management pilotées par l'organisation. Activer une norme ajoute son catalogue (mesures ou exigences) ; la désactiver masque ses écrans sans rien supprimer. Les éléments communs (audits, revues de direction, documents, objectifs, non-conformités) peuvent être rattachés à une ou plusieurs normes dès que plusieurs sont actives.</p>
+{% for r in rows %}
+<div class="panel" style="margin-bottom:16px;">
+  <div class="panel__head"><h2>{{ r.fw.name }}</h2><span class="muted" style="font-size:12px;margin-left:8px;">{{ r.fw.domain }} - {{ r.n_items }} {{ 'mesures' if r.fw.kind == 'controls' else 'exigences' }}</span><div class="spacer"></div>
+    {% if r.on %}<span class="appl appl--in">Active</span>{% else %}<span class="appl appl--out">Inactive</span>{% endif %}</div>
+  <div class="panel__body">
+    {% if r.on %}
+    <form method="post" class="stack" style="gap:12px;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="code" value="{{ r.fw.code }}"><input type="hidden" name="action" value="save">
+      <div class="field" style="margin:0;"><label>Périmètre propre à cette norme</label><textarea name="scope" rows="2" placeholder="Laisser vide si le périmètre est celui du système de management (Contexte)">{{ r.of.scope or '' }}</textarea></div>
+      <div class="form-grid">
+        <div class="field" style="margin:0;"><label>Certification visée le</label><input type="date" name="target_date" value="{{ r.of.target_date.isoformat() if r.of.target_date }}"></div>
+        <div class="field" style="margin:0;"><label>Organisme de certification</label><input type="text" name="certifier" maxlength="200" value="{{ r.of.certifier or '' }}"></div>
+        <div class="field" style="margin:0;"><label>Certifiée le</label><input type="date" name="certified_on" value="{{ r.of.certified_on.isoformat() if r.of.certified_on }}"></div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn btn--primary btn--sm" type="submit">Enregistrer</button>
+        {% if r.core %}<span class="muted" style="font-size:12px;align-self:center;">Norme socle de l'application : toujours active.</span>{% endif %}
+      </div>
+    </form>
+    {% if not r.core %}
+    <form method="post" style="margin-top:10px;" onsubmit="return confirm('Désactiver {{ r.fw.name }} ? Ses données sont conservées.');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="code" value="{{ r.fw.code }}"><input type="hidden" name="action" value="disable">
+      <button class="btn btn--ghost btn--sm">Désactiver</button></form>
+    {% endif %}
+    {% else %}
+    <form method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="code" value="{{ r.fw.code }}"><input type="hidden" name="action" value="enable">
+      <button class="btn btn--primary btn--sm">Activer {{ r.fw.short_name }}</button></form>
+    {% endif %}
+  </div>
+</div>
+{% endfor %}
+{% endblock %}

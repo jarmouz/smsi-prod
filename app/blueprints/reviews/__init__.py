@@ -13,6 +13,8 @@ from app.services.access import rssi_required, editor_required
 from app.services.refs import next_ref
 from app.services import attachments as att_svc
 
+from app.services import frameworks as fw_svc
+
 bp = Blueprint("reviews", __name__, url_prefix="/revue-direction")
 
 
@@ -47,6 +49,8 @@ def create():
                 decisions=request.form.get("decisions"))
             db.session.add(r)
             db.session.commit()
+            fw_svc.links_from_form(r, request.form)
+            db.session.commit()
             att_svc.save_many(request.files.getlist("attachments"), "review", r.id, current_user)
             flash(f"Revue {r.ref} créée.", "success")
             return redirect(url_for("reviews.detail", review_id=r.id))
@@ -76,6 +80,7 @@ def edit(review_id):
         r.participants = request.form.get("participants")
         r.inputs = request.form.get("inputs")
         r.decisions = request.form.get("decisions")
+        fw_svc.links_from_form(r, request.form)
         db.session.commit()
         flash(f"Revue {r.ref} mise à jour.", "success")
         return redirect(url_for("reviews.detail", review_id=r.id))

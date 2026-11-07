@@ -10,6 +10,8 @@ from app.services.audit_trail import log_event
 from app.services.refs import next_ref
 from app.services import attachments as att_svc
 
+from app.services import frameworks as fw_svc
+
 bp = Blueprint("documents", __name__, url_prefix="/documents")
 
 
@@ -58,6 +60,8 @@ def create():
                 note=request.form.get("note"))
             db.session.add(d)
             db.session.commit()
+            fw_svc.links_from_form(d, request.form)
+            db.session.commit()
             att_svc.save_many(request.files.getlist("attachments"), "document", d.id, current_user)
             flash(f"Document {d.ref} créé en brouillon. Soumettez-le pour approbation une fois rédigé.", "success")
             return redirect(url_for("documents.detail", doc_id=d.id))
@@ -79,6 +83,7 @@ def edit(doc_id):
         d.location = request.form.get("location")
         d.next_review_at = _date(request.form.get("next_review_at"))
         d.note = request.form.get("note")
+        fw_svc.links_from_form(d, request.form)
         db.session.commit()
         flash(f"Document {d.ref} mis à jour.", "success")
         return redirect(url_for("documents.detail", doc_id=d.id))

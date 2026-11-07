@@ -429,3 +429,56 @@ def ai_page():
     return render_template("admin/ai.html", configured=ai.platform_configured(), enabled=ai.org_enabled(),
                            by=settings_svc.get("ai_enabled_by", "", inherit=False),
                            at=settings_svc.get("ai_enabled_at", "", inherit=False), months=months, model=ai.MODEL)
+
+
+# --- Référentiels (normes activées par l'organisation) ------------------------
+@bp.route("/referentiels", methods=["GET", "POST"])
+@rssi_required
+def frameworks_page():
+    from datetime import date as _date
+    from app.models import OrgFramework
+    from app.services import frameworks as fw_svc
+    from app.services.audit_trail import log_event
+
+    def _d(v):
+        try:
+            return _date.fromisoformat(v) if v else None
+        except ValueError:
+            return None
+
+    if request.method == "POST":
+        code, action = request.form.get("code", ""), request.form.get("action")
+        fw = fw_svc.get(code)
+        if fw is None or not fw.available:
+            abort(404)
+        try:
+            if action == "enable":
+                fw_svc.enable(code)
+                log_event("parametres", f"Référentiel activé : {fw.name}")
+                flash(f"{fw.name} activée : son catalogue a été ajouté à l'organisation.", "success")
+            elif action == "disable":
+                fw_svc.disable(code)
+                log_event("parametres", f"Référentiel désactivé : {fw.name} (données conservées)")
+                flash(f"{fw.name} désactivée. Ses données sont conservées et réapparaîtront à la réactivation.", "success")
+            elif action == "save":
+                of = OrgFramework.query.filter_by(framework_id=fw.id).first() or abort(404)
+                of.scope = (request.form.get("scope") or "").strip() or None
+                of.certifier = (request.form.get("certifier") or "").strip()[:200] or None
+                of.target_date = _d(request.form.get("target_date"))
+                of.certified_on = _d(request.form.get("certified_on"))
+                flash(f"{fw.name} : informations enregistrées.", "success")
+            db.session.commit()
+        except ValueError as e:
+            db.session.rollback()
+            flash(str(e), "danger")
+        return redirect(url_for("admin.frameworks_page"))
+
+    rows = []
+    states = {of.framework_id: of for of in OrgFramework.query.all()}
+    for fw in fw_svc.all_frameworks():
+        if not fw.available:
+            continue
+        of = states.get(fw.id)
+        rows.append({"fw": fw, "of": of, "on": bool(of and of.enabled), "core": fw.code == fw_svc.CORE,
+                     "n_items": len([i for i in fw.items if i.kind == "control"])})
+    return render_template("admin/frameworks.html", rows=rows)

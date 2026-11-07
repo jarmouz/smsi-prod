@@ -175,3 +175,18 @@ def save_ai():
             else:
                 flash("Clé non enregistrée : " + msg, "danger")
     return redirect(url_for("platform.home"))
+
+
+@bp.route("/referentiels")
+@platform_view_required
+def frameworks():
+    """Catalogues des référentiels de la plateforme et organisations qui les utilisent."""
+    from sqlalchemy import func
+    from app.models import Framework, FrameworkItem, OrgFramework, ItemMapping
+    counts = dict(db.session.query(FrameworkItem.framework_id, func.count()).group_by(FrameworkItem.framework_id).all())
+    users = dict(db.session.query(OrgFramework.framework_id, func.count())
+                 .execution_options(all_tenants=True).filter(OrgFramework.enabled.is_(True))
+                 .group_by(OrgFramework.framework_id).all())
+    fws = Framework.query.order_by(Framework.sort_order, Framework.id).all()
+    return render_template("platform/frameworks.html", fws=fws, counts=counts, users=users,
+                           mappings=ItemMapping.query.count())

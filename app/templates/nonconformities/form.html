@@ -33,7 +33,7 @@
     <div class="field"><label>b) Cause(s) racine(s)</label><textarea name="root_cause" rows="3">{{ d.root_cause or '' }}</textarea></div>
     <div class="field"><label>b) Non-conformités similaires existantes ou susceptibles de se produire</label><textarea name="extent" rows="2">{{ d.extent or '' }}</textarea></div>
     <div class="field"><label>e) Modifications à apporter au SMSI</label><textarea name="isms_changes" rows="2" placeholder="Ex. mise à jour de la procédure, nouvel indicateur, risque réévalué...">{{ d.isms_changes or '' }}</textarea></div>
-    <p class="muted" style="font-size:11.5px;margin:0;">c) Les actions correctives s'ajoutent sur la fiche ; d) l'efficacité est vérifiée par le RSSI ou un auditeur avant clôture.</p>
+    <p class="muted" style="font-size:11.5px;margin:0;">c) Les actions correctives s'ajoutent sur la fiche ; d) l'efficacité est vérifiée par le RSSI ou un auditeur avant clôture.</p>{% with fw_entity=nc %}{% include "partials/framework_picker.html" %}{% endwith %}
     <div><button class="btn btn--primary" type="submit">Enregistrer</button></div>
   </div></div>
 </form>
