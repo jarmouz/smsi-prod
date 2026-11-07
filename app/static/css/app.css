@@ -727,3 +727,22 @@ table.grid tbody tr.imp-row--error td { background: #fdf6f4; }
 .rail__group[data-group="vieprivee"] { --g: #6A4C93; --g-dark: #533A75; --g-soft: #EFEAF6; }
 .rail__group[data-group="ia"]        { --g: #8E3B5A; --g-dark: #722F48; --g-soft: #F6E9EE; }
 .rail__tagline { display: block; font-size: 10.5px; font-weight: 500; letter-spacing: .02em; text-transform: none; opacity: .75; margin-top: 2px; line-height: 1.3; }
+
+/* ------------------------------------------------------------ Identité Integra */
+.integra { display: flex; align-items: center; gap: 12px; }
+.integra-mark { flex: 0 0 auto; display: block; }
+.integra__text { display: flex; flex-direction: column; min-width: 0; }
+.integra__name { font-family: var(--font-display); font-weight: 800; color: var(--ink-900); letter-spacing: -.02em; line-height: 1; }
+.integra__tagline { font-family: var(--font-display); font-weight: 600; color: var(--ink-500); text-transform: uppercase; letter-spacing: .08em; line-height: 1.35; }
+.integra--rail { gap: 10px; }
+.integra--rail .integra__name { font-size: 21px; }
+.integra--rail .integra__tagline { font-size: 8.5px; margin-top: 4px; max-width: 150px; }
+.integra--login .integra__name { font-size: 34px; }
+.integra--login .integra__tagline { font-size: 11px; margin-top: 6px; letter-spacing: .1em; }
+.rail__by { font-size: 10.5px; color: var(--ink-500); margin-top: 2px; }
+.rail__by b { font-weight: 600; color: var(--ink-700); }
+.rail__org { width: 100%; margin-top: 6px; padding-top: 10px; border-top: 1px solid var(--line); }
+.rail__org-label { display: block; font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--kicker); margin-bottom: 4px; }
+.rail__org-name { font-family: var(--font-display); font-size: 13.5px; font-weight: 700; color: var(--ink-900); line-height: 1.3; }
+.rail__org select { width: 100%; font-size: 12.5px; font-weight: 600; }
+.rail__home { text-decoration: none; color: inherit; display: block; }

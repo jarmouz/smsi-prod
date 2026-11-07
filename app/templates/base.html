@@ -1,3 +1,4 @@
+{%- from 'partials/integra.html' import integra_lockup with context -%}
 <!doctype html>
 <html lang="fr">
 <head>
@@ -78,19 +79,22 @@
   {% if current_user.is_authenticated %}
   <aside class="rail" id="rail">
     <div class="rail__brand">
-      <img class="rail__logo" src="{{ url_for('static', filename='img/logo-kaizen-horizontal.svg') }}" alt="Kaizen Intelligence">
-      <div class="rail__title">{{ APP_NAME }}<span class="rail__tagline">{{ APP_TAGLINE }}</span></div>
+      <a href="{{ url_for('dashboard.home') }}" class="rail__home" aria-label="{{ APP_NAME }} - tableau de bord">{{ integra_lockup('rail') }}</a>
+      <div class="rail__by">par <b>Kaizen Intelligence</b></div>
       {% if current_org %}
+      <div class="rail__org">
+        <span class="rail__org-label">Organisation</span>
         {% if all_orgs|length > 1 %}
-        <form method="post" action="{{ url_for('platform.switch') }}" id="org-switch" style="margin-top:8px;">
+        <form method="post" action="{{ url_for('platform.switch') }}" id="org-switch">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <select name="org_id" aria-label="Organisation" style="width:100%;font-size:12px;" onchange="this.form.submit();">
+          <select name="org_id" aria-label="Organisation" onchange="this.form.submit();">
             {% for o in all_orgs %}<option value="{{ o.id }}" {{ 'selected' if o.id == current_org.id }}>{{ o.name }}{{ ' (inactive)' if not o.is_active }}</option>{% endfor %}
           </select>
         </form>
         {% else %}
-        <div class="rail__title" style="margin-top:4px;font-weight:600;">{{ current_org.name }}</div>
+        <div class="rail__org-name">{{ current_org.name }}</div>
         {% endif %}
+      </div>
       {% endif %}
     </div>
     <nav class="rail__nav" id="rail-nav" aria-label="Navigation principale">

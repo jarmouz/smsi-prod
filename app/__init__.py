@@ -129,7 +129,17 @@ def _register_jinja(app):
         def fw_codes_of(entity):
             return {f.code for f in fw_svc.frameworks_of(entity)} if entity is not None and entity.id else set()
 
-        return {"fw_active": fw_active, "fw_codes_of": fw_codes_of, "fw_of": fw_svc.frameworks_of}
+        def login_frameworks():
+            """Normes disponibles sur la plateforme (page de connexion)."""
+            from app.models import Framework
+            try:
+                return Framework.query.filter_by(available=True).order_by(Framework.sort_order).all()
+            except Exception:  # noqa: BLE001 - base pas encore initialisée
+                db.session.rollback()
+                return []
+
+        return {"fw_active": fw_active, "fw_codes_of": fw_codes_of, "fw_of": fw_svc.frameworks_of,
+                "login_frameworks": login_frameworks}
 
     @app.template_filter("grp")
     def _grp(value):

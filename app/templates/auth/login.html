@@ -1,3 +1,4 @@
+{%- from 'partials/integra.html' import integra_lockup with context -%}
 <!doctype html>
 <html lang="fr">
 <head>
@@ -10,7 +11,11 @@
     html,body{height:100%;margin:0;overflow:hidden;font-family:var(--font-body)}
     .lg-wrap{height:100vh;display:grid;grid-template-columns:1.05fr .95fr}
     .lg-aside{position:relative;padding:40px 48px 32px;display:flex;flex-direction:column;gap:36px;background:var(--surface);border-right:1px solid var(--line);color:var(--ink-900);overflow-y:auto}
-    .lg-logo{width:220px;height:auto;display:block;margin:0 0 44px}
+    .lg-brand{margin:0 0 40px}
+    .lg-by{display:flex;align-items:center;gap:10px;margin:22px 0 0;padding-top:16px;border-top:1px solid var(--line);font-size:12px;color:var(--ink-500)}
+    .lg-by img{width:140px;height:auto;display:block}
+    .lg-norms{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0 0;padding:0;list-style:none}
+    .lg-norms li{font-family:var(--font-display);font-size:12px;font-weight:700;color:var(--teal-600);background:var(--teal-050);padding:5px 10px}
     .lg-main{flex:1;display:flex;flex-direction:column;justify-content:center;gap:36px}
     .lg-kicker{font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--kicker);margin:0 0 14px}
     .lg-head .ttl{font-family:var(--font-display);font-weight:800;font-size:38px;line-height:1.06;letter-spacing:-.015em;margin:0 0 14px;max-width:460px;color:var(--ink-900)}
@@ -40,9 +45,11 @@
   <aside class="lg-aside">
     <div class="lg-main">
       <div class="lg-head">
-        <p class="lg-kicker">{{ APP_NAME }} - {{ APP_TAGLINE }}</p>
+        <p class="lg-kicker">Système de management intégré</p>
         <h2 class="ttl">Un système de management qui s'améliore en continu.</h2>
         <p>Applicabilité, risques, incidents, audits et preuves reliés dans un même cycle, prêts pour la certification.</p>
+        {% set _norms = login_frameworks() %}
+        {% if _norms %}<ul class="lg-norms" aria-label="Normes prises en charge">{% for f in _norms %}<li>{{ f.name.split(':')[0] }}</li>{% endfor %}</ul>{% endif %}
       </div>
 
       <div class="lg-steps">
@@ -57,7 +64,7 @@
   </aside>
 
   <main class="lg-form">
-    <img class="lg-logo" src="{{ url_for('static', filename='img/logo-kaizen-horizontal.svg') }}" alt="Kaizen Intelligence">
+    <div class="lg-brand">{{ integra_lockup('login') }}</div>
     {% if mfa_step %}
     <h1>Vérification</h1>
     <p class="sub">Saisissez le code à 6 chiffres affiché par votre application d'authentification, ou l'un de vos codes de secours.</p>
@@ -104,7 +111,7 @@
       <span class="l"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Connexion chiffrée.</span>
       Accès réservé aux utilisateurs autorisés.
     </div>
-    <p class="lg-legal">Kaizen Intelligence | kaizen-intelligence.tn</p>
+    <div class="lg-by"><span>Une solution</span><img src="{{ url_for('static', filename='img/logo-kaizen-horizontal.svg') }}" alt="Kaizen Intelligence"></div>
   </main>
 
 </div>
