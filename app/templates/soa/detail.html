@@ -179,7 +179,7 @@
         <div class="table-wrap"><table class="grid"><tbody>
           {% for r in c.risks %}
           <tr class="row-link" onclick="window.location='{{ url_for('risks.detail', risk_id=r.id) }}'">
-            <td class="ref">{{ r.ref }}</td><td class="subj">{{ r.title }}</td><td>{{ risk_chip(r.residual_level) }}</td>
+            <td class="ref">{{ r.ref }}</td><td class="subj">{{ r.title }}</td><td>{{ risk_chip(r.display_level) }}</td>
           </tr>
           {% endfor %}
         </tbody></table></div>

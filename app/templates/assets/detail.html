@@ -7,7 +7,7 @@
 <div class="detail-grid">
   <div class="stack">
     <div class="panel"><div class="panel__head"><h2>Risques portant sur cet actif</h2><span class="rail__badge">{{ a.risks|length }}</span></div><div class="panel__body--flush"><div class="table-wrap"><table class="grid">
-      <tbody>{% for r in a.risks %}<tr class="row-link" onclick="window.location='{{ url_for('risks.detail', risk_id=r.id) }}'"><td class="ref">{{ r.ref }}</td><td class="subj">{{ r.title }}</td><td style="text-align:center;">{{ score_badge(r.residual_score or r.inherent_score, r.residual_level) }}</td><td>{{ risk_chip(r.residual_level) }}</td><td class="muted">{{ r.status.label }}</td></tr>
+      <tbody>{% for r in a.risks %}<tr class="row-link" onclick="window.location='{{ url_for('risks.detail', risk_id=r.id) }}'"><td class="ref">{{ r.ref }}</td><td class="subj">{{ r.title }}</td><td style="text-align:center;">{{ score_badge(r.residual_score or r.inherent_score, r.display_level) }}</td><td>{{ risk_chip(r.display_level) }}</td><td class="muted">{{ r.status.label }}</td></tr>
       {% else %}<tr><td class="muted" style="padding:14px;">Aucun risque rattaché (le lien se fait depuis la fiche du risque).</td></tr>{% endfor %}</tbody>
     </table></div></div></div>
     <div class="panel"><div class="panel__head"><h2>Activités dépendantes (BIA)</h2><span class="rail__badge">{{ a.processes|length }}</span></div><div class="panel__body--flush"><div class="table-wrap"><table class="grid">

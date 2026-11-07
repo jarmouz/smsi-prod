@@ -13,7 +13,7 @@
   <div class="kpi kpi--retard">
     <div class="kpi__label">Risques élevés</div>
     <div class="kpi__value">{{ high_risks_n }}</div>
-    <div class="kpi__sub">{{ open_risks_n }} risques ouverts</div>
+    <div class="kpi__sub">{{ open_risks_n }} risques ouverts{% if open_opps_n %} · {{ open_opps_n }} opportunité(s){% endif %}</div>
   </div>
   <a class="kpi kpi--ouvert" href="{{ url_for('nonconformities.index', statut='ouvertes') }}" style="text-decoration:none;color:inherit;">
     <div class="kpi__label">Non-conformités</div>
@@ -120,7 +120,7 @@
           <tr class="row-link" onclick="window.location='{{ url_for('risks.detail', risk_id=r.id) }}'">
             <td class="ref">{{ r.ref }}</td>
             <td class="subj">{{ r.title }}</td>
-            <td>{{ risk_chip(r.residual_level) }}</td>
+            <td>{{ risk_chip(r.display_level) }}</td>
           </tr>
           {% endfor %}
           </tbody>

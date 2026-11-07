@@ -768,6 +768,7 @@ table.grid tbody tr.imp-row--error td { background: #fdf6f4; }
 }
 .tag-opp, .tag-q { display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; padding: 1px 6px; vertical-align: 2px; margin-left: 4px; }
 .tag-opp { color: #20653E; background: #E3F2EA; }
+.risk--opportunite { background: #2F6FA3; color: #fff; }
 .tag-q { color: #6E4700; background: #FBF1DC; }
 .rail__group[data-group="qualite"]   { --g: #56701C; --g-dark: #435716; --g-soft: #EEF3E2; }
 /* Cartographie des processus (ISO 9001 §4.4) */

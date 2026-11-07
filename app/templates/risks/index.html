@@ -6,9 +6,13 @@
 
 {% block content %}
 <form class="toolbar" method="get">
-  {%- if 'ISO9001' in fw_active()|map(attribute='code')|list %}
-  <select name="domaine" onchange="this.form.submit()"><option value="">Tous domaines</option><option value="SECURITE" {{ 'selected' if f_domain=='SECURITE' }}>Sécurité de l'information</option><option value="QUALITE" {{ 'selected' if f_domain=='QUALITE' }}>Qualité</option><option value="OPPORTUNITE" {{ 'selected' if f_domain=='OPPORTUNITE' }}>Opportunités</option></select>
+  {%- if fw_list|length > 1 %}
+  <select name="norme" onchange="this.form.submit()"><option value="">Toutes normes</option>{% for f in fw_list %}<option value="{{ f.code }}" {{ 'selected' if f_norm==f.code }}>{{ f.short_name }}</option>{% endfor %}</select>
   {%- endif %}
+  {%- if domains|length > 1 %}
+  <select name="domaine" onchange="this.form.submit()"><option value="">Tous domaines</option>{% for k, l in domains %}<option value="{{ k }}" {{ 'selected' if f_domain==k }}>{{ l }}</option>{% endfor %}</select>
+  {%- endif %}
+  <select name="nature" onchange="this.form.submit()"><option value="">Risques et opportunités</option><option value="risques" {{ 'selected' if f_nature=='risques' }}>Risques</option><option value="opportunites" {{ 'selected' if f_nature=='opportunites' }}>Opportunités</option></select>
   <select name="statut" onchange="this.form.submit()">
     <option value="">Tous statuts</option>
     {% for s in RiskStatus %}<option value="{{ s.value }}" {{ 'selected' if f_status==s.value }}>{{ s.label }}</option>{% endfor %}
@@ -23,7 +27,7 @@
     <option value="a_faire" {{ 'selected' if f_acc=='a_faire' }}>À accepter / ré-accepter</option>
     <option value="acceptes" {{ 'selected' if f_acc=='acceptes' }}>Acceptés</option>
   </select>
-  {% if f_status or f_level or f_acc %}<a href="{{ url_for('risks.index') }}" class="btn btn--ghost btn--sm">Réinitialiser</a>{% endif %}
+  {% if f_status or f_level or f_acc or f_domain or f_nature or f_norm %}<a href="{{ url_for('risks.index') }}" class="btn btn--ghost btn--sm">Réinitialiser</a>{% endif %}
 </form>
 
 <div class="panel" style="margin-top:16px;">
@@ -38,14 +42,14 @@
         {% for r in risks %}
         <tr class="row-link" onclick="window.location='{{ url_for('risks.detail', risk_id=r.id) }}'">
           <td class="ref">{{ r.ref }}</td>
-          <td class="subj">{{ r.title }}{% if r.nature == 'OPPORTUNITE' %} <span class="tag-opp">Opportunité</span>{% endif %}{% if r.risk_domain == 'QUALITE' %} <span class="tag-q">Qualité</span>{% endif %}
+          <td class="subj">{{ r.title }}{% if r.is_opportunity %} <span class="tag-opp">Opportunité</span>{% endif %}{% if r.risk_domain %} <span class="tag-q">{{ r.domain_label }}</span>{% endif %}
             {% if r.controls %}<span class="muted" style="font-size:11px;"> - {{ r.controls|length }} mesure(s)</span>{% endif %}
             <div class="muted" style="font-size:11.5px;">{{ r.asset or '' }}</div>
           </td>
           <td class="muted">{{ r.treatment.label }}</td>
-          <td style="text-align:center;">{{ score_badge(r.inherent_score, r.inherent_level) }}</td>
-          <td style="text-align:center;">{{ score_badge(r.residual_score, r.residual_level) }}</td>
-          <td>{{ risk_chip(r.residual_level) }}</td>
+          <td style="text-align:center;">{{ score_badge(r.inherent_score, r.display_inherent_level) }}</td>
+          <td style="text-align:center;">{{ score_badge(r.residual_score, r.display_level) }}</td>
+          <td>{{ risk_chip(r.display_level) }}</td>
           <td>{{ acceptance_chip(r) }}</td>
           <td class="muted">{{ r.status.label }}</td>
         </tr>

@@ -45,37 +45,50 @@ def _acceptance(r):
     st = r.acceptance_state
     if st == "valid":
         return f"Accepté par {r.accepted_by.name if r.accepted_by else '-'} le {r.accepted_at:%d/%m/%Y}"
-    return {"required": "À accepter", "expired": "Acceptation expirée", "outdated": "À ré-accepter"}.get(
-        st, "Dans les critères")
+    return {"required": "À accepter", "expired": "Acceptation expirée", "outdated": "À ré-accepter",
+            "not_applicable": "Sans objet (opportunité)"}.get(st, "Dans les critères")
+
+
+def _norms(r):
+    from app.services import frameworks as fw_svc
+    names = {f.code: f.short_name for f in fw_svc.active()}
+    return ", ".join(names[c] for c in r.framework_codes if c in names)
+
+
+def _measure_ref(c):
+    return c.annex_ref if c.framework.code == "ISO27001" else f"{c.framework.short_name} {c.annex_ref}"
 
 
 def _risks():
-    return sorted(Risk.query.all(), key=lambda r: (-r.effective_score, r.ref))
+    return sorted(Risk.query.all(), key=lambda r: (r.is_opportunity, -r.effective_score, r.ref))
 
 
 def risk_rows():
-    rows = [["Réf.", "Risque", "Actif / périmètre", "Menace", "Vulnérabilité", "V", "I", "Score inhérent",
+    rows = [["Réf.", "Risque", "Nature", "Domaine", "Normes", "Actif / périmètre", "Menace ou cause",
+             "Vulnérabilité ou facteur aggravant", "V", "I", "Score inhérent",
              "Niveau inhérent", "Traitement", "V rés.", "I rés.", "Score résiduel", "Niveau résiduel",
              "Acceptation", "Statut", "Propriétaire", "Prochaine revue"]]
     for r in _risks():
-        rows.append([r.ref, r.title, r.asset or "", r.threat or "", r.vulnerability or "", r.likelihood, r.impact,
-                     r.inherent_score, risk_criteria.label_of(r.inherent_level), r.treatment.label,
+        rows.append([r.ref, r.title, "Opportunité" if r.is_opportunity else "Risque", r.domain_label, _norms(r),
+                     r.asset or "", r.threat or "", r.vulnerability or "", r.likelihood, r.impact,
+                     r.inherent_score, risk_criteria.label_of(r.display_inherent_level), r.treatment.label,
                      r.residual_likelihood or "", r.residual_impact or "", r.residual_score or "",
-                     risk_criteria.label_of(r.residual_level), _acceptance(r), r.status.label,
+                     risk_criteria.label_of(r.display_level), _acceptance(r), r.status.label,
                      r.owner.name if r.owner else "", r.review_date.strftime("%d/%m/%Y") if r.review_date else ""])
     return rows
 
 
 def plan_rows():
-    rows = [["Réf.", "Risque", "Niveau inhérent", "Option de traitement", "Mesures (Annexe A) et état",
+    rows = [["Réf.", "Risque", "Niveau inhérent", "Option de traitement", "Mesures d'annexe et état",
              "Propriétaire", "Niveau résiduel", "Acceptation du risque résiduel", "Échéance de revue"]]
     for r in _risks():
         if r.status.value == "CLOTURE" and r.treatment.value != "EVITER":
             continue
-        measures = "; ".join(f"{c.annex_ref} {c.status.label.lower()}" for c in r.controls) or "-"
-        rows.append([r.ref, r.title, f"{r.inherent_score} - {risk_criteria.label_of(r.inherent_level)}",
+        measures = "; ".join(f"{_measure_ref(c)} {c.status.label.lower()}" for c in r.controls) or "-"
+        title = f"{r.title} (opportunité)" if r.is_opportunity else r.title
+        rows.append([r.ref, title, f"{r.inherent_score} - {risk_criteria.label_of(r.display_inherent_level)}",
                      r.treatment.label, measures, r.owner.name if r.owner else "",
-                     f"{r.effective_score} - {risk_criteria.label_of(r.residual_level)}", _acceptance(r),
+                     f"{r.effective_score} - {risk_criteria.label_of(r.display_level)}", _acceptance(r),
                      r.review_date.strftime("%d/%m/%Y") if r.review_date else ""])
     return rows
 
@@ -84,9 +97,9 @@ def plan_rows():
 DOCS = {
     "dda": {"title": "Déclaration d'applicabilité", "rows": soa_rows, "clause": "ISO/IEC 27001:2022, 6.1.3 d)",
             "widths": [900, 2600, 900, 3300, 1100, 3300, 1300, 1170], "approver": "Direction / RSSI"},
-    "registre-risques": {"title": "Registre des risques", "rows": risk_rows, "clause": "ISO/IEC 27001:2022, 6.1.2 et 8.2",
+    "registre-risques": {"title": "Registre des risques", "rows": risk_rows, "clause": "Chapitres 6.1 et 8 des normes de systèmes de management (ISO/IEC 27001:2022, 6.1.2 et 8.2)",
                          "widths": None, "approver": "RSSI"},
-    "plan-traitement": {"title": "Plan de traitement des risques", "rows": plan_rows, "clause": "ISO/IEC 27001:2022, 6.1.3 e) et f), 8.3",
+    "plan-traitement": {"title": "Plan de traitement des risques", "rows": plan_rows, "clause": "Chapitres 6.1 et 8 des normes de systèmes de management (ISO/IEC 27001:2022, 6.1.3 e) et f), 8.3)",
                         "widths": [1150, 2500, 1150, 1150, 3200, 1400, 1150, 1650, 1220],
                         "approver": "Propriétaires des risques"},
 }

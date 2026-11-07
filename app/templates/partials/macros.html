@@ -24,7 +24,7 @@
 
 {# couleur d'un niveau de risque #}
 {% macro score_color(level) -%}
-{{ {'faible':'#2A7E4F','modere':'#E8B04A','eleve':'#B4532C','critique':'#C0392B','inconnu':'#5B6676'}[level] }}
+{{ {'faible':'#2A7E4F','modere':'#E8B04A','eleve':'#B4532C','critique':'#C0392B','inconnu':'#5B6676','opportunite':'#2F6FA3'}[level] }}
 {%- endmacro %}
 
 {# couleur d'une cellule de matrice à partir du score l*i #}
@@ -115,6 +115,7 @@
 {%- elif st == 'required' -%}<span class="appl appl--out">À accepter</span>
 {%- elif st == 'expired' -%}<span class="appl appl--out">Acceptation expirée</span>
 {%- elif st == 'outdated' -%}<span class="appl appl--out">À ré-accepter</span>
+{%- elif st == 'not_applicable' -%}<span class="muted" style="font-size:11.5px;">Sans objet</span>
 {%- else -%}<span class="muted" style="font-size:11.5px;">Dans les critères</span>{%- endif -%}
 {%- endmacro %}
 

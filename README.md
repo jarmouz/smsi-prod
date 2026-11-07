@@ -57,7 +57,7 @@ communs (audits, revues, documents, objectifs, non-conformités) peuvent être
 rattachés à une ou plusieurs normes. Les écrans historiques restent limités à
 l'ISO 27001 (`Control.of()`).
 
-Normes disponibles (3.5) :
+Normes disponibles (3.6) :
 
 | Norme | Type | Module propre |
 |---|---|---|
@@ -126,6 +126,38 @@ affiche « §6.1.2 » pour une exigence, « A.5.1 » pour une mesure.
   unique, exigences ajoutées aux normes actives de chaque organisation (héritées
   du socle si communes), sans toucher aux mesures existantes. Une norme
   désactivée les reçoit à sa réactivation.
+
+### Registre des risques SMI (3.6)
+
+Le registre des risques (clause 6.1, commune à toutes les normes) n'est plus
+limité à la sécurité de l'information (`app/models/risk.py`) :
+
+- **Domaine** (`risk_domain`) : sécurité de l'information (NULL, valeur
+  historique), vie privée, IA, continuité, services IT, qualité. Le domaine
+  donne les normes concernées par défaut (`DOMAINS`) ; la vie privée concerne
+  aussi la 27001, qu'elle prolonge. Seuls les domaines des normes actives sont
+  proposés.
+- **Normes concernées** = normes du domaine + normes cochées en plus, stockées
+  dans `FrameworkLink` (`set_links(..., collapse=False)` : pour un risque,
+  l'absence de lien veut dire « la norme du domaine » et non « toutes les
+  normes »). `Risk.framework_codes` et `Risk.concerns(code)` ; filtre « norme »
+  du registre ; preuves des exigences 6.1.2 / 6.1.3 / 8.2 / 8.3 comptées par
+  norme (`proofs.py`).
+- **Mesures de traitement** : mesures d'annexe de toutes les normes actives
+  (27001, 27701, 42001), regroupées par norme. Les mesures d'une norme
+  désactivée restent rattachées.
+- **Opportunités** (`nature = OPPORTUNITE`) : traitements propres (exploiter,
+  renforcer, partager, ne pas donner suite) ; pas d'acceptation formelle
+  (`acceptance_state = "not_applicable"`) ; exclues des risques élevés
+  (`Risk.is_high`), de la matrice du tableau de bord et des « risques ouverts /
+  élevés » de la revue de direction, comptées à part ; niveau affiché
+  « Opportunité » (`display_level`).
+- Exports registre et plan de traitement : nature, domaine, normes, mesures
+  préfixées par leur norme hors 27001.
+- Migration (`flask upgrade-db`) : `risks.treatment` passe de VARCHAR(8) à
+  VARCHAR(16). Les risques existants gardent le domaine sécurité ; les risques
+  IA, vie privée, etc. sont à reclasser pour apparaître dans les preuves de
+  leur norme.
 
 ## Modules
 

@@ -56,10 +56,15 @@ class ControlStatus(str, enum.Enum):
 
 
 class Treatment(str, enum.Enum):
+    # risque (menace)
     REDUIRE = "REDUIRE"
     ACCEPTER = "ACCEPTER"
     EVITER = "EVITER"
-    PARTAGER = "PARTAGER"
+    PARTAGER = "PARTAGER"            # aussi pour une opportunité
+    # opportunité (3.6) : on ne « réduit » ni « n'accepte » une opportunité
+    EXPLOITER = "EXPLOITER"
+    RENFORCER = "RENFORCER"
+    NE_PAS_SAISIR = "NE_PAS_SAISIR"
 
     @property
     def label(self):
@@ -68,7 +73,21 @@ class Treatment(str, enum.Enum):
             "ACCEPTER": "Accepter",
             "EVITER": "Éviter",
             "PARTAGER": "Partager / transférer",
+            "EXPLOITER": "Exploiter (saisir)",
+            "RENFORCER": "Renforcer (accroître le bénéfice)",
+            "NE_PAS_SAISIR": "Ne pas donner suite",
         }[self.value]
+
+    @classmethod
+    def for_nature(cls, nature):
+        """Options de traitement d'un risque (nature None) ou d'une opportunité."""
+        if nature == "OPPORTUNITE":
+            return [cls.EXPLOITER, cls.RENFORCER, cls.PARTAGER, cls.NE_PAS_SAISIR]
+        return [cls.REDUIRE, cls.ACCEPTER, cls.EVITER, cls.PARTAGER]
+
+    @classmethod
+    def default_for(cls, nature):
+        return cls.for_nature(nature)[0]
 
 
 class RiskStatus(str, enum.Enum):

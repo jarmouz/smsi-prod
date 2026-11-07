@@ -6,10 +6,39 @@ from app.models.enums import Treatment, RiskStatus
 from app.models.control import risk_controls
 
 
+# --- Registre commun du SMI (3.6) -----------------------------------------------------
+# Domaine d'un risque -> (libellé, normes concernées par défaut). Stocké dans risk_domain ;
+# NULL = sécurité de l'information (comportement historique, avant la 3.6).
+SECURITE = "SECURITE"
+DOMAINS = {
+    SECURITE: ("Sécurité de l'information", ("ISO27001",)),
+    "VIE_PRIVEE": ("Vie privée", ("ISO27701", "ISO27001")),     # la 27701 prolonge le SMSI
+    "IA": ("Intelligence artificielle", ("ISO42001",)),
+    "CONTINUITE": ("Continuité d'activité", ("ISO22301",)),
+    "SERVICES": ("Services informatiques", ("ISO20000",)),
+    "QUALITE": ("Qualité", ("ISO9001",)),
+}
+RISK_DOMAINS = {k: v[0] for k, v in DOMAINS.items() if k != SECURITE}   # valeurs stockées (hors NULL)
+RISK_NATURES = {"OPPORTUNITE": "Opportunité"}                            # NULL = risque
+OPPORTUNITE = "OPPORTUNITE"
+
+
+def domain_label(key):
+    return DOMAINS.get(key or SECURITE, DOMAINS[SECURITE])[0]
+
+
+def domains_for(active_codes, current=None):
+    """Domaines proposés : sécurité (historique) + ceux dont une norme est active (+ la valeur actuelle)."""
+    return [(k, v[0]) for k, v in DOMAINS.items()
+            if k == SECURITE or set(v[1]) & set(active_codes) or k == (current or SECURITE)]
+
+
 class Risk(TenantMixin, db.Model):
-    """Risque de sécurité de l'information (approche ISO/IEC 27005).
-    Score = vraisemblance × impact, avant (inhérent) et après (résiduel) traitement.
-    Le traitement s'appuie sur des mesures de l'Annexe A (maillage risque↔mesure)."""
+    """Risque ou opportunité du système de management intégré (chapitre 6.1 commun aux normes,
+    approche ISO/IEC 27005 / ISO 31000). Score = vraisemblance × impact, avant (inhérent) et
+    après (résiduel) traitement. Le domaine donne les normes concernées par défaut ; des normes
+    supplémentaires se rattachent par FrameworkLink. Le traitement s'appuie sur les mesures
+    d'annexe des normes actives (27001, 27701, 42001 : maillage risque↔mesure)."""
 
     __tablename__ = "risks"
     __table_args__ = (db.UniqueConstraint("organization_id", "ref", name="uq_risks_org_ref"),)
@@ -30,7 +59,7 @@ class Risk(TenantMixin, db.Model):
     likelihood = db.Column(db.Integer, default=3, nullable=False)
     impact = db.Column(db.Integer, default=3, nullable=False)
 
-    treatment = db.Column(db.Enum(Treatment, native_enum=False),
+    treatment = db.Column(db.Enum(Treatment, native_enum=False, length=16),
                           default=Treatment.REDUIRE, nullable=False)
 
     # Risque résiduel (après mesures)
@@ -57,6 +86,31 @@ class Risk(TenantMixin, db.Model):
     controls = db.relationship("Control", secondary=risk_controls, back_populates="risks")
     assets = db.relationship("Asset", secondary="asset_risks", back_populates="risks", order_by="Asset.ref")
 
+    # --- domaine, nature, normes ------------------------------------------------
+    @property
+    def is_opportunity(self):
+        return self.nature == OPPORTUNITE
+
+    @property
+    def domain_key(self):
+        return self.risk_domain or SECURITE
+
+    @property
+    def domain_label(self):
+        return domain_label(self.risk_domain)
+
+    @property
+    def framework_codes(self):
+        """Normes concernées : celles du domaine + celles rattachées explicitement."""
+        from app.services import frameworks as fw_svc
+        codes = list(DOMAINS[self.domain_key][1]) if self.domain_key in DOMAINS else ["ISO27001"]
+        if self.id:
+            codes += [f.code for f in fw_svc.frameworks_of(self) if f.code not in codes]
+        return codes
+
+    def concerns(self, code):
+        return code in self.framework_codes
+
     @property
     def inherent_score(self):
         return (self.likelihood or 0) * (self.impact or 0)
@@ -81,11 +135,14 @@ class Risk(TenantMixin, db.Model):
     def within_acceptance(self):
         """Score résiduel effectif dans les critères d'acceptation de l'organisation."""
         from app.services import risk_criteria
-        return self.effective_score <= risk_criteria.acceptance_threshold()
+        return self.is_opportunity or self.effective_score <= risk_criteria.acceptance_threshold()
 
     @property
     def acceptance_state(self):
-        """valid | expired | outdated (cotation modifiée depuis) | required | not_required."""
+        """valid | expired | outdated (cotation modifiée depuis) | required | not_required |
+        not_applicable (opportunité : on décide de la saisir ou non, on ne l'accepte pas)."""
+        if self.is_opportunity:
+            return "not_applicable"
         if self.accepted_at:
             if self.accepted_score != self.effective_score:
                 return "outdated"
@@ -103,6 +160,23 @@ class Risk(TenantMixin, db.Model):
     @property
     def residual_level(self):
         return self.level_of(self.effective_score)
+
+    @property
+    def is_high(self):
+        """Risque ouvert au niveau « élevé » ou au-delà (tableaux de bord, revue de direction) :
+        jamais une opportunité, dont le score mesure un bénéfice."""
+        from app.services import risk_criteria
+        return (not self.is_opportunity and self.status.is_open
+                and self.effective_score >= risk_criteria.high_threshold())
+
+    # niveaux affichés : une opportunité n'a pas de couleur de gravité
+    @property
+    def display_inherent_level(self):
+        return "opportunite" if self.is_opportunity else self.inherent_level
+
+    @property
+    def display_level(self):
+        return "opportunite" if self.is_opportunity else self.residual_level
 
     def __repr__(self):
         return f"<Risk {self.ref} {self.inherent_score}>"

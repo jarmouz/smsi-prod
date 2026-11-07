@@ -356,15 +356,19 @@ def frameworks_of(entity):
             .order_by(Framework.sort_order).all())
 
 
-def set_links(entity, codes):
-    """Remplace les rattachements de l'élément (codes de normes actives ; vide = toutes)."""
+def set_links(entity, codes, collapse=True):
+    """Remplace les rattachements de l'élément (codes de normes actives ; vide = toutes).
+    collapse=False : toutes les normes cochées restent des liens explicites (registre des risques,
+    où l'absence de lien signifie « la norme du domaine » et non « toutes les normes »).
+    Les liens vers une norme désactivée sont conservés (ils réapparaissent à sa réactivation)."""
     allowed = {f.code: f for f in active()}
     wanted = {allowed[c].id for c in codes if c in allowed}
-    if wanted and len(wanted) == len(allowed):
+    if collapse and wanted and len(wanted) == len(allowed):
         wanted = set()                      # toutes les normes actives = pas de restriction
     rows = FrameworkLink.query.filter_by(entity_type=_etype(entity), entity_id=entity.id).all()
+    active_ids = {f.id for f in allowed.values()}
     for r in rows:
-        if r.framework_id not in wanted:
+        if r.framework_id not in wanted and (collapse or r.framework_id in active_ids):
             db.session.delete(r)
     have = {r.framework_id for r in rows}
     for fid in wanted - have:

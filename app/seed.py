@@ -167,6 +167,8 @@ UPGRADE_DDL = [
     # Exigences des chapitres 4 à 10 de l'ISO 27001 et de l'ISO 42001 (3.5) : mesure d'annexe
     # ou exigence (clé unique et remplissage dans frameworks.migrate)
     "ALTER TABLE controls ADD COLUMN IF NOT EXISTS kind VARCHAR(16) NOT NULL DEFAULT 'control'",
+    # Registre des risques SMI (3.6) : options de traitement des opportunités (NE_PAS_SAISIR...)
+    "ALTER TABLE risks ALTER COLUMN treatment TYPE VARCHAR(16)",
 ]
 
 # Tables rattachées à une organisation (voir TenantMixin)

@@ -24,9 +24,10 @@ _MAP = {
 }
 
 
-def _risks():
-    """Risques du registre hors qualité (sécurité de l'information et autres risques du SMI)."""
-    return [r for r in Risk.query.all() if r.risk_domain != "QUALITE" and r.nature != "OPPORTUNITE"]
+def _risks(code):
+    """Risques du registre (hors opportunités) qui concernent la norme : par leur domaine
+    ou par un rattachement explicite (3.6)."""
+    return [r for r in Risk.query.all() if not r.is_opportunity and r.concerns(code)]
 
 
 def _ai():
@@ -47,9 +48,9 @@ def _item(key, code):
         return {"label": "Critères de risque (acceptation, échelles)", "url": url_for("admin.risk_criteria_page"),
                 "info": "vraisemblance, impact et seuil d'acceptation de l'organisation"}
     if key == "registre":
-        rs = _risks()
+        rs = _risks(code)
         own = sum(1 for r in rs if r.owner_id)
-        return {"label": "Registre des risques", "url": url_for("risks.index", domaine="SECURITE"),
+        return {"label": "Registre des risques", "url": url_for("risks.index", norme=code, nature="risques"),
                 "info": f"{len(rs)} risque(s) identifié(s) et coté(s), {own} avec un propriétaire",
                 "warn": not rs}
     if key == "export_registre":
@@ -61,15 +62,17 @@ def _item(key, code):
                 "url": url_for("soa.export", kind="plan-traitement", fmt="xlsx"),
                 "info": "options de traitement, mesures retenues, propriétaires, risques résiduels"}
     if key == "traitement":
-        rs = [r for r in _risks() if r.treatment.value == "REDUIRE"]
+        rs = [r for r in _risks(code) if r.treatment.value == "REDUIRE"]
+        own = [r for r in rs if any(c.framework.code == code for c in r.controls)]
         done = sum(1 for r in rs if r.controls)
-        return {"label": "Risques à réduire traités par des mesures", "url": url_for("risks.index", domaine="SECURITE"),
-                "info": f"{done} / {len(rs)} risque(s) à réduire rattaché(s) à au moins une mesure",
+        return {"label": "Risques à réduire traités par des mesures", "url": url_for("risks.index", norme=code, nature="risques"),
+                "info": f"{done} / {len(rs)} risque(s) à réduire rattaché(s) à au moins une mesure"
+                        + (f", dont {len(own)} par une mesure de l'Annexe A de la norme" if code != "ISO27001" else ""),
                 "warn": done < len(rs)}
     if key == "acceptation":
-        rs = _risks()
+        rs = _risks(code)
         todo = sum(1 for r in rs if r.acceptance_state in ("required", "expired", "outdated"))
-        return {"label": "Acceptation des risques résiduels", "url": url_for("risks.index", acceptation="a_faire"),
+        return {"label": "Acceptation des risques résiduels", "url": url_for("risks.index", acceptation="a_faire", norme=code),
                 "info": f"{todo} acceptation(s) par le propriétaire du risque à obtenir" if todo
                 else "aucune acceptation en attente", "warn": bool(todo)}
     if key == "dda":

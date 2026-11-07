@@ -176,6 +176,8 @@ def level_of(score):
 
 
 def label_of(level):
+    if level == "opportunite":
+        return "Opportunité"
     return get()["levels"].get(level, {}).get("label", "-")
 
 

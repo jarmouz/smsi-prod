@@ -12,19 +12,26 @@
       <div class="panel__head"><h2>Description du risque</h2></div>
       <div class="panel__body stack">
         <div class="field"><label>Intitulé *</label><input type="text" name="title" required value="{{ risk.title if risk else '' }}" placeholder="Ex. Compromission de comptes à privilèges"></div>
-        {%- if 'ISO9001' in fw_active()|map(attribute='code')|list %}
-        <input type="hidden" name="q_present" value="1">
+        <input type="hidden" name="smi_present" value="1">
         <div class="form-grid">
-          <div class="field"><label>Domaine</label><select name="risk_domain"><option value="">Sécurité de l'information</option>{% for k, l in RISK_DOMAINS.items() %}<option value="{{ k }}" {{ 'selected' if risk and risk.risk_domain == k }}>{{ l }}</option>{% endfor %}</select></div>
-          <div class="field"><label>Nature</label><select name="nature"><option value="">Risque (menace)</option>{% for k, l in RISK_NATURES.items() %}<option value="{{ k }}" {{ 'selected' if risk and risk.nature == k }}>{{ l }} (effet positif à saisir)</option>{% endfor %}</select><div class="hint">Pour une opportunité, l'impact mesure le bénéfice attendu.</div></div>
+          <div class="field"><label>Domaine</label><select name="risk_domain" id="risk-domain">{% for k, l in domains %}<option value="{{ k }}" {{ 'selected' if (risk.domain_key if risk else 'SECURITE') == k }}>{{ l }}</option>{% endfor %}</select></div>
+          <div class="field"><label>Nature</label><select name="nature" id="risk-nature"><option value="">Risque (effet négatif)</option>{% for k, l in RISK_NATURES.items() %}<option value="{{ k }}" {{ 'selected' if risk and risk.nature == k }}>{{ l }} (effet positif à saisir)</option>{% endfor %}</select><div class="hint">Pour une opportunité, l'impact mesure le bénéfice attendu ; pas d'acceptation formelle.</div></div>
+        </div>
+        {%- if fw_list|length > 1 %}
+        <div class="field fw-picker"><label>Normes concernées</label>
+          <input type="hidden" name="fw_present" value="1">
+          <div class="fw-picker__opts">{% for f in fw_list %}
+            <label><input type="checkbox" name="fw" value="{{ f.code }}" data-explicit="{{ '1' if f.code in fw_on }}" {{ 'checked' if f.code in fw_on }}> {{ f.short_name }}</label>{% endfor %}
+          </div>
+          <div class="hint">Les normes du domaine sont toujours incluses ; cochez celles que le risque concerne aussi (ex. un rançongiciel : 27001, 22301 et 20000-1).</div>
         </div>
         {%- endif %}
         <div class="field"><label>Description</label><textarea name="description" rows="2">{{ risk.description if risk else '' }}</textarea></div>
         <div class="form-grid">
           <div class="field"><label>Actif / périmètre</label><input type="text" name="asset" value="{{ risk.asset if risk else '' }}"></div>
-          <div class="field"><label>Menace</label><input type="text" name="threat" value="{{ risk.threat if risk else '' }}"></div>
+          <div class="field"><label>Menace ou cause</label><input type="text" name="threat" value="{{ risk.threat if risk else '' }}"></div>
         </div>
-        <div class="field"><label>Vulnérabilité</label><input type="text" name="vulnerability" value="{{ risk.vulnerability if risk else '' }}"></div>
+        <div class="field"><label>Vulnérabilité ou facteur aggravant</label><input type="text" name="vulnerability" value="{{ risk.vulnerability if risk else '' }}"></div>
         <div class="field"><label>Actifs de l'inventaire concernés</label>
           <select name="assets" multiple size="5">{% for a in assets %}<option value="{{ a.id }}" {{ 'selected' if risk and a in risk.assets }}>{{ a.ref }} - {{ a.name|truncate(50) }}</option>{% endfor %}</select>
           <div class="muted" style="font-size:11px;margin-top:3px;">Ctrl / Cmd + clic pour une sélection multiple. Le champ « Actif / périmètre » reste disponible pour un libellé libre.</div></div>
@@ -36,13 +43,16 @@
       <div class="panel__body stack">
         <div class="section-title">Risque inhérent (avant traitement)</div>
         <div class="form-grid">
-          <div class="field"><label>Vraisemblance (1–5)</label>
+          <div class="field"><label>Vraisemblance</label>
             <select name="likelihood">{% for n in range(1, risk_criteria()['scale']['likelihood'] + 1) %}<option value="{{ n }}" {{ 'selected' if risk and risk.likelihood==n or (not risk and n==(risk_criteria()['scale']['likelihood'] + 1) // 2) }}>{{ n }} - {{ risk_criteria()['likelihood'][n-1]|truncate(48) }}</option>{% endfor %}</select></div>
-          <div class="field"><label>Impact (1–5)</label>
+          <div class="field"><label id="impact-label">Impact</label>
             <select name="impact">{% for n in range(1, risk_criteria()['scale']['impact'] + 1) %}<option value="{{ n }}" {{ 'selected' if risk and risk.impact==n or (not risk and n==(risk_criteria()['scale']['impact'] + 1) // 2) }}>{{ n }} - {{ risk_criteria()['impact'][n-1]|truncate(48) }}</option>{% endfor %}</select></div>
         </div>
         <div class="field"><label>Option de traitement</label>
-          <select name="treatment">{% for t in Treatment %}<option value="{{ t.value }}" {{ 'selected' if risk and risk.treatment==t }}>{{ t.label }}</option>{% endfor %}</select></div>
+          <select name="treatment" id="risk-treatment">
+            <optgroup label="Risque" data-nature="">{% for t in Treatment.for_nature(None) %}<option value="{{ t.value }}" {{ 'selected' if risk and risk.treatment==t and not risk.is_opportunity }}>{{ t.label }}</option>{% endfor %}</optgroup>
+            <optgroup label="Opportunité" data-nature="OPPORTUNITE">{% for t in Treatment.for_nature('OPPORTUNITE') %}<option value="{{ t.value }}" {{ 'selected' if risk and risk.treatment==t and risk.is_opportunity }}>{{ t.label }}</option>{% endfor %}</optgroup>
+          </select></div>
         <div class="section-title">Risque résiduel (après mesures)</div>
         <div class="form-grid">
           <div class="field"><label>Vraisemblance résiduelle</label>
@@ -68,20 +78,55 @@
     </div>
 
     <div class="panel">
-      <div class="panel__head"><h2>Mesures de traitement (Annexe A)</h2></div>
+      <div class="panel__head"><h2>Mesures de traitement</h2></div>
       <div class="panel__body">
-        <p class="muted" style="font-size:12px;margin-bottom:8px;">Sélectionnez les mesures qui traitent ce risque.</p>
+        <p class="muted" style="font-size:12px;margin-bottom:8px;">Sélectionnez les mesures d'annexe qui traitent ce risque, dans les normes actives (la déclaration d'applicabilité de chaque norme en tient compte).</p>
+        {% if control_groups %}
         <div class="ctrl-picker">
-          {% for t in Theme %}
-          <div class="section-title" style="margin:6px 0 2px;">{{ t.annex }} - {{ t.label }}</div>
-          {% for c in controls if c.theme == t %}
+          {% for fw, groups in control_groups %}
+          {% if control_groups|length > 1 %}<div class="section-title" style="margin:10px 0 2px;font-size:12.5px;">{{ fw.name }}</div>{% endif %}
+          {% for g, cs in groups %}
+          <div class="section-title" style="margin:6px 0 2px;">{{ g }}</div>
+          {% for c in cs %}
           <label><input type="checkbox" name="controls" value="{{ c.id }}" {{ 'checked' if c.id in sel }}><span class="ref">{{ c.annex_ref }}</span><span>{{ c.title }}</span></label>
           {% endfor %}
           {% endfor %}
+          {% endfor %}
         </div>
+        {% else %}<p class="muted">Aucune norme à annexe de mesures n'est active (27001, 27701, 42001) : décrivez le traitement dans la description.</p>{% endif %}
       </div>
     </div>
     <div><button class="btn btn--primary" type="submit">{{ 'Enregistrer' if risk else 'Créer le risque' }}</button></div>
   </div>
 </form>
+<script>
+(function () {
+  var nat = document.getElementById('risk-nature'), tr = document.getElementById('risk-treatment'),
+      dom = document.getElementById('risk-domain'), imp = document.getElementById('impact-label');
+  var base = {{ domain_norms|tojson }};
+  function syncNature() {
+    var opp = nat.value === 'OPPORTUNITE';
+    Array.prototype.forEach.call(tr.querySelectorAll('optgroup'), function (g) {
+      var on = (g.dataset.nature === 'OPPORTUNITE') === opp;
+      g.disabled = !on; g.hidden = !on;
+    });
+    if (tr.selectedOptions.length === 0 || tr.selectedOptions[0].parentNode.disabled) {
+      var first = tr.querySelector('optgroup:not([disabled]) option'); if (first) first.selected = true;
+    }
+    imp.textContent = opp ? 'Impact (bénéfice attendu)' : 'Impact';
+  }
+  function syncDomain() {
+    var codes = base[dom.value] || [];
+    Array.prototype.forEach.call(document.querySelectorAll('input[name=fw]'), function (cb) {
+      var forced = codes.indexOf(cb.value) >= 0;
+      if (forced) cb.checked = true;
+      else if (cb.disabled) cb.checked = cb.dataset.explicit === '1';   // ne l'était que par le domaine
+      cb.disabled = forced;
+      cb.title = forced ? 'Norme du domaine (toujours incluse)' : '';
+    });
+  }
+  nat.addEventListener('change', syncNature); dom.addEventListener('change', syncDomain);
+  syncNature(); syncDomain();
+})();
+</script>
 {% endblock %}

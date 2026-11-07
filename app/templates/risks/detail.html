@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% from 'partials/macros.html' import risk_chip, score_badge, control_chip, history_panel, acceptance_chip with context %}
 {% block title %}{{ r.ref }} - {{ APP_NAME }}{% endblock %}
-{% block heading %}{{ r.ref }} - {{ r.title }}{% if r.nature == 'OPPORTUNITE' %} <span class="tag-opp">Opportunité</span>{% endif %}{% if r.risk_domain == 'QUALITE' %} <span class="tag-q">Qualité</span>{% endif %}{% endblock %}
+{% block heading %}{{ r.ref }} - {{ r.title }}{% if r.is_opportunity %} <span class="tag-opp">Opportunité</span>{% endif %}{% if r.risk_domain %} <span class="tag-q">{{ r.domain_label }}</span>{% endif %}{% endblock %}
 {% block topactions %}
   <a href="{{ url_for('risks.index') }}" class="btn btn--ghost btn--sm">Retour</a>
   {% if current_user.can_edit %}<a href="{{ url_for('risks.edit', risk_id=r.id) }}" class="btn btn--primary btn--sm">Modifier</a>{% endif %}
@@ -14,10 +14,12 @@
       <div class="panel__head"><h2>Analyse</h2></div>
       <div class="panel__body">
         <div class="meta-list">
+          <div><span>Domaine</span><b>{{ r.domain_label }}{{ ' - opportunité' if r.is_opportunity }}</b></div>
+          <div><span>Normes concernées</span><b>{% for f in fw_active() if f.code in r.framework_codes %}<span class="chip">{{ f.short_name }}</span> {% else %}-{% endfor %}</b></div>
           <div><span>Description</span><b>{{ r.description or '-' }}</b></div>
           <div><span>Actif / périmètre</span><b>{{ r.asset or '-' }}{% for a in r.assets %} <a class="chip" href="{{ url_for('assets.detail', asset_id=a.id) }}">{{ a.ref }}</a>{% endfor %}</b></div>
-          <div><span>Menace</span><b>{{ r.threat or '-' }}</b></div>
-          <div><span>Vulnérabilité</span><b>{{ r.vulnerability or '-' }}</b></div>
+          <div><span>Menace ou cause</span><b>{{ r.threat or '-' }}</b></div>
+          <div><span>Vulnérabilité ou facteur aggravant</span><b>{{ r.vulnerability or '-' }}</b></div>
           <div><span>Traitement</span><b>{{ r.treatment.label }}</b></div>
         </div>
       </div>
@@ -27,8 +29,8 @@
       <div class="panel__head"><h2>Mesures de traitement</h2><span class="rail__badge">{{ r.controls|length }}</span></div>
       <div class="panel__body">
         {% if r.controls %}
-          {% for c in r.controls %}{{ control_chip(c) }} <span class="muted" style="font-size:12px;">{{ c.title }}</span><br>{% endfor %}
-        {% else %}<p class="muted">Aucune mesure de l'Annexe A rattachée. {% if current_user.can_edit %}<a href="{{ url_for('risks.edit', risk_id=r.id) }}">En ajouter</a>{% endif %}</p>{% endif %}
+          {% for c in r.controls|sort(attribute='framework_id') %}{% if c.framework.code != 'ISO27001' %}<span class="muted" style="font-size:11px;">{{ c.framework.short_name }}</span> {% endif %}{{ control_chip(c) }} <span class="muted" style="font-size:12px;">{{ c.title }}</span><br>{% endfor %}
+        {% else %}<p class="muted">Aucune mesure d'annexe rattachée. {% if current_user.can_edit %}<a href="{{ url_for('risks.edit', risk_id=r.id) }}">En ajouter</a>{% endif %}</p>{% endif %}
       </div>
     </div>
   </div>
@@ -38,13 +40,15 @@
       <div class="panel__head"><h2>Cotation</h2></div>
       <div class="panel__body">
         <div class="meta-inline" style="justify-content:space-between;margin-bottom:12px;">
-          <div style="text-align:center;"><div class="muted" style="font-size:11px;">Inhérent</div>{{ score_badge(r.inherent_score, r.inherent_level) }}<div class="muted" style="font-size:11px;margin-top:3px;">V{{ r.likelihood }}×I{{ r.impact }}</div></div>
+          <div style="text-align:center;"><div class="muted" style="font-size:11px;">Inhérent</div>{{ score_badge(r.inherent_score, r.display_inherent_level) }}<div class="muted" style="font-size:11px;margin-top:3px;">V{{ r.likelihood }}×I{{ r.impact }}</div></div>
           <div style="text-align:center;align-self:center;font-size:20px;color:var(--text-dim);"></div>
-          <div style="text-align:center;"><div class="muted" style="font-size:11px;">Résiduel</div>{{ score_badge(r.residual_score, r.residual_level) }}<div class="muted" style="font-size:11px;margin-top:3px;">{% if r.residual_score %}V{{ r.residual_likelihood }}×I{{ r.residual_impact }}{% else %}non coté{% endif %}</div></div>
+          <div style="text-align:center;"><div class="muted" style="font-size:11px;">Résiduel</div>{{ score_badge(r.residual_score, r.display_level) }}<div class="muted" style="font-size:11px;margin-top:3px;">{% if r.residual_score %}V{{ r.residual_likelihood }}×I{{ r.residual_impact }}{% else %}non coté{% endif %}</div></div>
         </div>
-        <div style="text-align:center;">{{ risk_chip(r.residual_level) }}</div>
+        <div style="text-align:center;">{{ risk_chip(r.display_level) }}</div>
+        {% if r.is_opportunity %}<p class="muted" style="font-size:11.5px;margin:8px 0 0;text-align:center;">Opportunité : le score mesure le bénéfice attendu, il n'entre pas dans les risques élevés.</p>{% endif %}
       </div>
     </div>
+    {% if not r.is_opportunity %}
     <div class="panel">
       <div class="panel__head"><h2>Acceptation du risque résiduel</h2>{{ acceptance_chip(r) }}</div>
       <div class="panel__body stack">
@@ -74,6 +78,7 @@
         {% endif %}
       </div>
     </div>
+    {% endif %}
     <div class="panel">
       <div class="panel__head"><h2>Suivi</h2></div>
       <div class="panel__body"><div class="meta-list">

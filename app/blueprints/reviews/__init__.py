@@ -126,8 +126,9 @@ def _digest():
     return {
         "soa_rate": round(100 * len(impl) / len(appl)) if appl else 0,
         "applicable": len(appl),
-        "risks_open": len([r for r in risks if r.status.is_open]),
-        "risks_high": len([r for r in risks if r.effective_score >= risk_criteria.high_threshold() and r.status.is_open]),
+        "risks_open": len([r for r in risks if r.status.is_open and not r.is_opportunity]),
+        "risks_high": len([r for r in risks if r.is_high]),
+        "opps_open": len([r for r in risks if r.status.is_open and r.is_opportunity]),
         "open_ncs": open_ncs,
         **governance.summary(),
     }

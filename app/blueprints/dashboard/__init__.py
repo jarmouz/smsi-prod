@@ -22,8 +22,10 @@ def home():
     soa_rate = round(100 * len(implemented) / len(applicable)) if applicable else 0
 
     risks = Risk.query.all()
-    open_risks = [r for r in risks if r.status.is_open]
-    high_risks = [r for r in risks if r.effective_score >= risk_criteria.high_threshold() and r.status.is_open]
+    # les opportunités (ISO 6.1) ont leur propre lecture : ni dans la matrice ni dans les risques élevés
+    open_risks = [r for r in risks if r.status.is_open and not r.is_opportunity]
+    high_risks = sorted((r for r in risks if r.is_high), key=lambda r: -r.effective_score)
+    open_opps_n = sum(1 for r in risks if r.status.is_open and r.is_opportunity)
 
     actions = CorrectiveAction.query.all()
     open_actions = [a for a in actions if a.status.is_open]
@@ -71,7 +73,7 @@ def home():
         "dashboard/home.html",
         soa_rate=soa_rate, applicable_n=len(applicable), implemented_n=len(implemented),
         controls_total=len(controls),
-        open_risks_n=len(open_risks), high_risks_n=len(high_risks),
+        open_risks_n=len(open_risks), high_risks_n=len(high_risks), open_opps_n=open_opps_n,
         open_ncs=open_ncs, open_actions_n=len(open_actions), overdue_actions_n=len(overdue_actions),
         docs_to_review=docs_to_review, evidence_n=Evidence.query.count(),
         theme_rows=theme_rows, matrix=matrix, n_l=n_l, n_i=n_i, high_risks=high_risks[:6],

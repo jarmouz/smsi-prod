@@ -19,8 +19,8 @@ class _Labelled(str, enum.Enum):
 
 
 # --- Prolongements des registres communs (valeurs NULL = comportement historique) ---------
-RISK_DOMAINS = {"QUALITE": "Qualité"}                     # NULL = sécurité de l'information
-RISK_NATURES = {"OPPORTUNITE": "Opportunité"}             # NULL = risque
+# Domaines et natures des risques : voir app/models/risk.py (registre commun du SMI, 3.6)
+from app.models.risk import RISK_DOMAINS, RISK_NATURES  # noqa: E402,F401
 NC_KINDS = {"PRODUIT": "Produit ou service non conforme"}  # NULL = non-conformité du système
 NC_DISPOSITIONS = {"CORRECTION": "Correction", "REPRISE": "Reprise / retouche", "DEROGATION": "Acceptation par dérogation",
                    "RETOUR": "Retour / remplacement", "SUSPENSION": "Suspension de la prestation",
