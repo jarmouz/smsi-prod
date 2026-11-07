@@ -23,6 +23,24 @@ Dépôt **principal** de l'application (il remplace `jarmouz/SMSI`, archivé).
 | `scripts/build-release.sh` | construit le paquet de livraison `dist/smsi-<VERSION>.tar.gz` |
 | `VERSION` | version livrée par le kit |
 
+### Organisation du travail
+
+| Branche | Rôle | Où elle tourne |
+|---|---|---|
+| `main` | reflet exact de la **production** | `smsi.kaizen-intelligence.tn` (serveur Kaizen, `/opt/smsi-prod`) |
+| `develop` | versions validées en **recette**, pas encore en production | VPS de démonstration `ims.kaizen-intelligence.tn` |
+| `<sujet>` (ex. `phase2-22301-20000`) | travail en cours, parti de `develop`, fusionné dans `develop` une fois testé | copie locale de la base de production |
+| `hotfix-<sujet>` | correctif urgent de production, parti de `main`, puis reporté dans `develop` | production |
+| `version-base-iso27001` | version de base mono-norme, conservée telle quelle | - |
+
+Cycle d'une version : développement sur une branche de sujet (dossier de
+travail `/opt/smsi-dev`) → tests sur une copie de la base de production →
+fusion dans `develop`, tag `vX.Y.Z`, paquet `scripts/build-release.sh` →
+installation sur le VPS avec `update.sh` → validation par Kaizen. La
+production n'est mise à jour que sur décision explicite : fusion de `develop`
+dans `main`, migration répétée sur une copie de la base, sauvegarde, image
+précédente conservée, déploiement ci-dessous.
+
 Mise en production (serveur Kaizen, dossier `/opt/smsi-prod`) :
 
 ```bash
