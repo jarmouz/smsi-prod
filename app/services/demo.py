@@ -91,7 +91,8 @@ def _wipe(org, log):
     from app.models.privacy import ProcessingActivity, SubjectRequest
     from app.models.service_mgmt import ContinuityPlan, ItService, ServiceMeasure, Problem, Release
     from app.models.quality import QmsProcess, CustomerSurvey, Complaint
-    for model in (FrameworkLink, RiskLink, AiImpactAssessment, AiSystem, SubjectRequest, ProcessingActivity,
+    from app.models import PolicyAcceptance
+    for model in (PolicyAcceptance, FrameworkLink, RiskLink, AiImpactAssessment, AiSystem, SubjectRequest, ProcessingActivity,
                   ServiceMeasure, Problem, Release, ItService, ContinuityPlan, Complaint, CustomerSurvey, QmsProcess):
         model.query.filter(model.organization_id == oid).delete(synchronize_session=False)
     for model in (ActivityLog, Attachment, CorrectiveAction, NonConformity, AuditPlanItem, CompetenceRecord,
@@ -231,6 +232,21 @@ def _seed(org, log):
                      location=f"/docs/b/{folder}" if webdav.enabled() else None)
         db.session.add(d)
         documents.append(d)
+
+    # acceptation des politiques : documents concernés et acceptations déjà recueillies
+    db.session.flush()
+    from app.models import PolicyAcceptance
+    for d in documents:
+        spec = C.POLICY_ACKS.get(d.ref)
+        if not spec or d.status != DocStatus.APPROUVE:
+            continue
+        roles, days, who = spec
+        d.ack_required, d.ack_roles, d.ack_days = True, roles or None, days
+        for k, key in enumerate(who):
+            if key in users:
+                db.session.add(PolicyAcceptance(document_id=d.id, user_id=users[key].id, version=d.version,
+                                                accepted_at=datetime.combine(d.approved_at, datetime.min.time())
+                                                + timedelta(days=1 + 2 * k, hours=9 + k)))
 
     evidences = []
     for i, (title, desc, j, owner, refs) in enumerate(C.EVIDENCE, 1):

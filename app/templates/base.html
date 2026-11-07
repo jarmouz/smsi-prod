@@ -207,6 +207,10 @@
         </div>
         {% endif %}
       {% endwith %}
+      {%- if current_user.is_authenticated and request.endpoint not in ('documents.my_policies', 'documents.detail') %}
+      {%- set _pp = policy_pending_count() %}
+      {%- if _pp %}<div class="flash flash--warning" style="margin-bottom:14px;"><span style="flex:1;">Vous avez <b>{{ _pp }}</b> politique(s) à lire et accepter.</span><a href="{{ url_for('documents.my_policies') }}" class="btn btn--primary btn--sm">Voir</a></div>{% endif %}
+      {%- endif %}
       {% block content %}{% endblock %}
     </main>
   </div>

@@ -161,6 +161,12 @@ def move_records(kind, refs, source, target, log):
             fl.organization_id = target.id
         # liens d'un risque vers les autres modules et actifs : ces éléments restent dans
         # l'organisation d'origine, les liens sont retirés (sinon ils traverseraient deux organisations)
+        if kind == "document":     # acceptations des personnes de l'origine : elles y restent
+            from app.models import PolicyAcceptance
+            n = PolicyAcceptance.query.filter_by(organization_id=source.id, document_id=obj.id).delete(
+                synchronize_session=False)
+            if n:
+                log(f"    {n} acceptation(s) de lecture retirée(s) (personnes restées dans {source.name})")
         if kind == "risk":
             for link in list(obj.links):
                 log(f"    lien vers {link.entity_type} n°{link.entity_id} retiré (élément resté dans {source.name})")

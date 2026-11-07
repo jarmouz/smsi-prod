@@ -4,7 +4,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user
 
 from app.extensions import db
-from app.models import Document, DocumentVersion, User, DocType, DocStatus
+from app.models import Document, DocumentVersion, User, DocType, DocStatus, Role
 from app.services.access import editor_required, rssi_required
 from app.services.audit_trail import log_event
 from app.services.refs import next_ref
@@ -13,6 +13,19 @@ from app.services import attachments as att_svc
 from app.services import frameworks as fw_svc
 
 bp = Blueprint("documents", __name__, url_prefix="/documents")
+
+
+def _ack_fields(d):
+    """Acceptation requise, rôles concernés (aucun = tous), délai en jours après approbation."""
+    f = request.form
+    if not f.get("ack_present"):
+        return
+    d.ack_required = bool(f.get("ack_required"))
+    d.ack_roles = ",".join(r for r in f.getlist("ack_roles") if r in Role.__members__) or None
+    try:
+        d.ack_days = max(1, min(365, int(f.get("ack_days") or 30)))
+    except ValueError:
+        d.ack_days = 30
 
 
 def _date(s):
@@ -58,6 +71,7 @@ def create():
                 location=request.form.get("location"),
                 next_review_at=_date(request.form.get("next_review_at")),
                 note=request.form.get("note"))
+            _ack_fields(d)
             db.session.add(d)
             db.session.commit()
             fw_svc.links_from_form(d, request.form)
@@ -66,7 +80,7 @@ def create():
             flash(f"Document {d.ref} créé en brouillon. Soumettez-le pour approbation une fois rédigé.", "success")
             return redirect(url_for("documents.detail", doc_id=d.id))
     return render_template("documents/form.html", users=users, doc=None,
-                           DocType=DocType, DocStatus=DocStatus)
+                           DocType=DocType, DocStatus=DocStatus, Role=Role)
 
 
 @bp.route("/<int:doc_id>/modifier", methods=["GET", "POST"])
@@ -83,20 +97,27 @@ def edit(doc_id):
         d.location = request.form.get("location")
         d.next_review_at = _date(request.form.get("next_review_at"))
         d.note = request.form.get("note")
+        _ack_fields(d)
         fw_svc.links_from_form(d, request.form)
         db.session.commit()
         flash(f"Document {d.ref} mis à jour.", "success")
         return redirect(url_for("documents.detail", doc_id=d.id))
     return render_template("documents/form.html", users=users, doc=d,
                            attachments=att_svc.get_for("document", d.id),
-                           DocType=DocType, DocStatus=DocStatus)
+                           DocType=DocType, DocStatus=DocStatus, Role=Role)
 
 
 @bp.route("/<int:doc_id>")
 @login_required
 def detail(doc_id):
     d = db.session.get(Document, doc_id) or abort(404)
-    return render_template("documents/detail.html", d=d, attachments=att_svc.get_for("document", d.id))
+    from app.models import PolicyAcceptance
+    mine = PolicyAcceptance.query.filter_by(document_id=d.id, user_id=current_user.id).order_by(
+        PolicyAcceptance.accepted_at.desc()).all()
+    return render_template("documents/detail.html", d=d, attachments=att_svc.get_for("document", d.id),
+                           ack=d.ack_status() if d.ack_active else None,
+                           my_ack=next((a for a in mine if a.version == d.version), None), my_history=mine,
+                           can_see_ack=current_user.role.value in ("RSSI", "AUDITEUR") or current_user.id == d.owner_id)
 
 
 # --- Circuit d'approbation (7.5.2 / 7.5.3) ---------------------------------
@@ -200,3 +221,54 @@ def retire(doc_id):
         log_event("workflow", "Document rendu obsolète (retiré de la diffusion)", entity=d)
         flash(f"{d.ref} rendu obsolète.", "success")
     return redirect(url_for("documents.detail", doc_id=d.id))
+
+
+# --- Lecture et acceptation des politiques (3.10) ----------------------------------------
+@bp.route("/<int:doc_id>/accepter", methods=["POST"])
+@login_required
+def accept(doc_id):
+    from app.services import policies
+    from app.services.audit_trail import log_event
+    d = db.session.get(Document, doc_id) or abort(404)
+    if not d.ack_active:
+        flash("Ce document ne demande pas d'acceptation.", "warning")
+    elif current_user.is_readonly:
+        abort(403)
+    elif not request.form.get("read_confirm"):
+        flash("Cochez « J'ai lu ce document » pour l'accepter.", "warning")
+    else:
+        roles = d.ack_role_list
+        if roles and current_user.role.value not in roles:
+            flash("Ce document ne vous est pas destiné.", "warning")
+        else:
+            policies.accept(d, current_user)
+            db.session.commit()
+            log_event("accept", f"{d.ref} v{d.version} lu et accepté", entity=d)
+            flash(f"Merci : votre acceptation de {d.ref} v{d.version} est enregistrée.", "success")
+    nxt = request.form.get("next") or ""
+    if nxt.startswith("/") and not nxt.startswith("//"):
+        return redirect(nxt)
+    return redirect(url_for("documents.detail", doc_id=d.id))
+
+
+@bp.route("/a-accepter")
+@login_required
+def my_policies():
+    """Documents que l'utilisateur doit lire et accepter, et ceux qu'il a déjà acceptés."""
+    from app.models import PolicyAcceptance
+    from app.services import policies
+    pending = policies.pending_for(current_user)
+    history = (PolicyAcceptance.query.filter_by(user_id=current_user.id)
+               .order_by(PolicyAcceptance.accepted_at.desc()).all())
+    return render_template("documents/my_policies.html", pending=pending, history=history)
+
+
+@bp.route("/acceptations")
+@login_required
+def acceptances():
+    """Suivi des acceptations par document et par personne (RSSI, auditeur)."""
+    from app.services import policies
+    if current_user.role.value not in ("RSSI", "AUDITEUR"):
+        abort(403)
+    return render_template("documents/acceptances.html", s=policies.summary())
+

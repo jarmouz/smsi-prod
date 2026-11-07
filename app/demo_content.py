@@ -851,3 +851,11 @@ RISK_LINKS = {
 # risque dont la réévaluation est demandée (incident lié récemment)
 RISK_REASSESS = (6, ("Incident", 6))
 
+# Acceptation des politiques (3.10) : document -> (rôles concernés, délai en jours, comptes ayant accepté)
+POLICY_ACKS = {
+    "DOC-002": ("", 30, ["rssi", "dg", "dsi", "infra", "dev", "rh", "dpo"]),      # PSSI : tous
+    "DOC-007": ("", 30, ["rssi", "dsi", "infra"]),                              # contrôle d'accès
+    "DOC-010": ("", 45, ["rssi", "dg", "rh"]),                                  # télétravail
+    "DOC-009": ("RSSI,CONTRIBUTEUR", 30, ["rssi", "infra", "dev"]),             # cryptographie : équipes techniques
+}
+

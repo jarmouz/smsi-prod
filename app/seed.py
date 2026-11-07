@@ -175,6 +175,10 @@ UPGRADE_DDL = [
     # Cohérence SMI (3.9) : conséquences, impact par dimension
     "ALTER TABLE risks ADD COLUMN IF NOT EXISTS consequence TEXT NULL",
     "ALTER TABLE risks ADD COLUMN IF NOT EXISTS impact_details TEXT NULL",
+    # Acceptation des politiques (3.10)
+    "ALTER TABLE documents ADD COLUMN IF NOT EXISTS ack_required BOOLEAN NOT NULL DEFAULT false",
+    "ALTER TABLE documents ADD COLUMN IF NOT EXISTS ack_roles VARCHAR(80) NULL",
+    "ALTER TABLE documents ADD COLUMN IF NOT EXISTS ack_days INTEGER NOT NULL DEFAULT 30",
 ]
 
 # Tables rattachées à une organisation (voir TenantMixin)

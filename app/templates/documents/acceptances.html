@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% from 'partials/macros.html' import export_menu with context %}
+{% block title %}Acceptation des politiques - {{ APP_NAME }}{% endblock %}
+{% block heading %}Acceptation des politiques{% endblock %}
+{% block topactions %}{{ export_menu([('acceptations-politiques', 'Registre des acceptations')]) }} <a href="{{ url_for('documents.index') }}" class="btn btn--ghost btn--sm">Documents</a>{% endblock %}
+{% block content %}
+<div class="kpis" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px;">
+  <div class="kpi kpi--accent"><div class="kpi__label">Taux d'acceptation</div><div class="kpi__value">{{ s.rate }}<small>%</small></div><div class="kpi__sub">{{ s.done }}/{{ s.expected }} acceptations attendues</div></div>
+  <div class="kpi kpi--total"><div class="kpi__label">Documents concernés</div><div class="kpi__value">{{ s.rows|length }}</div><div class="kpi__sub">approuvés, acceptation requise</div></div>
+  <div class="kpi kpi--ouvert"><div class="kpi__label">En attente</div><div class="kpi__value">{{ s.pending }}</div><div class="kpi__sub">acceptations</div></div>
+  <div class="kpi kpi--retard"><div class="kpi__label">Hors délai</div><div class="kpi__value">{{ s.overdue }}</div><div class="kpi__sub">sur {{ s.overdue_docs }} document(s)</div></div>
+</div>
+<div class="panel">
+  <div class="panel__body--flush"><div class="table-wrap">
+    <table class="grid">
+      <thead><tr><th style="width:100px;">Document</th><th>Titre</th><th style="width:70px;">Version</th><th style="width:150px;">Concernés</th><th style="width:160px;">Acceptations</th><th>En attente</th></tr></thead>
+      <tbody>
+      {% for d, st in s.rows %}
+        <tr>
+          <td class="ref"><a href="{{ url_for('documents.detail', doc_id=d.id) }}#acceptation">{{ d.ref }}</a></td>
+          <td class="subj">{{ d.title }}{% if d.ack_due %}<div class="muted" style="font-size:11px;{{ 'color:var(--red-600);' if st.overdue }}">délai : {{ d.ack_due|d }}</div>{% endif %}</td>
+          <td class="mono">{{ d.version }}</td>
+          <td class="muted" style="font-size:12px;">{{ d.ack_role_list|join(', ') if d.ack_role_list else 'Tous' }} ({{ st.audience|length }})</td>
+          <td><div style="height:6px;background:var(--line);border-radius:3px;"><div style="width:{{ st.rate }}%;height:6px;border-radius:3px;background:{{ '#2A7E4F' if st.rate == 100 else '#2F6FA3' }};"></div></div><span class="muted" style="font-size:11px;">{{ st.done|length }}/{{ st.audience|length }} - {{ st.rate }} %</span></td>
+          <td style="font-size:12px;">{{ st.pending|map(attribute='name')|join(', ') or '-' }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6"><div class="empty" style="padding:26px;"><h3>Aucune politique à faire accepter</h3><p>Cochez « Lecture et acceptation requises » sur un document (politique, charte, règlement) puis faites-le approuver.</p></div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div></div>
+</div>
+{% endblock %}

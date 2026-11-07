@@ -57,7 +57,7 @@ communs (audits, revues, documents, objectifs, non-conformités) peuvent être
 rattachés à une ou plusieurs normes. Les écrans historiques restent limités à
 l'ISO 27001 (`Control.of()`).
 
-Normes disponibles (3.9) :
+Normes disponibles (3.10) :
 
 | Norme | Type | Module propre |
 |---|---|---|
@@ -268,6 +268,36 @@ conformité continue :
   et les mesures non reprises sont signalées.
 - Page plateforme : les opportunités ne sont plus comptées comme des risques.
 - Migration : colonnes `risks.consequence` et `risks.impact_details`.
+
+### Lecture et acceptation des politiques (3.10)
+
+Un document peut exiger que les personnes concernées le lisent et l'acceptent.
+Exigences couvertes : chapitres 5.2 et 7.3 des normes (politique communiquée,
+personnes conscientes de la politique), ISO/IEC 27001 A.5.1 et A.6.3.
+
+- **Réglage du document** : « Lecture et acceptation requises », rôles
+  concernés (aucun coché = tous les comptes actifs, sauf ceux en lecture
+  seule) et délai en jours après approbation (`documents.ack_*`).
+- **Acceptation** (`PolicyAcceptance`) : par personne et par version. Seule la
+  version approuvée en vigueur est concernée ; une nouvelle version approuvée
+  demande une nouvelle acceptation à tous. La case « J'ai lu ce document et je
+  m'engage à le respecter » est obligatoire. L'heure et l'adresse IP sont
+  conservées, et l'acceptation est tracée dans la piste d'audit.
+- **Pour chaque personne** : un bandeau sur toutes les pages tant qu'une
+  politique est en attente ; la page **Documents › Mes politiques à accepter**
+  (`/documents/a-accepter`) ; le bouton d'acceptation sur la fiche du
+  document ; les relances.
+- **Pour le RSSI et l'auditeur** : la page **Documents › Suivi des
+  acceptations** (taux, personnes en attente, hors délai) et le suivi sur la
+  fiche ; l'export « Registre des acceptations des politiques » ; les points à
+  traiter du tableau de bord ; les preuves des exigences 5.2 et 7.3 du socle
+  commun.
+- `move-records` d'un document : les acceptations des personnes restées dans
+  l'organisation d'origine sont retirées.
+- **Démo** : la PSSI, le contrôle d'accès, la cryptographie (équipes
+  techniques) et le télétravail sont soumis à acceptation, avec des
+  acceptations partielles, dont une hors délai.
+- **Migration** : table `policy_acceptances` et colonnes `documents.ack_*`.
 
 ## Modules
 

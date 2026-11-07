@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% block title %}Documents - {{ APP_NAME }}{% endblock %}
 {% block heading %}Gestion documentaire{% endblock %}
-{% block topactions %}{% if current_user.can_edit %}<a href="{{ url_for('imports.docs_start') }}" class="btn btn--subtle btn--sm">Déposer des documents</a> <a href="{{ url_for('documents.create') }}" class="btn btn--primary btn--sm">+ Nouveau document</a>{% endif %}{% endblock %}
+{% block topactions %}<a href="{{ url_for('documents.my_policies') }}" class="btn btn--subtle btn--sm">Mes politiques à accepter</a> {% if current_user.role.value in ('RSSI', 'AUDITEUR') %}<a href="{{ url_for('documents.acceptances') }}" class="btn btn--subtle btn--sm">Suivi des acceptations</a> {% endif %}{% if current_user.can_edit %}<a href="{{ url_for('imports.docs_start') }}" class="btn btn--subtle btn--sm">Déposer des documents</a> <a href="{{ url_for('documents.create') }}" class="btn btn--primary btn--sm">+ Nouveau document</a>{% endif %}{% endblock %}
 
 {% block content %}
 {% if to_review %}

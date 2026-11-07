@@ -28,6 +28,8 @@ def create_app(config_class=Config):
     risk_criteria.init_app(app)
     from app.services import risk_links
     risk_links.init_app(app)
+    from app.services import policies
+    policies.init_app(app)
     charts.init_app(app)
     _register_blueprints(app)
     from app.blueprints.account import enforce as _enforce_account

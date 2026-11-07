@@ -112,6 +112,10 @@ def attention(pilot):
     add(3, "Activités de la BIA dont l'exercice est à refaire", pilot.get("bcp_overdue", 0), url_for("continuity.index"))
     add(3, "Changements en attente de décision", pilot.get("chg_pending", 0), url_for("changes.index"))
     add(3, "Écarts de compétences", pilot.get("comp_gaps", 0), url_for("competences.index"))
+    from app.services import policies
+    ps = policies.summary()
+    add(1, "Acceptations de politiques hors délai", ps["overdue"], url_for("documents.acceptances"))
+    add(2, "Acceptations de politiques en attente", ps["pending"] - ps["overdue"], url_for("documents.acceptances"))
     for code, label, n, url in module_inputs():
         add(1 if "retard" in label else 2, f"{label} ({code[3:] if code != 'ISO20000' else '20000-1'})", n, url)
     review = sum(1 for r in open_r if r.review_date and r.review_date < date.today())

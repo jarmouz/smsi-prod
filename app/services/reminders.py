@@ -75,6 +75,11 @@ def collect(user, today=None):
         elif r.status.is_open and r.review_date and r.review_date <= soon7:
             add("Risques à réévaluer", f"{r.ref} : {r.title}", url_for("risks.detail", risk_id=r.id),
                 _due(r.review_date, t), r.review_date < t)
+    from app.services import policies
+    for d in policies.pending_for(user):
+        add("Politiques à lire et accepter", f"{d.ref} : {d.title} (v{d.version})",
+            url_for("documents.detail", doc_id=d.id) + "#acceptation", _due(d.ack_due, t) if d.ack_due else None,
+            bool(d.ack_due and d.ack_due < t))
     from app.models import RiskAction, RiskActionStatus
     for a in RiskAction.query.filter(RiskAction.owner_id == user.id,
                                      RiskAction.status.in_([RiskActionStatus.PREVUE, RiskActionStatus.EN_COURS]),

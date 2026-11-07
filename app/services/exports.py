@@ -150,6 +150,20 @@ def action_rows():
     return rows
 
 
+def acceptance_rows():
+    """Registre des acceptations des politiques (version en vigueur de chaque document concerné)."""
+    from app.services import policies
+    rows = [["Document", "Titre", "Version", "Personne", "Rôle", "Acceptée le", "Délai", "État"]]
+    for d, st in policies.summary()["rows"]:
+        for u in st["audience"]:
+            a = st["accepted"].get(u.id)
+            rows.append([d.ref, d.title, d.version, u.name, u.role.label,
+                         a.accepted_at.strftime("%d/%m/%Y %H:%M") if a else "",
+                         d.ack_due.strftime("%d/%m/%Y") if d.ack_due else "",
+                         "Acceptée" if a else ("En retard" if st["overdue"] else "En attente")])
+    return rows
+
+
 # --- Mise en forme --------------------------------------------------------------
 DOCS = {
     "dda": {"title": "Déclaration d'applicabilité", "rows": soa_rows, "clause": "ISO/IEC 27001:2022, 6.1.3 d)",
@@ -160,6 +174,9 @@ DOCS = {
                          # Réf., Risque, Normes, Score inh., Traitement, Score rés., Niveau rés., Acceptation, Statut, Propriétaire
                          "pdf_keep": ([0, 1, 4, 10, 12, 15, 16, 17, 18, 19],
                                       [1150, 2800, 1700, 850, 1250, 850, 1100, 2000, 1100, 1770])},
+    "acceptations-politiques": {"title": "Registre des acceptations des politiques", "rows": acceptance_rows,
+                                "clause": "Chapitres 5.2 et 7.3 des normes de systèmes de management (ISO/IEC 27001 A.5.1, A.6.3)",
+                                "widths": [1000, 3200, 800, 2200, 1700, 1700, 1200, 2770], "approver": "RSSI", "criteria": False},
     "actions-traitement": {"title": "Suivi des actions de traitement des risques", "rows": action_rows,
                            "clause": "Chapitres 6.1 et 8 des normes de systèmes de management (ISO/IEC 27001:2022, 6.1.3 e) et 8.3)",
                            "widths": None, "approver": "RSSI",

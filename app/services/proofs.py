@@ -20,6 +20,9 @@ _MAP = {
     ("ISO42001", "6.1.3"): ("plan", "actions", "dda", "acceptation"),
     ("ISO42001", "8.3"): ("plan", "actions", "traitement", "acceptation"),
     ("ISO42001", "6.1.4"): ("etudes_impact",),
+    # Socle commun (3.10) : politique communiquée et personnes conscientes de la politique
+    ("SMI", "5.2"): ("politiques",),
+    ("SMI", "7.3"): ("politiques",),
     ("ISO42001", "8.4"): ("etudes_impact", "systemes_ia"),
 }
 
@@ -61,6 +64,13 @@ def _item(key, code):
         return {"label": "Plan de traitement des risques (export Excel)",
                 "url": url_for("soa.export", kind="plan-traitement", fmt="xlsx"),
                 "info": "options de traitement, mesures retenues, propriétaires, risques résiduels"}
+    if key == "politiques":
+        from app.services import policies
+        ps = policies.summary()
+        return {"label": "Lecture et acceptation des politiques", "url": url_for("documents.acceptances"),
+                "info": (f"{len(ps['rows'])} document(s) à faire accepter, {ps['rate']} % d'acceptations "
+                         f"({ps['done']}/{ps['expected']}), {ps['overdue']} hors délai") if ps["rows"]
+                else "aucun document n'est soumis à acceptation", "warn": bool(ps["overdue"] or not ps["rows"])}
     if key == "reevaluation":
         rs = [r for r in _risks(code) if r.status.is_open]
         todo = [r for r in rs if r.reassess_at]

@@ -42,6 +42,36 @@
   </div>
 
   <div class="stack">
+    {% if d.ack_required %}
+    <div class="panel" id="acceptation">
+      <div class="panel__head"><h2>Lecture et acceptation</h2>{% if ack %}<span class="rail__badge">{{ ack.done|length }}/{{ ack.audience|length }}</span>{% endif %}</div>
+      <div class="panel__body stack">
+        {% if not d.ack_active %}
+        <p class="muted" style="font-size:12.5px;margin:0;">L'acceptation sera demandée dès l'approbation de la version {{ d.version }}{{ ' (une nouvelle acceptation sera demandée à tous)' if d.versions }}.</p>
+        {% else %}
+          {% if my_ack %}
+          <div class="flash flash--success" style="margin:0;">Vous avez lu et accepté la version {{ d.version }} le {{ my_ack.accepted_at|dt }}.</div>
+          {% elif not current_user.is_readonly and (not d.ack_role_list or current_user.role.value in d.ack_role_list) %}
+          <form method="post" action="{{ url_for('documents.accept', doc_id=d.id) }}" class="stack" style="background:var(--paper);padding:10px;border-radius:6px;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <p style="font-size:12.5px;margin:0;">Ce document vous concerne : lisez la version {{ d.version }} (pièce jointe{{ ' ou lien ci-contre' if d.location }}) puis confirmez.</p>
+            <label style="display:flex;align-items:flex-start;gap:8px;font-size:12.5px;"><input type="checkbox" name="read_confirm" value="1" required style="width:auto;margin-top:2px;"> J'ai lu ce document et je m'engage à le respecter.</label>
+            <div><button class="btn btn--primary btn--sm" type="submit">J'accepte la version {{ d.version }}</button>{% if d.ack_due %} <span class="muted" style="font-size:11.5px;">à faire avant le {{ d.ack_due|d }}</span>{% endif %}</div>
+          </form>
+          {% endif %}
+          {% if can_see_ack and ack %}
+          <div class="statrow"><span class="lbl" style="width:90px;font-size:12px;">Acceptations</span><span class="bar"><span style="width:{{ ack.rate }}%;background:var(--teal-500)"></span></span><span class="val">{{ ack.rate }}%</span></div>
+          <p class="muted" style="font-size:11.5px;margin:0;">Concernés : {{ d.ack_role_list|join(', ') if d.ack_role_list else 'tous les comptes actifs' }} · délai : {{ d.ack_days }} jours après approbation{% if d.ack_due %} ({{ d.ack_due|d }}){% endif %}.</p>
+          {% if ack.overdue %}<div class="flash flash--warning" style="margin:0;">Délai dépassé : {{ ack.pending|length }} personne(s) n'ont pas encore accepté.</div>{% endif %}
+          {% if ack.pending %}<div style="font-size:12px;"><b>En attente :</b> {{ ack.pending|map(attribute='name')|join(', ') }}</div>{% endif %}
+          {% if ack.done %}<details style="font-size:12px;"><summary class="muted" style="cursor:pointer;">Acceptées ({{ ack.done|length }})</summary>
+            {% for u in ack.done %}<div>{{ u.name }} - {{ ack.accepted[u.id].accepted_at|dt }}</div>{% endfor %}</details>{% endif %}
+          {% endif %}
+        {% endif %}
+        {% if my_history|length > (1 if my_ack else 0) %}<p class="muted" style="font-size:11px;margin:0;">Vos acceptations précédentes : {% for a in my_history if a.version != d.version %}v{{ a.version }} ({{ a.accepted_at|d }}){{ ', ' if not loop.last }}{% endfor %}</p>{% endif %}
+      </div>
+    </div>
+    {% endif %}
     <div class="panel">
       <div class="panel__head"><h2>Circuit d'approbation</h2></div>
       <div class="panel__body stack">
