@@ -3,42 +3,91 @@
 Ce paquet installe l'application SMSI sur un serveur du client, **sans accès
 internet** : les images Docker sont fournies dans `images/`.
 
-## Prérequis
+## 1. Avant l'intervention : à obtenir du client
 
-| Élément | Minimum |
+| Élément | Détail |
 |---|---|
-| Système | Linux 64 bits (Debian 12, Ubuntu 22.04+, RHEL 9…) |
-| Ressources | 2 vCPU, 4 Go de RAM, 20 Go de disque (+ volume des pièces jointes) |
-| Logiciels | Docker Engine 24+ avec le plugin `docker compose`, `openssl` |
-| Réseau | Un nom DNS interne (ex. `smsi.entreprise.local`) pointant vers le serveur ; ports 80 et 443 ouverts aux utilisateurs |
-| Certificat | Idéalement un certificat émis par l'autorité interne du client pour ce nom |
+| VM | Linux 64 bits (Ubuntu 24.04+, Debian 12, RHEL 9…), 2 vCPU, 4 Go de RAM, 40 Go de disque |
+| Docker | Docker Engine 24+ avec le plugin `docker compose`, et `openssl`. **Le paquet ne contient pas Docker** : si la VM n'a pas accès à internet, le client l'installe à l'avance |
+| Nom d'accès | Un nom DNS interne (ex. `smsi.entreprise.local`) pointant vers l'IP de la VM |
+| Certificat | Idéalement émis par l'autorité interne du client pour ce nom (`smsi.crt` + `smsi.key`, PEM). À défaut, certificat auto-signé (avertissement du navigateur) |
+| Réseau | Ports 80 et 443 ouverts depuis les postes des utilisateurs vers la VM |
+| Accès | Un compte avec `sudo` sur la VM |
+| Informations | Nom de l'organisation, e-mail du RSSI (le RSSI saisit lui-même son mot de passe) |
 
-## Installation
+## 2. Installation (sur place)
+
+**Copier et vérifier le paquet** (clé USB ou `scp`) :
 
 ```bash
-tar xzf smsi-<version>.tar.gz
-cd smsi-<version>
-# (recommandé) déposer le certificat du client :
-#   certs/smsi.crt  (certificat + chaîne intermédiaire, format PEM)
-#   certs/smsi.key  (clé privée, format PEM)
-sudo ./install.sh
+sha256sum -c smsi-<version>.tar.gz.sha256
+sudo tar xzf smsi-<version>.tar.gz -C /opt && sudo mv /opt/smsi-<version> /opt/smsi
 ```
 
-Le script :
-1. charge les images Docker livrées ;
+**Déposer le certificat du client** (recommandé) :
+
+```bash
+sudo cp smsi.crt smsi.key /opt/smsi/certs/
+#   smsi.crt : certificat + chaîne intermédiaire (PEM) ; smsi.key : clé privée (PEM)
+```
+
+**Lancer l'installation**, depuis un terminal (saisies interactives) :
+
+```bash
+cd /opt/smsi && sudo ./install.sh
+```
+
+Questions posées : le **nom d'accès** (ex. `smsi.entreprise.local`), le **nom de
+l'organisation**, puis l'**e-mail et le mot de passe du RSSI** (12 caractères
+minimum, 3 types de caractères). Le script :
+
+1. charge les images Docker livrées (aucun accès internet requis) ;
 2. crée `.env` et **génère des secrets uniques** (clé de l'application, mot de
    passe de la base) ;
 3. propose un certificat auto-signé provisoire si aucun certificat n'est fourni ;
 4. démarre les services (base, application, reverse proxy HTTPS) ;
-5. initialise la base : crée **l'organisation du client** (avec le catalogue
-   des 93 mesures de l'Annexe A) et son **compte RSSI**, super-administrateur de
-   la plateforme (mot de passe demandé : 12 caractères minimum, 3 types de
-   caractères).
-
-L'application est ensuite accessible sur `https://<nom d'accès>`.
+5. crée **l'organisation du client** (catalogue des 93 mesures de l'Annexe A)
+   et son **compte RSSI**, super-administrateur de la plateforme.
 
 > `.env` contient les secrets de l'installation : il est créé en `600`, ne le
 > transmettez pas et incluez-le dans vos sauvegardes protégées.
+
+## 3. Vérification depuis un poste utilisateur
+
+- `https://<nom d'accès>` s'ouvre (sans avertissement si le certificat du client est utilisé) ;
+- le RSSI se connecte et voit le tableau de bord de son organisation ;
+- `https://<nom d'accès>/healthz` répond `{"status":"ok"}`.
+
+## 4. Planifier les sauvegardes
+
+Dans la crontab de root (`sudo crontab -e`) :
+
+```
+30 2 * * * /opt/smsi/backup.sh >> /opt/smsi/backups/backup.log 2>&1
+```
+
+Le client copie régulièrement `/opt/smsi/backups/` **hors de la VM**, dans un
+emplacement protégé (les sauvegardes contiennent les secrets). Détails dans la
+section « Sauvegardes » ci-dessous.
+
+## 5. Options selon le client
+
+- **Nextcloud / OnlyOffice internes** : voir la section dédiée ci-dessous.
+- **Rappels par e-mail** : le RSSI configure le SMTP dans l'application
+  (Administration › Paramètres), puis planifiez chaque matin (crontab de root) :
+  ```
+  0 6 * * * cd /opt/smsi && docker compose exec -T web flask send-reminders >> backups/reminders.log 2>&1
+  ```
+- **Assistant IA** : facultatif, il n'est utilisable que si la VM peut joindre
+  `api.anthropic.com` ; il reste désactivé tant que la clé d'API n'est pas
+  renseignée (Plateforme) puis activée par le RSSI.
+
+## 6. Avant de quitter le site
+
+- [ ] Sauvegarde manuelle (`sudo ./backup.sh`) présente dans `backups/`
+- [ ] Tâche de sauvegarde planifiée (et rappels si SMTP configuré)
+- [ ] Ce guide remis au client (mise à jour, restauration, exploitation)
+- [ ] Version installée (`cat VERSION`) et date notées dans la fiche client
 
 ## Sauvegardes
 
@@ -102,6 +151,41 @@ REQUESTS_CA_BUNDLE=/ca/ca-entreprise.pem
 
 Puis `docker compose up -d` et testez dans **Administration → Paramètres →
 Tester Nextcloud**.
+
+## Certificat public Let's Encrypt (serveur exposé sur internet)
+
+Le kit n'obtient pas de certificat lui-même : il utilise `certs/smsi.crt` et
+`certs/smsi.key`. Sur un serveur public, obtenez-le **avant** `install.sh`
+(le port 80 est encore libre) :
+
+```bash
+sudo apt-get install -y certbot
+sudo certbot certonly --standalone -d <nom d'accès>
+sudo cp -L /etc/letsencrypt/live/<nom d'accès>/fullchain.pem /opt/smsi/certs/smsi.crt
+sudo cp -L /etc/letsencrypt/live/<nom d'accès>/privkey.pem   /opt/smsi/certs/smsi.key
+```
+
+Le renouvellement automatique de certbot a besoin du port 80, occupé par le
+proxy du kit : ajoutez ces deux scripts (rendus exécutables avec `chmod +x`),
+qui arrêtent le proxy, puis recopient le certificat et le relancent :
+
+`/etc/letsencrypt/renewal-hooks/pre/smsi.sh`
+```sh
+#!/bin/sh
+cd /opt/smsi && docker compose stop proxy
+```
+
+`/etc/letsencrypt/renewal-hooks/post/smsi.sh`
+```sh
+#!/bin/sh
+D=$(ls -d /etc/letsencrypt/live/*/ | head -1)
+cp -L "$D/fullchain.pem" /opt/smsi/certs/smsi.crt
+cp -L "$D/privkey.pem" /opt/smsi/certs/smsi.key
+chmod 644 /opt/smsi/certs/smsi.crt; chmod 640 /opt/smsi/certs/smsi.key
+cd /opt/smsi && docker compose start proxy
+```
+
+Vérification : `sudo certbot renew --dry-run` (quelques secondes de coupure).
 
 ## Exploitation courante
 
