@@ -49,8 +49,11 @@
 {%- endmacro -%}
 
 {%- macro is_active(endpoint) -%}
+{#- Une seule entrée active : par page exacte (admin), par section (modules à plusieurs entrées), sinon par module -#}
 {%- set bp = endpoint.split('.')[0] -%}
-{%- if bp == 'admin' -%}{{ '1' if request.endpoint == endpoint }}{%- else -%}{{ '1' if request.blueprint == bp }}{%- endif -%}
+{%- if bp == 'admin' -%}{{ '1' if request.endpoint == endpoint }}
+{%- elif bp in NAV_MULTI -%}{{ '1' if nav_section(request.endpoint) == endpoint }}
+{%- else -%}{{ '1' if request.blueprint == bp }}{%- endif -%}
 {%- endmacro -%}
 
 {%- macro nav_link(endpoint, name, label) -%}

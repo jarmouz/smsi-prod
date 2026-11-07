@@ -143,6 +143,20 @@ def _register_jinja(app):
         return {"fw_active": fw_active, "fw_codes_of": fw_codes_of, "fw_of": fw_svc.frameworks_of,
                 "login_frameworks": login_frameworks}
 
+    # Modules qui ont plusieurs entrées dans le menu : page -> entrée de menu (préfixe d'endpoint)
+    nav_sections = [("itsm.problem", "itsm.problems"), ("itsm.release", "itsm.releases"),
+                    ("privacy.request", "privacy.requests_index")]
+
+    @app.template_global()
+    def nav_section(endpoint):
+        endpoint = endpoint or ""
+        for prefix, target in nav_sections:
+            if endpoint.startswith(prefix):
+                return target
+        return endpoint.split(".")[0] + ".index"
+
+    app.jinja_env.globals["NAV_MULTI"] = {"itsm", "privacy"}
+
     @app.template_filter("grp")
     def _grp(value):
         """Groupe d'une mesure : « A.5 - Mesures organisationnelles » (ISO 27001) ou libellé libre."""
