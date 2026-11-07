@@ -364,6 +364,35 @@ def register_seed_command(app):
         db.session.commit()
         click.echo(f"{u.email} est super-admin.")
 
+    @app.cli.command("reset-password")
+    @click.argument("email")
+    @click.option("--keep-mfa", is_flag=True, help="Conserver la double authentification du compte.")
+    def reset_password(email, keep_mfa):
+        """Secours : mot de passe temporaire pour un compte (ex. seul RSSI ayant perdu son accès).
+        Déverrouille le compte, réactive le compte s'il était désactivé, et supprime la double
+        authentification (sauf --keep-mfa). Le mot de passe est à changer à la connexion suivante."""
+        from app.services import totp
+        from app.services.audit_trail import log_event
+        from app.services.tenancy import tenant_scope
+        u = (User.query.execution_options(all_tenants=True)
+             .filter_by(email=email.strip().lower()).first())
+        if not u:
+            raise click.ClickException(f"Aucun compte « {email} ». Liste des comptes : "
+                                       "docker compose exec db psql -U smsi -d smsi -c 'select email from users'")
+        with tenant_scope(u.organization_id):
+            temp = totp.temporary_password()
+            u.set_password(temp)
+            u.must_change_password = True
+            u.is_active_flag = True
+            if not keep_mfa:
+                u.totp_secret = u.totp_last_step = u.recovery_codes = None
+            u.reset_failures()
+            db.session.commit()
+            log_event("mfa", "Accès réinitialisé en ligne de commande (mot de passe temporaire"
+                      + ("" if keep_mfa else ", double authentification à reconfigurer") + ")", entity=u)
+        click.echo(f"Compte {u.email} : mot de passe temporaire {temp}")
+        click.echo("À changer à la prochaine connexion" + ("." if keep_mfa else " ; double authentification supprimée."))
+
     @app.cli.command("init-platform")
     @click.option("--org-name", default=None, help="Nom de l'organisation du client.")
     @click.option("--admin-email", default=None, help="E-mail du premier RSSI (super-administrateur).")

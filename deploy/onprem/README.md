@@ -52,6 +52,10 @@ minimum, 3 types de caractères). Le script :
 > `.env` contient les secrets de l'installation : il est créé en `600`, ne le
 > transmettez pas et incluez-le dans vos sauvegardes protégées.
 
+**Premier compte** : c'est le RSSI saisi pendant l'installation (e-mail et mot
+de passe tapés au clavier, rappelés en fin de script). Le mot de passe n'est
+conservé nulle part en clair : notez-le, ou faites-le saisir par le RSSI.
+
 ## 3. Vérification depuis un poste utilisateur
 
 - `https://<nom d'accès>` s'ouvre (sans avertissement si le certificat du client est utilisé) ;
@@ -196,6 +200,22 @@ Vérification : `sudo certbot renew --dry-run` (quelques secondes de coupure).
 | Redémarrer | `docker compose restart` |
 | Arrêter | `docker compose down` (les données sont conservées) |
 | Contrôle de santé | `curl -k https://<nom d'accès>/healthz` |
+| Liste des comptes | `docker compose exec db psql -U smsi -d smsi -c "select email, role, is_superadmin, is_active from users"` |
+| Accès perdu (mot de passe oublié, compte verrouillé ou téléphone perdu) | `docker compose exec web flask reset-password <e-mail>` |
+
+### Accès perdu
+
+Un autre administrateur peut utiliser **Administration › Utilisateurs ›
+Réinitialiser l'accès**. Si c'est le seul RSSI qui a perdu son accès, depuis la VM :
+
+```bash
+cd /opt/smsi && sudo docker compose exec web flask reset-password rssi@entreprise.tn
+```
+
+La commande affiche un **mot de passe temporaire** (à changer à la connexion
+suivante), déverrouille et réactive le compte, et supprime la double
+authentification (`--keep-mfa` pour la conserver). L'opération est inscrite au
+journal d'activité.
 
 > ⚠️ Ne lancez **jamais** `flask init-db` : c'est un outil de développement qui
 > efface toute la base. L'installation utilise `flask init-platform`, qui refuse
