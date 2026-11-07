@@ -57,7 +57,7 @@ communs (audits, revues, documents, objectifs, non-conformités) peuvent être
 rattachés à une ou plusieurs normes. Les écrans historiques restent limités à
 l'ISO 27001 (`Control.of()`).
 
-Normes disponibles (3.11) :
+Normes disponibles (3.12) :
 
 | Norme | Type | Module propre |
 |---|---|---|
@@ -333,6 +333,50 @@ publié sans un choix explicite du RSSI.
   attente).
 - **Migration** : table `trust_requests`, colonnes `documents.trust_visibility`
   et `suppliers.trust_public`.
+
+### Bibliothèque de scénarios de risques (3.12)
+
+**Risques et opportunités › Bibliothèque de scénarios** (`/risques/bibliotheque`)
+propose **347 scénarios prêts à l'emploi**, dont 41 opportunités, rédigés
+selon ISO 31000, ISO/IEC 27005 et EBIOS RM :
+
+| Domaine | Scénarios | Fichier (`app/services/risk_library/`) |
+|---|---|---|
+| Sécurité de l'information - menaces externes | 60 | `securite_externe.py` (SEC-) |
+| Sécurité de l'information - menaces internes, organisation, physique | 60 | `securite_interne.py` (SEI-) |
+| Vie privée (RGPD, loi organique tunisienne n° 2004-63) | 45 | `vie_privee.py` (PRV-) |
+| Intelligence artificielle (ISO/IEC 42001, AI Act) | 46 | `ia.py` (IA-) |
+| Continuité d'activité (ISO 22301) | 45 | `continuite.py` (CON-) |
+| Services informatiques (ISO/IEC 20000-1) | 40 | `services_it.py` (SRV-) |
+| Qualité (ISO 9001), tous secteurs | 51 | `qualite.py` (QUA-) |
+
+Chaque scénario comporte :
+- une famille, un événement redouté, une cause, une vulnérabilité et des
+  conséquences ;
+- une vraisemblance et des impacts par dimension, sur 5 niveaux ;
+- une option de traitement ;
+- des mesures d'annexe (27001, 27701, 42001) et des exigences de référence
+  (22301, 20000-1, 9001) ;
+- 2 à 4 actions de traitement ;
+- les secteurs concernés et, le cas échéant, des références réglementaires.
+
+**Recherche et filtres** : par domaine, nature, famille et secteur, avec une
+recherche plein texte qui ne tient compte ni des accents ni des majuscules.
+
+**Import** (sélection multiple) : un risque est créé par scénario, avec :
+- la cotation convertie aux échelles de l'organisation ;
+- les impacts limités aux dimensions activées ;
+- le rattachement des seules mesures des normes actives ;
+- les actions proposées (option) et le propriétaire choisi ;
+- l'origine notée dans la description.
+
+Un scénario déjà présent (même intitulé) est ignoré. Importer un seul scénario
+ouvre directement sa fiche. La bibliothèque est aussi proposée depuis
+« Nouveau risque » et depuis le registre vide.
+
+**Ajouter des scénarios** : il suffit de compléter un module du paquet. Toutes
+les références sont contrôlées par les tests contre les catalogues de
+l'application.
 
 ## Modules
 

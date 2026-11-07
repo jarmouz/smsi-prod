@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% block title %}{{ 'Modifier' if risk else 'Nouveau' }} risque - {{ APP_NAME }}{% endblock %}
 {% block heading %}{{ 'Modifier ' + risk.ref if risk else 'Nouveau risque' }}{% endblock %}
-{% block topactions %}<a href="{{ url_for('risks.index') }}" class="btn btn--ghost btn--sm">Retour</a>{% endblock %}
+{% block topactions %}{% if not risk %}<a href="{{ url_for('risks.library') }}" class="btn btn--subtle btn--sm">Partir d'un scénario de la bibliothèque</a> {% endif %}<a href="{{ url_for('risks.index') }}" class="btn btn--ghost btn--sm">Retour</a>{% endblock %}
 
 {% block content %}
 {% set sel = risk.controls|map(attribute='id')|list if risk else [] %}

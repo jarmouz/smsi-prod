@@ -2,7 +2,7 @@
 {% from 'partials/macros.html' import risk_chip, score_badge, acceptance_chip, export_menu with context %}
 {% block title %}Risques et opportunités - {{ APP_NAME }}{% endblock %}
 {% block heading %}Risques et opportunités{% endblock %}
-{% block topactions %}{{ export_menu([('registre-risques', 'Registre des risques'), ('plan-traitement', 'Plan de traitement des risques')]) }} <a href="{{ url_for('risks.plan') }}" class="btn btn--subtle btn--sm">Plan de traitement</a> {% if current_user.can_edit %}<a href="{{ url_for('imports.upload', kind='risques') }}" class="btn btn--subtle btn--sm">Importer</a> <a href="{{ url_for('risks.create') }}" class="btn btn--primary btn--sm">+ Nouveau risque</a>{% endif %}{% endblock %}
+{% block topactions %}{{ export_menu([('registre-risques', 'Registre des risques'), ('plan-traitement', 'Plan de traitement des risques')]) }} <a href="{{ url_for('risks.plan') }}" class="btn btn--subtle btn--sm">Plan de traitement</a> <a href="{{ url_for('risks.library') }}" class="btn btn--subtle btn--sm">Bibliothèque de scénarios</a> {% if current_user.can_edit %}<a href="{{ url_for('imports.upload', kind='risques') }}" class="btn btn--subtle btn--sm">Importer</a> <a href="{{ url_for('risks.create') }}" class="btn btn--primary btn--sm">+ Nouveau risque</a>{% endif %}{% endblock %}
 
 {% block content %}
 <form class="toolbar" method="get">
@@ -55,7 +55,7 @@
           <td class="muted">{{ r.status.label }}</td>
         </tr>
         {% else %}
-        <tr><td colspan="8"><div class="empty" style="padding:30px;"><h3>Aucun risque</h3><p>Commencez par enregistrer un risque.</p></div></td></tr>
+        <tr><td colspan="8"><div class="empty" style="padding:30px;"><h3>Aucun risque</h3><p>Commencez par enregistrer un risque, ou importez des scénarios prêts à l'emploi depuis la <a href="{{ url_for('risks.library') }}">bibliothèque de scénarios</a>.</p></div></td></tr>
         {% endfor %}
       </tbody>
     </table>

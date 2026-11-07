@@ -494,3 +494,48 @@ def confirm_reassess(risk_id):
         log_event("update", f"Risque réévalué, cotation inchangée ({reason})" + (f" : {note}" if note else ""), entity=r)
         flash(f"Réévaluation de {r.ref} enregistrée.", "success")
     return redirect(url_for("risks.detail", risk_id=r.id))
+
+
+# --- Bibliothèque de scénarios (3.12) ----------------------------------------------------
+@bp.route("/bibliotheque")
+@login_required
+def library():
+    from app.services import risk_library as lib
+    from app.models.risk import DOMAINS
+    from app.services import frameworks as fw_svc
+    f = {k: request.args.get(k) or None for k in ("domaine", "nature", "categorie", "secteur", "q")}
+    base = lib.search(domain=f["domaine"], nature=f["nature"], sector=f["secteur"], q=f["q"])
+    items = [s for s in base if not f["categorie"] or s["category"] == f["categorie"]]
+    already = lib.existing_titles()
+    stats = {}
+    for s in lib.scenarios():
+        k = s["domain"] or "SECURITE"
+        stats[k] = stats.get(k, 0) + 1
+    users = User.query.filter_by(is_active_flag=True).order_by(User.name).all()
+    return render_template("risks/library.html", items=items, f=f, cats=lib.categories(base), stats=stats,
+                           total=len(lib.scenarios()), domains=[(k, v[0]) for k, v in DOMAINS.items()],
+                           sectors=lib.SECTORS, norm_labels=lib.NORM_LABELS, already=already, scaled=lib.scaled,
+                           active_codes={x.code for x in fw_svc.active()}, users=users)
+
+
+@bp.route("/bibliotheque/importer", methods=["POST"])
+@editor_required
+def library_import():
+    from app.services import risk_library as lib
+    codes = request.form.getlist("codes")
+    if not codes:
+        flash("Sélectionnez au moins un scénario.", "warning")
+        return redirect(request.referrer or url_for("risks.library"))
+    created, skipped = lib.import_scenarios(codes, owner_id=request.form.get("owner_id", type=int),
+                                            with_actions=bool(request.form.get("with_actions")))
+    db.session.commit()
+    if created:
+        flash(f"{len(created)} scénario(s) importé(s) dans le registre : "
+              f"{', '.join(r.ref for r in created[:8])}{'…' if len(created) > 8 else ''}. "
+              "Ajustez la cotation à votre contexte et désignez les propriétaires.", "success")
+    if skipped:
+        flash(f"{len(skipped)} ignoré(s) : " + " ; ".join(f"{c} ({m})" for c, m in skipped[:5])
+              + ("…" if len(skipped) > 5 else ""), "warning")
+    if len(created) == 1:
+        return redirect(url_for("risks.edit", risk_id=created[0].id))
+    return redirect(url_for("risks.index") if created else (request.referrer or url_for("risks.library")))

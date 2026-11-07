@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% from 'partials/macros.html' import risk_chip with context %}
+{% block title %}Bibliothèque de scénarios - {{ APP_NAME }}{% endblock %}
+{% block heading %}Bibliothèque de scénarios de risques{% endblock %}
+{% block topactions %}<a href="{{ url_for('risks.index') }}" class="btn btn--ghost btn--sm">Registre des risques</a>{% endblock %}
+
+{% block content %}
+<p class="muted" style="font-size:12.5px;max-width:900px;margin:0 0 12px;">{{ total }} scénarios de risques et d'opportunités prêts à l'emploi, rédigés selon ISO 31000 et ISO/IEC 27005 : événement redouté, cause, vulnérabilité, conséquences, cotation proposée, mesures des normes, actions de traitement. À l'import, la cotation est convertie à vos échelles, seules les mesures de vos normes actives sont rattachées, et vous ajustez ensuite chaque risque à votre contexte.</p>
+
+<div class="fw-tabs" style="margin-bottom:10px;">
+  <a href="{{ url_for('risks.library', nature=f.nature, secteur=f.secteur, q=f.q) }}" class="fw-tab {{ 'is-active' if not f.domaine }}">Tous <span class="muted">{{ total }}</span></a>
+  {% for k, l in domains %}<a href="{{ url_for('risks.library', domaine=k, nature=f.nature, secteur=f.secteur, q=f.q) }}" class="fw-tab {{ 'is-active' if f.domaine == k }}">{{ l }} <span class="muted">{{ stats.get(k, 0) }}</span></a>{% endfor %}
+</div>
+
+<form class="toolbar" method="get">
+  {% if f.domaine %}<input type="hidden" name="domaine" value="{{ f.domaine }}">{% endif %}
+  <input type="search" name="q" value="{{ f.q or '' }}" placeholder="Rechercher : rançongiciel, sous-traitant, biais, crue…" style="min-width:260px;">
+  <select name="nature" onchange="this.form.submit()"><option value="">Risques et opportunités</option><option value="risques" {{ 'selected' if f.nature == 'risques' }}>Risques</option><option value="opportunites" {{ 'selected' if f.nature == 'opportunites' }}>Opportunités</option></select>
+  <select name="categorie" onchange="this.form.submit()"><option value="">Toutes les familles</option>{% for c in cats %}<option value="{{ c }}" {{ 'selected' if f.categorie == c }}>{{ c }}</option>{% endfor %}</select>
+  <select name="secteur" onchange="this.form.submit()"><option value="">Tous secteurs</option>{% for k, l in sectors.items() if k != 'tous' %}<option value="{{ k }}" {{ 'selected' if f.secteur == k }}>{{ l }}</option>{% endfor %}</select>
+  <button class="btn btn--subtle btn--sm" type="submit">Filtrer</button>
+  {% if f.q or f.nature or f.categorie or f.secteur %}<a href="{{ url_for('risks.library', domaine=f.domaine) }}" class="btn btn--ghost btn--sm">Réinitialiser</a>{% endif %}
+</form>
+
+<form method="post" action="{{ url_for('risks.library_import') }}" id="lib-form">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="panel" style="margin-top:12px;">
+    <div class="panel__head"><h2>{{ items|length }} scénario(s)</h2><div class="spacer"></div>
+      {% if current_user.can_edit %}<label style="font-size:12px;display:flex;gap:6px;align-items:center;"><input type="checkbox" id="lib-all" style="width:auto;"> Tout sélectionner</label>{% endif %}</div>
+    <div class="panel__body--flush">
+      {% for s in items %}
+      {%- set lik, dims = scaled(s) %}{% set imp = dims.values()|max %}{% set done = s.title.strip().lower() in already %}
+      <div class="lib-row{{ ' lib-row--done' if done }}">
+        <div class="lib-row__head">
+          {% if current_user.can_edit %}<input type="checkbox" name="codes" value="{{ s.code }}" class="lib-cb" style="width:auto;" {{ 'disabled title="Déjà dans le registre"' if done }}>{% endif %}
+          <span class="ref" style="width:70px;">{{ s.code }}</span>
+          <details class="lib-det">
+            <summary><b>{{ s.title }}</b>
+              {% if s.nature == 'OPPORTUNITE' %}<span class="tag-opp">Opportunité</span>{% endif %}
+              <span class="muted" style="font-size:11.5px;"> · {{ s.category }}{% if done %} · <b>déjà dans le registre</b>{% endif %}</span>
+            </summary>
+            <div class="lib-body">
+              <div class="meta-list" style="font-size:12.5px;">
+                <div><span>Événement redouté</span><b>{{ s.event }}</b></div>
+                <div><span>{{ 'Origine' if s.nature == 'OPPORTUNITE' else 'Menace ou cause' }}</span><b>{{ s.cause }}</b></div>
+                <div><span>{{ 'Conditions favorables' if s.nature == 'OPPORTUNITE' else 'Vulnérabilité' }}</span><b>{{ s.vulnerability }}</b></div>
+                <div><span>{{ 'Bénéfices attendus' if s.nature == 'OPPORTUNITE' else 'Conséquences' }}</span><b>{{ s.consequence }}</b></div>
+                <div><span>Cotation proposée</span><b>V{{ lik }} × I{{ imp }} = {{ lik * imp }} · {% for k, v in dims|dictsort %}{{ dimension_label(k)|lower }} {{ v }}{{ ', ' if not loop.last }}{% endfor %}</b></div>
+                <div><span>Traitement proposé</span><b>{{ {'REDUIRE': 'Réduire', 'EVITER': 'Éviter', 'PARTAGER': 'Partager / transférer', 'ACCEPTER': 'Accepter', 'EXPLOITER': 'Exploiter', 'RENFORCER': 'Renforcer', 'NE_PAS_SAISIR': 'Ne pas donner suite'}[s.treatment] }}</b></div>
+                <div><span>Mesures</span><b>{% for n, refs in s.controls.items() if refs %}<span class="{{ '' if n in active_codes else 'muted' }}" title="{{ '' if n in active_codes else 'Norme non active : non rattachées à l\'import' }}">ISO {{ norm_labels[n] }} : {{ refs|join(', ') }}</span>{{ ' · ' if not loop.last }}{% endfor %}</b></div>
+                {% if s.clauses %}<div><span>Exigences de référence</span><b>{% for n, refs in s.clauses.items() if refs %}ISO {{ norm_labels.get(n, n) }} : {{ refs|join(', ') }}{{ ' · ' if not loop.last }}{% endfor %}</b></div>{% endif %}
+                <div><span>Actions proposées</span><b><ul style="margin:0;padding-left:18px;">{% for a in s.actions %}<li>{{ a }}</li>{% endfor %}</ul></b></div>
+                <div><span>Secteurs</span><b>{{ s.sectors|map('replace', 'tous', 'tous secteurs')|join(', ') }}</b></div>
+                {% if s.references %}<div><span>Références</span><b>{{ s.references }}</b></div>{% endif %}
+              </div>
+            </div>
+          </details>
+          <span style="margin-left:auto;">{% if s.nature == 'OPPORTUNITE' %}{{ risk_chip('opportunite') }}{% else %}{{ risk_chip(risk_level(lik * imp)) }}{% endif %}</span>
+        </div>
+      </div>
+      {% else %}
+      <div class="empty" style="padding:30px;"><h3>Aucun scénario</h3><p>Modifiez les filtres ou la recherche.</p></div>
+      {% endfor %}
+    </div>
+  </div>
+
+  {% if current_user.can_edit and items %}
+  <div class="lib-bar">
+    <span id="lib-count">0 sélectionné(s)</span>
+    <select name="owner_id" style="width:auto;font-size:12.5px;"><option value="">Propriétaire : à désigner</option>{% for u in users %}<option value="{{ u.id }}">{{ u.name }}</option>{% endfor %}</select>
+    <label style="font-size:12.5px;display:flex;gap:6px;align-items:center;"><input type="checkbox" name="with_actions" value="1" checked style="width:auto;"> Créer les actions de traitement proposées</label>
+    <button class="btn btn--primary btn--sm" type="submit" id="lib-submit" disabled>Importer dans le registre</button>
+  </div>
+  {% endif %}
+</form>
+
+<style>
+  .lib-row{border-top:1px solid var(--line);padding:8px 14px}
+  .lib-row:first-child{border-top:0}
+  .lib-row--done{opacity:.6}
+  .lib-row__head{display:flex;align-items:flex-start;gap:10px}
+  .lib-row__head .ref{flex:none;padding-top:2px}
+  .lib-det{flex:1;min-width:0}
+  .lib-det summary{cursor:pointer;font-size:13px;list-style:none}
+  .lib-det summary::-webkit-details-marker{display:none}
+  .lib-body{padding:8px 0 4px}
+  .lib-bar{position:sticky;bottom:0;z-index:10;display:flex;flex-wrap:wrap;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin-top:12px;box-shadow:0 -2px 8px rgba(0,0,0,.06)}
+</style>
+<script>
+(function () {
+  var cbs = document.querySelectorAll('.lib-cb:not([disabled])'), all = document.getElementById('lib-all'),
+      cnt = document.getElementById('lib-count'), btn = document.getElementById('lib-submit');
+  function sync() {
+    var n = 0; Array.prototype.forEach.call(cbs, function (c) { if (c.checked) n++; });
+    if (cnt) cnt.textContent = n + ' sélectionné(s)';
+    if (btn) btn.disabled = n === 0;
+  }
+  Array.prototype.forEach.call(cbs, function (c) { c.addEventListener('change', sync); });
+  if (all) all.addEventListener('change', function () { Array.prototype.forEach.call(cbs, function (c) { c.checked = all.checked; }); sync(); });
+  sync();
+})();
+</script>
+{% endblock %}
