@@ -191,4 +191,6 @@ def frameworks():
     from app.services.catalogue_data import COMMON
     return render_template("platform/frameworks.html", fws=fws, counts=counts, users=users,
                            mappings=ItemMapping.query.count(),
+                           with_clauses={f.code for f in fws if f.kind == "controls"
+                                         and any(i.kind == "clause" for i in f.items)},
                            common={k: (len(v), sum(r == "commune" for _, r in v.values())) for k, v in COMMON.items()})

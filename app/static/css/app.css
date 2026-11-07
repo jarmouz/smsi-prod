@@ -799,3 +799,23 @@ table.grid tbody tr.imp-row--error td { background: #fdf6f4; }
 .tag-socle--plus { background: var(--amber-050); color: var(--amber-700); border-color: #EBD8AE; }
 .tag-socle--off, .tag-heir--off { background: transparent; color: var(--ink-500); border-color: var(--line); }
 .tag-heir { font-family: var(--font-mono); font-weight: 500; }
+
+/* Exigences des chapitres 4 à 10 de l'ISO/IEC 27001 et de l'ISO/IEC 42001 (3.5) */
+.fw-subtabs { display: inline-flex; flex-wrap: wrap; gap: 4px; padding: 3px; margin: -4px 0 16px; background: var(--paper); border: 1px solid var(--line); border-radius: 8px; max-width: 100%; }
+.fw-subtabs .fw-subtab { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 6px; font-size: 12.5px; font-weight: 600; color: var(--ink-700); text-decoration: none; }
+.fw-subtabs .fw-subtab .muted { font-weight: 500; }
+.fw-subtabs .fw-subtab:hover { color: var(--teal-600); }
+.fw-subtabs .fw-subtab.is-active { background: #fff; color: var(--teal-700); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+.tag-own { display: inline-block; font-size: 10.5px; font-weight: 600; line-height: 1.5; padding: 0 7px; border-radius: 9px; white-space: nowrap;
+  background: #EFEAF6; color: #533A75; border: 1px solid #DCD2EA; }
+.proof-list { list-style: none; margin: 0; padding: 0; }
+.proof-list li { padding: 10px 16px; border-top: 1px solid var(--line); font-size: 13px; line-height: 1.4; }
+.proof-list li:first-child { border-top: 0; }
+.proof-list a { font-weight: 600; }
+.proof-list .proof-info { display: block; font-size: 12px; color: var(--ink-500); margin-top: 2px; }
+.proof-list li.is-warn .proof-info { color: #8A5A00; }
+.proof-list li.is-warn .proof-info::before { content: "\26A0  "; }
+.socle-note--own { border-left-color: #6A4C93; }
+.fw-subtabs .fw-subtab__n { font-size: 11px; font-weight: 700; padding: 0 6px; border-radius: 8px; background: var(--line); color: var(--ink-700); }
+.fw-subtabs .fw-subtab.is-active .fw-subtab__n { background: var(--teal-050); color: var(--teal-700); }
+.side-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin-top: 3px; }

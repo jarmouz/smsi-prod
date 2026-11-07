@@ -164,6 +164,9 @@ UPGRADE_DDL = [
     "ALTER TABLE controls ADD COLUMN IF NOT EXISTS common_id INTEGER NULL REFERENCES controls(id) ON DELETE SET NULL",
     "ALTER TABLE controls ADD COLUMN IF NOT EXISTS inherit BOOLEAN NOT NULL DEFAULT false",
     "CREATE INDEX IF NOT EXISTS ix_controls_common_id ON controls (common_id)",
+    # Exigences des chapitres 4 à 10 de l'ISO 27001 et de l'ISO 42001 (3.5) : mesure d'annexe
+    # ou exigence (clé unique et remplissage dans frameworks.migrate)
+    "ALTER TABLE controls ADD COLUMN IF NOT EXISTS kind VARCHAR(16) NOT NULL DEFAULT 'control'",
 ]
 
 # Tables rattachées à une organisation (voir TenantMixin)
@@ -444,7 +447,7 @@ def register_seed_command(app):
         user.must_change_password = False      # choisi à l'instant par le RSSI
         user.is_superadmin = True
         db.session.commit()
-        click.echo(f"Organisation « {org.name} » créée ({Control.query.execution_options(all_tenants=True).filter_by(organization_id=org.id).count()} mesures de l'Annexe A).")
+        click.echo(f"Organisation « {org.name} » créée ({Control.query.execution_options(all_tenants=True).filter_by(organization_id=org.id, kind='control').count()} mesures de l'Annexe A).")
         click.echo(f"Compte RSSI (super-administrateur) : {user.email}")
 
     @app.cli.command("init-db")
@@ -488,7 +491,7 @@ def register_seed_command(app):
                 _seed_demo(rssi, contrib, auditor)
 
         click.echo("Base SMSI initialisée.")
-        click.echo(f"Catalogue Annexe A : {Control.query.filter_by(organization_id=org.id).count()} mesures.")
+        click.echo(f"Catalogue Annexe A : {Control.query.filter_by(organization_id=org.id, kind='control').count()} mesures.")
         click.echo("Connexions (mot de passe : smsi123) :")
         click.echo("  rssi@smsi.local      - RSSI (accès complet, super-admin)")
         click.echo("  contrib@smsi.local   - Contributeur")

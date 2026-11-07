@@ -94,11 +94,12 @@ def _remap(obj, target, log):
         cid = getattr(obj, col)
         if cid:
             src = db.session.get(Control, cid)
-            new = Control.query.filter_by(organization_id=target.id, framework_id=src.framework_id, ref=src.ref).first()
+            new = Control.query.filter_by(organization_id=target.id, framework_id=src.framework_id, kind=src.kind,
+                                          ref=src.ref).first()
             setattr(obj, col, new.id if new else None)
     if hasattr(obj, "controls"):
         obj.controls = [c2 for c2 in (Control.query.filter_by(organization_id=target.id, framework_id=c.framework_id,
-                                                              ref=c.ref).first()
+                                                              kind=c.kind, ref=c.ref).first()
                                       for c in obj.controls) if c2]
     for col in _fk_columns(type(obj), "users"):
         uid = getattr(obj, col)

@@ -520,7 +520,125 @@ COMMON = {
 }
 del C, P
 
+# ---------------------------------------------------------------------------
+# Exigences (chapitres 4 à 10) des normes qui ont AUSSI une annexe de mesures (3.5).
+# Elles sont stockées avec kind = "clause" : leurs numéros (« 5.1 », « 8.2 ») ne se
+# confondent pas avec les mesures de l'Annexe A de l'ISO 27001 (kind = "control").
+# ---------------------------------------------------------------------------
+ISO27001_CLAUSES = _by_chapter([
+    ("4.1", "Compréhension de l'organisation et de son contexte"),
+    ("4.2", "Besoins et attentes des parties intéressées"),
+    ("4.3", "Domaine d'application du SMSI"),
+    ("4.4", "SMSI et ses processus"),
+    ("5.1", "Leadership et engagement"),
+    ("5.2", "Politique de sécurité de l'information"),
+    ("5.3", "Rôles, responsabilités et autorités"),
+    ("6.1.1", "Actions face aux risques et opportunités : généralités"),
+    ("6.1.2", "Appréciation des risques de sécurité de l'information"),
+    ("6.1.3", "Traitement des risques de sécurité de l'information (dont DdA)"),
+    ("6.2", "Objectifs de sécurité de l'information et planification"),
+    ("6.3", "Planification des modifications"),
+    ("7.1", "Ressources"),
+    ("7.2", "Compétences"),
+    ("7.3", "Sensibilisation"),
+    ("7.4", "Communication"),
+    ("7.5.1", "Informations documentées : généralités"),
+    ("7.5.2", "Création et mise à jour des informations documentées"),
+    ("7.5.3", "Maîtrise des informations documentées"),
+    ("8.1", "Planification et maîtrise opérationnelles"),
+    ("8.2", "Réalisation de l'appréciation des risques de sécurité de l'information"),
+    ("8.3", "Réalisation du traitement des risques de sécurité de l'information"),
+    ("9.1", "Surveillance, mesure, analyse et évaluation"),
+    ("9.2.1", "Audit interne : généralités"),
+    ("9.2.2", "Programme d'audit interne"),
+    ("9.3.1", "Revue de direction : généralités"),
+    ("9.3.2", "Éléments d'entrée de la revue de direction"),
+    ("9.3.3", "Éléments de sortie de la revue de direction"),
+    ("10.1", "Amélioration continue"),
+    ("10.2", "Non-conformité et action corrective"),
+])
+
+ISO42001_CLAUSES = _by_chapter([
+    ("4.1", "Compréhension de l'organisation et de son contexte (dont rôles vis-à-vis de l'IA)"),
+    ("4.2", "Besoins et attentes des parties intéressées"),
+    ("4.3", "Domaine d'application du système de management de l'IA"),
+    ("4.4", "Système de management de l'IA et ses processus"),
+    ("5.1", "Leadership et engagement"),
+    ("5.2", "Politique en matière d'IA"),
+    ("5.3", "Rôles, responsabilités et autorités"),
+    ("6.1.1", "Actions face aux risques et opportunités : généralités"),
+    ("6.1.2", "Appréciation des risques liés à l'IA"),
+    ("6.1.3", "Traitement des risques liés à l'IA (dont DdA)"),
+    ("6.1.4", "Évaluation d'impact des systèmes d'IA"),
+    ("6.2", "Objectifs en matière d'IA et planification"),
+    ("6.3", "Planification des modifications"),
+    ("7.1", "Ressources"),
+    ("7.2", "Compétences"),
+    ("7.3", "Sensibilisation"),
+    ("7.4", "Communication"),
+    ("7.5.1", "Informations documentées : généralités"),
+    ("7.5.2", "Création et mise à jour des informations documentées"),
+    ("7.5.3", "Maîtrise des informations documentées"),
+    ("8.1", "Planification et maîtrise opérationnelles"),
+    ("8.2", "Réalisation de l'appréciation des risques liés à l'IA"),
+    ("8.3", "Réalisation du traitement des risques liés à l'IA"),
+    ("8.4", "Réalisation de l'évaluation d'impact des systèmes d'IA"),
+    ("9.1", "Surveillance, mesure, analyse et évaluation"),
+    ("9.2.1", "Audit interne : généralités"),
+    ("9.2.2", "Programme d'audit interne"),
+    ("9.3.1", "Revue de direction : généralités"),
+    ("9.3.2", "Éléments d'entrée de la revue de direction"),
+    ("9.3.3", "Éléments de sortie de la revue de direction"),
+    ("10.1", "Amélioration continue"),
+    ("10.2", "Non-conformité et action corrective"),
+])
+
+# Rattachement au socle (3.5). Choix :
+# - 4.1 / 4.2 « commune » malgré l'amendement 1:2024 (changement climatique) : le texte
+#   ajouté est le même pour toutes les normes de systèmes de management (structure
+#   harmonisée) ; il relève donc du socle (voir SOCLE_NOTES), pas d'un complément.
+#   Exception : 42001 §4.1 est un complément (rôles de l'organisation vis-à-vis de l'IA,
+#   finalité prévue des systèmes d'IA).
+# - « complement » quand la norme ajoute des exigences propres au texte commun :
+#   27001 §4.3 (interfaces et dépendances), §6.2 (résultats de l'appréciation et du
+#   traitement des risques), §8.1 et §9.3.2 (résultats de l'appréciation des risques,
+#   état du plan de traitement) ; 42001 §6.1.1 (critères de risque liés à l'IA, finalité
+#   prévue), §8.1.
+# - Absentes (propres à la norme) : 6.1.2, 6.1.3, 6.1.4, 8.2, 8.3, 8.4.
+C, P = "commune", "complement"
+COMMON["ISO27001"] = {
+    "4.1": ("4.1", C), "4.2": ("4.2", C), "4.3": ("4.3", P), "4.4": ("4.4", C),
+    "5.1": ("5.1", C), "5.2": ("5.2", C), "5.3": ("5.3", C),
+    "6.1.1": ("6.1", C), "6.2": ("6.2", P), "6.3": ("6.3", C),
+    "7.1": ("7.1", C), "7.2": ("7.2", C), "7.3": ("7.3", C), "7.4": ("7.4", C),
+    "7.5.1": ("7.5.1", C), "7.5.2": ("7.5.2", C), "7.5.3": ("7.5.3", C),
+    "8.1": ("8.1", P),
+    "9.1": ("9.1", C), "9.2.1": ("9.2.1", C), "9.2.2": ("9.2.2", C),
+    "9.3.1": ("9.3.1", C), "9.3.2": ("9.3.2", P), "9.3.3": ("9.3.3", C),
+    "10.1": ("10.1", C), "10.2": ("10.2", C),
+}
+COMMON["ISO42001"] = {
+    "4.1": ("4.1", P), "4.2": ("4.2", C), "4.3": ("4.3", C), "4.4": ("4.4", C),
+    "5.1": ("5.1", C), "5.2": ("5.2", C), "5.3": ("5.3", C),
+    "6.1.1": ("6.1", P), "6.2": ("6.2", C), "6.3": ("6.3", C),
+    "7.1": ("7.1", C), "7.2": ("7.2", C), "7.3": ("7.3", C), "7.4": ("7.4", C),
+    "7.5.1": ("7.5.1", C), "7.5.2": ("7.5.2", C), "7.5.3": ("7.5.3", C),
+    "8.1": ("8.1", P),
+    "9.1": ("9.1", C), "9.2.1": ("9.2.1", C), "9.2.2": ("9.2.2", C),
+    "9.3.1": ("9.3.1", C), "9.3.2": ("9.3.2", C), "9.3.3": ("9.3.3", C),
+    "10.1": ("10.1", C), "10.2": ("10.2", C),
+}
+del C, P
+
+# Repères affichés sur la fiche d'une exigence du socle (ne modifient pas l'intitulé).
+SOCLE_NOTES = {
+    "4.1": "Amendement 1:2024 (changement climatique) : déterminer si le changement climatique est un enjeu "
+           "pertinent pour l'organisation, et conserver la trace de cette décision.",
+    "4.2": "Amendement 1:2024 : des parties intéressées peuvent avoir des exigences liées au changement climatique.",
+}
+
 # Normes dont les chapitres 4 à 10 suivent la structure harmonisée mais ne sont pas
-# catalogués exigence par exigence dans l'application (seule l'annexe de mesures l'est) :
-# le socle commun tient lieu de leurs exigences communes.
-SOCLE_ONLY = ("ISO27001", "ISO27701", "ISO42001")
+# catalogués exigence par exigence : le socle commun tient lieu de leurs exigences
+# communes. ISO/IEC 27701:2019 : ses chapitres 5 et 6 prolongent ceux de l'ISO/IEC 27001
+# (ce n'est pas une norme de système de management autonome).
+SOCLE_ONLY = ("ISO27701",)

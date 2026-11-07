@@ -1,32 +1,37 @@
 {% extends 'base.html' %}
 {% from 'partials/macros.html' import control_status, applicability, export_menu with context %}
 {% block title %}Déclaration d'applicabilité - {{ APP_NAME }}{% endblock %}
-{% block heading %}{{ "Déclaration d'applicabilité (DdA)" if fw.kind == 'controls' else ('Socle commun du système de management intégré' if fw.kind == 'common' else 'Conformité aux exigences - ' ~ fw.name) }}{% endblock %}
-{% block topactions %}{% if not norme %}{{ export_menu([('dda', "Déclaration d'applicabilité")]) }}{% if current_user.can_edit %} <a href="{{ url_for('imports.upload', kind='dda') }}" class="btn btn--subtle btn--sm">Importer</a>{% endif %}{% endif %}{% endblock %}
+{% block heading %}{{ "Déclaration d'applicabilité (DdA)" if not reqs else ('Socle commun du système de management intégré' if fw.kind == 'common' else 'Conformité aux exigences - ' ~ fw.name) }}{% endblock %}
+{% block topactions %}{% if not norme and not vue %}{{ export_menu([('dda', "Déclaration d'applicabilité")]) }}{% if current_user.can_edit %} <a href="{{ url_for('imports.upload', kind='dda') }}" class="btn btn--subtle btn--sm">Importer</a>{% endif %}{% endif %}{% endblock %}
 
 {% block content %}
 {% set can_edit = current_user.can_edit %}
 {% if fws|length > 1 %}<div class="fw-tabs">{% for f in fws %}<a href="{{ url_for('soa.index', norme=None if f.code == 'ISO27001' else f.code) }}" class="fw-tab {{ 'is-active' if f.id == fw.id }}{{ ' fw-tab--socle' if f.kind == 'common' }}">{{ f.name }}</a>{% endfor %}</div>{% endif %}
+{% if split %}<div class="fw-subtabs" role="tablist">
+  <a href="{{ url_for('soa.index', norme=norme) }}" class="fw-subtab {{ 'is-active' if not vue }}">Mesures <span class="muted">Annexe A</span> <span class="fw-subtab__n">{{ counts.mesures }}</span></a>
+  <a href="{{ url_for('soa.index', norme=norme, vue='exigences') }}" class="fw-subtab {{ 'is-active' if vue }}">Exigences <span class="muted">chapitres 4 à 10</span> <span class="fw-subtab__n">{{ counts.exigences }}</span></a>
+</div>{% endif %}
 <div class="kpis" style="grid-template-columns:repeat(4,1fr);margin-bottom:18px;">
-  <div class="kpi kpi--total"><div class="kpi__label">Catalogue</div><div class="kpi__value">{{ stats.total }}</div><div class="kpi__sub">{{ 'mesures Annexe A:2022' if not norme else ('exigences communes' if fw.kind == 'common' else ('mesures ' if fw.kind == 'controls' else 'exigences ') ~ fw.short_name) }}{% if stats.heritees %} - {{ stats.heritees }} via le socle{% endif %}</div></div>
+  <div class="kpi kpi--total"><div class="kpi__label">Catalogue</div><div class="kpi__value">{{ stats.total }}</div><div class="kpi__sub">{{ 'mesures Annexe A:2022' if not norme and not vue else ('exigences communes' if fw.kind == 'common' else ('exigences ' if reqs else 'mesures ') ~ fw.short_name) }}{% if stats.heritees %} - {{ stats.heritees }} via le socle{% endif %}</div></div>
   <div class="kpi kpi--sla"><div class="kpi__label">Retenues</div><div class="kpi__value">{{ stats.applicable }}</div><div class="kpi__sub">applicables</div></div>
-  <div class="kpi kpi--ouvert"><div class="kpi__label">{{ 'Implémentées' if fw.kind == 'controls' else 'Satisfaites' }}</div><div class="kpi__value">{{ stats.implementees }}</div><div class="kpi__sub">{{ 'mesures en place' if fw.kind == 'controls' else 'exigences satisfaites' }}</div></div>
+  <div class="kpi kpi--ouvert"><div class="kpi__label">{{ 'Satisfaites' if reqs else 'Implémentées' }}</div><div class="kpi__value">{{ stats.implementees }}</div><div class="kpi__sub">{{ 'exigences satisfaites' if reqs else 'mesures en place' }}</div></div>
   <div class="kpi kpi--bientot"><div class="kpi__label">Exclues</div><div class="kpi__value">{{ stats.exclues }}</div><div class="kpi__sub">avec justification</div></div>
 </div>
 
 {% if fw.kind == 'common' %}{% set so = stats.socle %}
 <div class="panel socle-note"><div class="panel__body">
-  <b>Une exigence commune s'évalue une seule fois.</b> Les chapitres 4 à 10 des normes ISO de systèmes de management suivent la même structure harmonisée (annexe SL) : contexte, politique, rôles, risques et opportunités, objectifs, compétences, documentation, audit interne, revue de direction, non-conformités, amélioration. Évaluez-les ici : l'ISO 9001, l'ISO 22301 et l'ISO/IEC 20000-1 en héritent ; pour l'ISO/IEC 27001, 27701 et 42001, le socle tient lieu de leurs chapitres 4 à 10.
+  <b>Une exigence commune s'évalue une seule fois.</b> Les chapitres 4 à 10 des normes ISO de systèmes de management suivent la même structure harmonisée (annexe SL) : contexte, politique, rôles, risques et opportunités, objectifs, compétences, documentation, audit interne, revue de direction, non-conformités, amélioration. Évaluez-les ici : l'ISO/IEC 27001, l'ISO/IEC 42001, l'ISO 9001, l'ISO 22301 et l'ISO/IEC 20000-1 en héritent ; pour l'ISO/IEC 27701, qui prolonge l'ISO/IEC 27001, le socle tient lieu de ses chapitres.
   <div class="socle-stats"><span><b>{{ so.heritees }}</b> exigence(s) des normes actives héritée(s)</span><span><b>{{ so.complements }}</b> à compléter dans leur norme</span><span><b>{{ so.separees }}</b> évaluée(s) séparément</span></div>
 </div></div>
-{% elif fw.kind == 'requirements' and rels %}
-<p class="muted" style="font-size:12.5px;margin:0 2px 12px;"><span class="tag-socle">Socle</span> exigence commune, évaluée une fois dans le <a href="{{ url_for('soa.index', norme='SMI') }}">socle commun</a> ; <span class="tag-socle tag-socle--plus">Socle + complément</span> le socle couvre la partie commune, évaluez ici ce que la norme ajoute.</p>
+{% elif reqs and rels %}
+<p class="muted" style="font-size:12.5px;margin:0 2px 12px;"><span class="tag-socle">Socle</span> exigence commune, évaluée une fois dans le <a href="{{ url_for('soa.index', norme='SMI') }}">socle commun</a> ; <span class="tag-socle tag-socle--plus">Socle + complément</span> le socle couvre la partie commune, évaluez ici ce que la norme ajoute{% if stats.propres %} ; <span class="tag-own">Propre à la {{ fw.short_name }}</span> exigence de la seule norme{% if vue %}, dont la fiche indique le module qui en tient la preuve{% endif %}{% endif %}.</p>
 {% endif %}
 <form class="toolbar" method="get">
   {% if norme %}<input type="hidden" name="norme" value="{{ norme }}">{% endif %}
+  {% if vue %}<input type="hidden" name="vue" value="{{ vue }}">{% endif %}
   <input type="text" name="q" class="search" placeholder="Rechercher (réf. ou intitulé)…" value="{{ search or '' }}">
   <select name="theme" onchange="this.form.submit()">
-    <option value="">Tous les thèmes</option>
+    <option value="">{{ 'Tous les chapitres' if reqs else 'Tous les thèmes' }}</option>
     {% for v, lbl in groups %}<option value="{{ v }}" {{ 'selected' if f_theme==v }}>{{ lbl }}</option>{% endfor %}
   </select>
   <select name="statut" onchange="this.form.submit()">
@@ -39,7 +44,7 @@
     <option value="non" {{ 'selected' if f_appl=='non' }}>Exclues</option>
   </select>
   <button class="btn btn--subtle btn--sm" type="submit">Filtrer</button>
-  {% if search or f_theme or f_status or f_appl %}<a href="{{ url_for('soa.index', norme=norme) }}" class="btn btn--ghost btn--sm">Réinitialiser</a>{% endif %}
+  {% if search or f_theme or f_status or f_appl %}<a href="{{ url_for('soa.index', norme=norme, vue=vue) }}" class="btn btn--ghost btn--sm">Réinitialiser</a>{% endif %}
 </form>
 
 {% if can_edit %}<p class="muted" style="font-size:12.5px;margin:12px 2px 0;">Cliquez sur une ligne pour modifier l'applicabilité, le statut et la justification directement ici.</p>{% endif %}
@@ -59,6 +64,7 @@
             {% if c.evidences %}<span class="muted" style="font-size:11px;"> - {{ c.evidences|length }} preuve(s)</span>{% endif %}
             {% if c.justification %}<div class="muted" style="font-size:11px;">{{ c.justification|truncate(90) }}</div>{% endif %}
             {%- set rel = rels.get(c.id) %}
+            {%- if reqs and fw.kind != 'common' and not c.common_id %}<div style="margin-top:3px;"><span class="tag-own" title="Exigence propre à la norme, sans équivalent dans le socle commun">Propre à la {{ fw.short_name }}</span></div>{% endif %}
             {%- if rel %}<div style="margin-top:3px;">{% if c.inherited %}<span class="tag-socle" title="Évaluée dans le socle commun">Socle §{{ rel[0] }}</span>{% elif rel[1] == 'complement' %}<span class="tag-socle tag-socle--plus" title="Partie commune évaluée dans le socle">Socle §{{ rel[0] }} + complément</span>{% else %}<span class="tag-socle tag-socle--off" title="Exigence commune évaluée séparément">Commune §{{ rel[0] }}, évaluée séparément</span>{% endif %}</div>{% endif %}
             {%- if heirs.get(c.id) %}<div style="margin-top:3px;">{% for h in heirs[c.id] %}<span class="tag-heir{{ ' tag-heir--off' if not h.inherited }}" title="{{ h.framework.name }} - {{ 'hérite de cette évaluation' if h.inherited else ('socle + complément propre à la norme' if h.socle_rel and h.socle_rel[1] == 'complement' else 'évaluée séparément') }}">{{ h.framework.short_name }} §{{ h.ref }}</span> {% endfor %}</div>{% endif %}
           </td>
@@ -80,7 +86,7 @@
           <td colspan="6" style="background:var(--paper);">
             <form method="post" action="{{ url_for('soa.update', control_id=c.id) }}" class="soa-edit">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <input type="hidden" name="next" value="{{ url_for('soa.index', norme=norme, theme=f_theme, statut=f_status, applicable=f_appl, q=search) }}#c{{ c.id }}">
+              <input type="hidden" name="next" value="{{ url_for('soa.index', norme=norme, vue=vue, theme=f_theme, statut=f_status, applicable=f_appl, q=search) }}#c{{ c.id }}">
               <div class="form-grid" style="margin-bottom:10px;">
                 <div class="field"><label>Applicabilité</label>
                   <select name="applicable">
@@ -98,7 +104,7 @@
                 <textarea name="justification" rows="2" placeholder="Motif de sélection ou d'exclusion…">{{ c.justification or '' }}</textarea>
               </div>
               <div class="field" style="margin-bottom:10px;"><label>Mise en œuvre / référence</label>
-                <textarea name="implementation" rows="2" placeholder="Comment la mesure est appliquée…">{{ c.implementation or '' }}</textarea>
+                <textarea name="implementation" rows="2" placeholder="{{ 'Comment l’exigence est satisfaite…' if reqs else 'Comment la mesure est appliquée…' }}">{{ c.implementation or '' }}</textarea>
               </div>
               <div class="form-grid" style="align-items:end;">
                 <div class="field"><label>Responsable</label>
@@ -119,7 +125,7 @@
   </div></div>
 </div>
 {% else %}
-<div class="empty" style="margin-top:14px;"><h3>Aucune mesure</h3><p>Aucun résultat pour ces filtres.</p></div>
+<div class="empty" style="margin-top:14px;"><h3>{{ 'Aucune exigence' if reqs else 'Aucune mesure' }}</h3><p>Aucun résultat pour ces filtres.</p></div>
 {% endfor %}
 
 {% if can_edit %}

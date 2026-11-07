@@ -57,13 +57,13 @@ communs (audits, revues, documents, objectifs, non-conformités) peuvent être
 rattachés à une ou plusieurs normes. Les écrans historiques restent limités à
 l'ISO 27001 (`Control.of()`).
 
-Normes disponibles (3.2) :
+Normes disponibles (3.5) :
 
 | Norme | Type | Module propre |
 |---|---|---|
-| ISO/IEC 27001:2022 (socle) | 93 mesures (Annexe A) + DdA | toute l'application historique |
+| ISO/IEC 27001:2022 (socle) | 93 mesures (Annexe A) + DdA, 30 exigences (chapitres 4 à 10, 3.5) | toute l'application historique |
 | ISO/IEC 27701:2019 | 49 mesures (Annexes A et B) | Vie privée : registre des traitements, demandes des personnes |
-| ISO/IEC 42001:2023 | 38 mesures (Annexe A) | Intelligence artificielle : systèmes d'IA, études d'impact |
+| ISO/IEC 42001:2023 | 38 mesures (Annexe A), 32 exigences (chapitres 4 à 10, 3.5) | Intelligence artificielle : systèmes d'IA, études d'impact |
 | ISO 22301:2019 | 46 exigences (chapitres 4 à 10) | Plans de continuité (en plus de la BIA et des exercices) |
 | ISO/IEC 20000-1:2018 | 45 exigences (chapitres 4 à 10) | Services IT : catalogue et niveaux de service, mesures mensuelles, problèmes, mises en production |
 | ISO 9001:2015 | 63 exigences (chapitres 4 à 10) | Qualité : cartographie des processus, satisfaction client, réclamations ; risques qualité et opportunités, produits non conformes (dans les registres communs) |
@@ -89,8 +89,9 @@ au socle (`COMMON` dans `catalogue_data.py`) :
 | complément | le socle couvre la partie commune, la norme ajoute des exigences | évaluée dans la norme, le socle sert de base |
 | (aucune) | exigence propre à la norme (chapitre 8 métier, orientation client...) | évaluée dans la norme |
 
-Pour l'ISO/IEC 27001, 27701 et 42001, seules les annexes de mesures sont
-cataloguées : le socle tient lieu de leurs chapitres 4 à 10. Une exigence
+Pour l'ISO/IEC 27701, seule l'annexe de mesures est cataloguée : ce n'est pas
+une norme de système de management autonome (ses chapitres prolongent ceux de
+l'ISO/IEC 27001), le socle et les exigences 27001 en tiennent lieu. Une exigence
 « commune » déjà évaluée avant la 3.4 n'est pas écrasée : elle reste « évaluée
 séparément » et peut être rattachée au socle (bouton « Évaluer via le socle
 commun » ; si le socle est encore vide, l'évaluation y est reprise avec ses
@@ -98,6 +99,33 @@ preuves). Les registres communs (audits, revues, documents, objectifs,
 non-conformités) étaient déjà partagés entre normes.
 Une base neuve s'initialise avec `flask init-platform` (organisation + RSSI) ;
 `flask init-db` est réservé au développement (il efface tout).
+
+### Exigences des chapitres 4 à 10 de l'ISO/IEC 27001 et de l'ISO/IEC 42001 (3.5)
+
+Ces deux normes ont à la fois des **mesures** (annexe A) et des **exigences**
+(chapitres 4 à 10). Les deux sont dans la table `controls`, distinguées par la
+colonne `kind` (`control` / `clause`), présente dans la clé unique
+`(organization_id, framework_id, kind, ref)` : la mesure A.5.1 et l'exigence §5.1
+de la 27001 coexistent. `Control.of(code)` ne renvoie que les mesures pour une
+norme à mesures (DdA, tableau de bord, revue de direction, exports : toujours
+93 mesures) ; `Control.of(code, "clause")` renvoie ses exigences. `annex_ref`
+affiche « §6.1.2 » pour une exigence, « A.5.1 » pour une mesure.
+
+- DdA › ISO/IEC 27001 (ou 42001) : sous-onglets **Mesures** (DdA inchangée) et
+  **Exigences** (`/dda/?vue=exigences`, `/dda/?norme=ISO42001&vue=exigences`).
+- Rattachement au socle (`COMMON` dans `catalogue_data.py`) : communes héritées,
+  compléments (27001 §4.3, §6.2, §8.1, §9.3.2 ; 42001 §4.1, §6.1.1, §8.1),
+  exigences propres (6.1.2, 6.1.3, 8.2, 8.3, et 6.1.4, 8.4 pour la 42001).
+- Amendement 1:2024 (changement climatique, §4.1/§4.2) : texte harmonisé, donc
+  couvert par le socle ; repère affiché sur les fiches §4.1 et §4.2 du socle.
+- Fiche d'une exigence propre : panneau « Preuve dans l'application »
+  (`app/services/proofs.py`) avec liens et indicateurs : critères de risque,
+  registre des risques, plan de traitement, acceptation des risques résiduels,
+  DdA 27001 ou 42001 (6.1.3 d), inventaire des systèmes d'IA, études d'impact.
+- Migration (`flask upgrade-db`, idempotente) : colonne `kind`, nouvelle clé
+  unique, exigences ajoutées aux normes actives de chaque organisation (héritées
+  du socle si communes), sans toucher aux mesures existantes. Une norme
+  désactivée les reçoit à sa réactivation.
 
 ## Modules
 

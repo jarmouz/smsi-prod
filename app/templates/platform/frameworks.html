@@ -11,7 +11,7 @@
       <tbody>{% for f in fws %}
         <tr><td class="subj">{{ f.name }}<div class="muted" style="font-size:11.5px;">{{ f.code }}{{ ' - non disponible' if not f.available }}</div></td>
           <td class="muted">{{ f.domain }}</td>
-          <td class="muted">{{ 'Mesures + DdA' if f.kind == 'controls' else ('Socle commun' if f.kind == 'common' else 'Exigences') }}{% if common.get(f.code) %}<div style="font-size:11px;">{{ common[f.code][0] }} rattachées au socle, dont {{ common[f.code][1] }} héritées</div>{% endif %}</td>
+          <td class="muted">{{ ('Mesures + DdA + exigences' if f.code in with_clauses else 'Mesures + DdA') if f.kind == 'controls' else ('Socle commun' if f.kind == 'common' else 'Exigences') }}{% if common.get(f.code) %}<div style="font-size:11px;">{{ common[f.code][0] }} rattachées au socle, dont {{ common[f.code][1] }} héritées</div>{% endif %}</td>
           <td class="num">{{ counts.get(f.id, 0) }}</td>
           <td class="num">{{ 'toutes' if f.kind == 'common' else users.get(f.id, 0) }}</td></tr>
       {% endfor %}</tbody>

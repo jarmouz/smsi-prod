@@ -40,16 +40,27 @@ def _catalogue(name, kind="control"):
     return _items_from(getattr(catalogue_data, name), kind)()
 
 
+def _with_clauses(items, name):
+    """Mesures d'annexe puis exigences des chapitres 4 à 10 (kind « clause », 3.5)."""
+    def gen():
+        yield from items()
+        for it in _catalogue(name, "clause"):
+            yield dict(it, sort_order=1000 + it["sort_order"])
+    return gen
+
+
 # code -> définition. "items" est une fonction (évaluée à la synchronisation).
 CATALOGUES = {
     SOCLE: {"name": "Socle commun SMI", "short_name": "Socle", "domain": "Exigences communes (structure harmonisée ISO)",
             "kind": "common", "sort_order": 1, "items": lambda: _catalogue("SOCLE", "clause")},
     ISO27001: {"name": "ISO/IEC 27001:2022", "short_name": "27001", "domain": "Sécurité de l'information",
-               "kind": "controls", "sort_order": 10, "items": _iso27001_items},
+               "kind": "controls", "sort_order": 10,
+               "items": _with_clauses(_iso27001_items, "ISO27001_CLAUSES")},
     "ISO27701": {"name": "ISO/IEC 27701:2019", "short_name": "27701", "domain": "Protection de la vie privée",
                  "kind": "controls", "sort_order": 20, "items": lambda: _catalogue("ISO27701")},
     "ISO42001": {"name": "ISO/IEC 42001:2023", "short_name": "42001", "domain": "Intelligence artificielle",
-                 "kind": "controls", "sort_order": 30, "items": lambda: _catalogue("ISO42001")},
+                 "kind": "controls", "sort_order": 30,
+                 "items": _with_clauses(lambda: _catalogue("ISO42001"), "ISO42001_CLAUSES")},
     # Référentiels sans annexe de mesures : conformité évaluée exigence par exigence (chapitres 4 à 10)
     "ISO22301": {"name": "ISO 22301:2019", "short_name": "22301", "domain": "Continuité d'activité",
                  "kind": "requirements", "sort_order": 40, "items": lambda: _catalogue("ISO22301", "clause")},
@@ -91,10 +102,38 @@ def _common_map(code):
 
 
 def common_relation(control):
-    """(réf. socle, relation) d'une exigence de norme, ou None si elle est propre à la norme."""
-    if control.framework is None:
+    """(réf. socle, relation) d'une exigence de norme, ou None si elle est propre à la norme
+    (ou si c'est une mesure d'annexe : « 5.1 » de l'Annexe A n'est pas le chapitre 5.1)."""
+    if control.framework is None or control.kind != "clause":
         return None
     return _common_map(control.framework.code).get(control.ref)
+
+
+def has_clauses(fw):
+    """La norme a-t-elle des exigences de chapitres cataloguées en plus de ses mesures ?"""
+    return fw is not None and fw.kind == "controls" and \
+        FrameworkItem.query.filter_by(framework_id=fw.id, kind="clause").first() is not None
+
+
+def _item_kinds(fw):
+    return ("clause",) if fw.kind in ("requirements", "common") else ("control", "clause")
+
+
+def copy_catalogue(fw):
+    """Copie dans l'organisation courante les éléments du catalogue qui lui manquent
+    (mesures et exigences) ; ne touche jamais aux éléments existants."""
+    have = {(c.kind, c.ref) for c in Control.query.filter_by(framework_id=fw.id)}
+    kinds = _item_kinds(fw)
+    n = 0
+    for it in (FrameworkItem.query.filter_by(framework_id=fw.id).filter(FrameworkItem.kind.in_(kinds))
+               .order_by(FrameworkItem.sort_order)):
+        if (it.kind, it.ref) not in have:
+            db.session.add(Control(framework_id=fw.id, kind=it.kind, ref=it.ref, theme=it.group, title=it.title,
+                                   applicable=True, status=ControlStatus.NON_DEMARRE))
+            have.add((it.kind, it.ref))
+            n += 1
+    db.session.flush()
+    return n
 
 
 def socle_framework():
@@ -112,16 +151,16 @@ def ensure_common():
     socle = {c.ref: c for c in Control.query.filter_by(framework_id=fw.id)}
     for it in FrameworkItem.query.filter_by(framework_id=fw.id, kind="clause").order_by(FrameworkItem.sort_order):
         if it.ref not in socle:
-            c = Control(framework_id=fw.id, ref=it.ref, theme=it.group, title=it.title,
+            c = Control(framework_id=fw.id, kind="clause", ref=it.ref, theme=it.group, title=it.title,
                         applicable=True, status=ControlStatus.NON_DEMARRE)
             db.session.add(c)
             socle[it.ref] = c
     db.session.flush()
-    for f in Framework.query.filter(Framework.kind == "requirements").all():
+    for f in Framework.query.filter(Framework.kind.in_(("requirements", "controls"))).all():
         cmap = _common_map(f.code)
         if not cmap:
             continue
-        for c in Control.query.filter_by(framework_id=f.id).filter(Control.common_id.is_(None)):
+        for c in Control.query.filter_by(framework_id=f.id, kind="clause").filter(Control.common_id.is_(None)):
             rel = cmap.get(c.ref)
             if rel is None:
                 continue
@@ -205,7 +244,9 @@ def socle_stats():
 def _sync_mappings():
     from app.models import ItemMapping
     from app.services.catalogue_data import MAPPINGS
-    ids = {(f.code, i.ref): i.id for f in Framework.query.all() for i in f.items if i.kind in ("control", "clause")}
+    # une réf. désigne la mesure d'annexe pour une norme à mesures, l'exigence sinon
+    ids = {(f.code, i.ref): i.id for f in Framework.query.all() for i in f.items
+           if i.kind == ("control" if f.kind == "controls" else "clause")}
     have = {(m.source_id, m.target_id) for m in ItemMapping.query.all()}
     for sc, sr, tc, tr in MAPPINGS:
         a, b = ids.get((sc, sr)), ids.get((tc, tr))
@@ -218,8 +259,8 @@ def correspondences(control):
     """Mesures des AUTRES normes actives de l'organisation qui correspondent à cette mesure
     (correspondances proposées, dans les deux sens)."""
     from app.models import ItemMapping
-    item = (FrameworkItem.query.filter_by(framework_id=control.framework_id, ref=control.ref)
-            .filter(FrameworkItem.kind.in_(("control", "clause"))).first())
+    item = FrameworkItem.query.filter_by(framework_id=control.framework_id, ref=control.ref,
+                                         kind=control.kind).first()
     if item is None:
         return []
     pairs = ItemMapping.query.filter(db.or_(ItemMapping.source_id == item.id, ItemMapping.target_id == item.id)).all()
@@ -230,7 +271,7 @@ def correspondences(control):
     out = []
     for it in FrameworkItem.query.filter(FrameworkItem.id.in_(other_ids)).all():
         if it.framework_id in active_ids:
-            c = Control.query.filter_by(framework_id=it.framework_id, ref=it.ref).first()
+            c = Control.query.filter_by(framework_id=it.framework_id, ref=it.ref, kind=it.kind).first()
             # deux exigences rattachées au même élément du socle : le lien passe déjà par le socle
             if c and not (control.common_id and c.common_id == control.common_id):
                 out.append(c)
@@ -283,13 +324,8 @@ def enable(code):
         db.session.add(OrgFramework(framework_id=fw.id, enabled=True))
     else:
         of.enabled = True
-    if fw.kind in ("controls", "requirements"):        # mesures (DdA) ou exigences (conformité)
-        have = {c.ref for c in Control.query.filter_by(framework_id=fw.id)}
-        item_kind = "control" if fw.kind == "controls" else "clause"
-        for it in FrameworkItem.query.filter_by(framework_id=fw.id, kind=item_kind).order_by(FrameworkItem.sort_order):
-            if it.ref not in have:
-                db.session.add(Control(framework_id=fw.id, ref=it.ref, theme=it.group, title=it.title,
-                                       applicable=True, status=ControlStatus.NON_DEMARRE))
+    if fw.kind in ("controls", "requirements"):        # mesures (DdA) et/ou exigences (conformité)
+        copy_catalogue(fw)
     db.session.flush()
     ensure_common()
     return fw
@@ -365,18 +401,29 @@ def migrate():
         conn.execute(text("ALTER TABLE framework_items ALTER COLUMN \"group\" TYPE VARCHAR(80)"))
         conn.execute(text("CREATE INDEX IF NOT EXISTS ix_controls_framework_id ON controls (framework_id)"))
         conn.execute(text("ALTER TABLE controls DROP CONSTRAINT IF EXISTS uq_controls_org_ref"))
-        conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uq_controls_org_fw_ref "
-                          "ON controls (organization_id, framework_id, ref)"))
+        # 3.5 : nature de l'élément (mesure d'annexe / exigence de chapitre) dans la clé unique,
+        # les exigences 27001 ayant les mêmes numéros que les mesures de l'Annexe A
+        conn.execute(text("ALTER TABLE controls ADD COLUMN IF NOT EXISTS kind VARCHAR(16) NOT NULL DEFAULT 'control'"))
+        conn.execute(text("UPDATE controls SET kind = 'clause' WHERE kind = 'control' AND framework_id IN "
+                          "(SELECT id FROM frameworks WHERE kind IN ('requirements', 'common'))"))
+        conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uq_controls_org_fw_kind_ref "
+                          "ON controls (organization_id, framework_id, kind, ref)"))
+        conn.execute(text("ALTER TABLE controls DROP CONSTRAINT IF EXISTS uq_controls_org_fw_ref"))
+        conn.execute(text("DROP INDEX IF EXISTS uq_controls_org_fw_ref"))
         conn.execute(text(
             "INSERT INTO org_frameworks (organization_id, framework_id, enabled, enabled_at) "
             "SELECT o.id, :f, true, now() FROM organizations o "
             "WHERE NOT EXISTS (SELECT 1 FROM org_frameworks x WHERE x.organization_id = o.id AND x.framework_id = :f)"),
             {"f": fid})
-    # Socle commun SMI (3.4) pour chaque organisation
+    # Socle commun SMI (3.4) pour chaque organisation ; exigences des chapitres 4 à 10
+    # ajoutées aux normes actives qui n'avaient que leur annexe (27001, 42001 : 3.5)
     from app.models import Organization
     from app.services.tenancy import tenant_scope
     for org in Organization.query.all():
         with tenant_scope(org.id):
+            for f in active():
+                if f.kind in ("controls", "requirements"):
+                    copy_catalogue(f)
             ensure_common()
     db.session.commit()
     return fid

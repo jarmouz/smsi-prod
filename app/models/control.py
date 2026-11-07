@@ -26,11 +26,15 @@ class Control(TenantMixin, db.Model):
     référentiel (FrameworkItem) quand l'organisation active la norme."""
 
     __tablename__ = "controls"
-    __table_args__ = (db.UniqueConstraint("organization_id", "framework_id", "ref", name="uq_controls_org_fw_ref"),)
+    # kind : "control" (mesure d'annexe : Annexe A 27001, 27701, 42001) ou "clause" (exigence des
+    # chapitres 4 à 10). La 27001 a les deux avec les mêmes numéros (« 5.1 ») : kind est dans la clé.
+    __table_args__ = (db.UniqueConstraint("organization_id", "framework_id", "kind", "ref",
+                                          name="uq_controls_org_fw_kind_ref"),)
 
     id = db.Column(db.Integer, primary_key=True)
     framework_id = db.Column(db.Integer, db.ForeignKey("frameworks.id"), nullable=False, index=True)
     ref = db.Column(db.String(16), nullable=False, index=True)  # ex. "5.1"
+    kind = db.Column(db.String(16), nullable=False, default="control", server_default="control")
     # Thème (Theme) pour l'ISO 27001, groupe libre pour les autres référentiels
     theme = db.Column(GroupType(), nullable=False, index=True)
     title = db.Column(db.String(300), nullable=False)
@@ -71,16 +75,29 @@ class Control(TenantMixin, db.Model):
         return list(self.evidences)
 
     @classmethod
-    def of(cls, code=ISO27001):
-        """Mesures d'un référentiel (par défaut l'ISO 27001) pour l'organisation courante."""
+    def of(cls, code=ISO27001, kind=None):
+        """Éléments évalués d'un référentiel (par défaut l'ISO 27001) pour l'organisation courante.
+        kind None : les mesures d'annexe pour une norme à mesures (DdA : jamais ses exigences de
+        chapitres), les exigences pour une norme d'exigences ou le socle commun."""
         from app.models.framework import Framework
         fid = db.select(Framework.id).where(Framework.code == code).scalar_subquery()
-        return cls.query.filter(cls.framework_id == fid)
+        if kind is None:
+            fkind = db.select(Framework.kind).where(Framework.code == code).scalar_subquery()
+            kind = db.case((fkind == "controls", "control"), else_="clause")
+        return cls.query.filter(cls.framework_id == fid, cls.kind == kind)
+
+    @property
+    def is_clause(self):
+        """Exigence d'un chapitre 4 à 10 (et non mesure d'annexe)."""
+        return self.kind == "clause"
 
     @property
     def annex_ref(self):
-        """« A.5.1 » pour l'ISO 27001 (références stockées sans préfixe), la référence telle
-        quelle pour les autres référentiels (« A.2.2 », « B.8.2.1 »)."""
+        """« A.5.1 » pour une mesure de l'ISO 27001 (références stockées sans préfixe), « §6.1.2 »
+        pour une exigence de chapitre, la référence telle quelle pour les mesures des autres
+        référentiels (« A.2.2 », « B.8.2.1 »)."""
+        if self.kind == "clause":
+            return f"§{self.ref}"
         if self.ref[:1].isalpha():
             return self.ref
         from app.models.framework import Framework
@@ -93,4 +110,4 @@ class Control(TenantMixin, db.Model):
         return len(self.evidences)
 
     def __repr__(self):
-        return f"<Control A.{self.ref}>"
+        return f"<Control {self.kind} {self.ref}>"
