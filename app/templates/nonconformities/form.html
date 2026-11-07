@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% from 'partials/macros.html' import control_options with context %}
 {% block title %}Non-conformité - {{ APP_NAME }}{% endblock %}
 {% block heading %}{{ 'Modifier ' + nc.ref if nc else 'Nouvelle non-conformité' }}{% endblock %}
 {% block topactions %}<a href="{{ url_for('nonconformities.detail', nc_id=nc.id) if nc else url_for('nonconformities.index') }}" class="btn btn--ghost btn--sm">Retour</a>{% endblock %}
@@ -27,8 +28,8 @@
       <div class="field"><label>Détectée par</label><input type="text" name="detected_by" value="{{ d.detected_by or '' }}"></div>
     </div>
     <div class="form-grid">
-      <div class="field"><label>Clause ISO 27001</label><input type="text" name="clause" value="{{ d.clause or '' }}" placeholder="Ex. 9.2"></div>
-      <div class="field"><label>Mesure de l'Annexe A</label><select name="control_id"><option value="">-</option>{% for c in controls %}<option value="{{ c.id }}" {{ 'selected' if d.control_id==c.id }}>{{ c.annex_ref }} - {{ c.title|truncate(45) }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Clause de la norme</label><input type="text" name="clause" value="{{ d.clause or '' }}" placeholder="Ex. 9.2"></div>
+      <div class="field"><label>Mesure ou exigence concernée</label><select name="control_id"><option value="">-</option>{{ control_options(d.control_id, current=[d.control] if d.control is defined and d.control else []) }}</select></div>
     </div>
     <div class="field"><label>Pilote</label><select name="owner_id"><option value="">-</option>{% for u in users %}<option value="{{ u.id }}" {{ 'selected' if d.owner_id==u.id }}>{{ u.name }}</option>{% endfor %}</select></div>
   </div></div>
@@ -40,7 +41,7 @@
     </div>
     <div class="field"><label>b) Cause(s) racine(s)</label><textarea name="root_cause" rows="3">{{ d.root_cause or '' }}</textarea></div>
     <div class="field"><label>b) Non-conformités similaires existantes ou susceptibles de se produire</label><textarea name="extent" rows="2">{{ d.extent or '' }}</textarea></div>
-    <div class="field"><label>e) Modifications à apporter au SMSI</label><textarea name="isms_changes" rows="2" placeholder="Ex. mise à jour de la procédure, nouvel indicateur, risque réévalué...">{{ d.isms_changes or '' }}</textarea></div>
+    <div class="field"><label>e) Modifications à apporter au système de management</label><textarea name="isms_changes" rows="2" placeholder="Ex. mise à jour de la procédure, nouvel indicateur, risque réévalué...">{{ d.isms_changes or '' }}</textarea></div>
     <p class="muted" style="font-size:11.5px;margin:0;">c) Les actions correctives s'ajoutent sur la fiche ; d) l'efficacité est vérifiée par le RSSI ou un auditeur avant clôture.</p>{% with fw_entity=nc %}{% include "partials/framework_picker.html" %}{% endwith %}
     <div><button class="btn btn--primary" type="submit">Enregistrer</button></div>
   </div></div>

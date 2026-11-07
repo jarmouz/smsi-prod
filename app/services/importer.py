@@ -854,6 +854,23 @@ TREATMENT_TABLE = [
                           "retain", "prise de risque", "conserver"]),
     (Treatment.REDUIRE, ["reduire", "reduction", "traiter", "traitement", "attenuer", "attenuation", "mitiger",
                          "mitigation", "mitigate", "reduce", "modifier", "modification", "diminuer", "maitriser"]),
+    # opportunités (3.6)
+    (Treatment.EXPLOITER, ["exploiter", "saisir", "exploit", "saisie", "realiser l opportunite"]),
+    (Treatment.RENFORCER, ["renforcer", "ameliorer", "enhance", "accroitre", "developper"]),
+    (Treatment.NE_PAS_SAISIR, ["ne pas saisir", "ne pas donner suite", "ignorer", "renoncer", "ignore", "decline"]),
+]
+DOMAIN_TABLE = [
+    ("SECURITE", ["securite", "securite de l information", "ssi", "cyber", "cybersecurite", "information security",
+                  "27001", "smsi"]),
+    ("VIE_PRIVEE", ["vie privee", "rgpd", "donnees personnelles", "privacy", "protection des donnees", "27701"]),
+    ("IA", ["ia", "intelligence artificielle", "ai", "artificial intelligence", "42001", "algorithme"]),
+    ("CONTINUITE", ["continuite", "continuite d activite", "pca", "bcp", "business continuity", "22301", "crise"]),
+    ("SERVICES", ["services", "service it", "services informatiques", "itsm", "20000", "exploitation"]),
+    ("QUALITE", ["qualite", "quality", "qms", "smq", "9001", "client"]),
+]
+NATURE_TABLE = [
+    ("OPPORTUNITE", ["opportunite", "opportunity", "opportunites", "positif", "effet positif", "gain"]),
+    ("RISQUE", ["risque", "menace", "risk", "threat", "negatif", "effet negatif"]),
 ]
 RSTATUS_TABLE = [
     (RiskStatus.CLOTURE, ["cloture", "cloturee", "ferme", "fermee", "clos", "close", "closed", "obsolete", "archive"]),
@@ -948,7 +965,8 @@ def _risk_plan(rows, ctx):
               "vulnerability": "Vulnérabilité", "likelihood": "Vraisemblance", "impact": "Impact",
               "treatment": "Traitement", "residual_likelihood": "Vraisemblance résiduelle",
               "residual_impact": "Impact résiduel", "status": "Statut", "owner_id": "Propriétaire",
-              "review_date": "Prochaine revue", "controls": "Mesures", "assets": "Actifs liés"}
+              "review_date": "Prochaine revue", "controls": "Mesures", "assets": "Actifs liés",
+              "risk_domain": "Domaine", "nature": "Nature", "consequence": "Conséquences"}
     seen_ref, seen_title, out = {}, {}, []
     for line, row in rows:
         g = row.get
@@ -974,7 +992,7 @@ def _risk_plan(rows, ctx):
         target = (by_ref.get(cref.lower()) if cref else None) or by_title.get(kt)
         v = res["values"]
         v["title"] = title[:300]
-        for k, lim in (("description", None), ("threat", 255), ("vulnerability", 255)):
+        for k, lim in (("description", None), ("threat", 255), ("vulnerability", 255), ("consequence", None)):
             if g(k, "").strip():
                 v[k] = g(k).strip()[:lim] if lim else g(k).strip()
         if g("asset", "").strip():
@@ -1003,6 +1021,26 @@ def _risk_plan(rows, ctx):
                 res["warnings"].append(f"Traitement « {g('treatment')} » non reconnu.")
             else:
                 v["treatment"] = t
+        if g("domain", "").strip():
+            d = match_table(g("domain"), DOMAIN_TABLE)
+            if d is None:
+                res["warnings"].append(f"Domaine « {g('domain')} » non reconnu : sécurité de l'information retenue.")
+            else:
+                v["risk_domain"] = None if d == "SECURITE" else d
+        if g("nature", "").strip():
+            n = match_table(g("nature"), NATURE_TABLE)
+            if n is None:
+                res["warnings"].append(f"Nature « {g('nature')} » non reconnue : risque retenu.")
+            else:
+                v["nature"] = None if n == "RISQUE" else n
+        nature = v.get("nature", target.nature if target is not None else None)
+        if "treatment" in v and v["treatment"] not in Treatment.for_nature(nature):
+            dflt = Treatment.default_for(nature)
+            res["warnings"].append(f"Traitement « {v['treatment'].label} » inadapté à "
+                                   f"{'une opportunité' if nature else 'un risque'} : « {dflt.label} » retenu.")
+            v["treatment"] = dflt
+        elif "treatment" not in v and target is None and nature:
+            v["treatment"] = Treatment.default_for(nature)
         if g("status", "").strip():
             st = match_table(g("status"), RSTATUS_TABLE)
             if st is None:
@@ -1031,7 +1069,7 @@ def _risk_plan(rows, ctx):
                 res["warnings"].append("Mesures inconnues ignorées : " + ", ".join(unknown) + ".")
             if not found and not unknown:
                 res["warnings"].append(f"Aucune référence de mesure reconnue dans « {g('controls')[:60]} ».")
-        if v.get("treatment") == Treatment.ACCEPTER or v.get("status") == RiskStatus.ACCEPTE:
+        if not nature and (v.get("treatment") == Treatment.ACCEPTER or v.get("status") == RiskStatus.ACCEPTE):
             res["warnings"].append("Acceptation à formaliser par le propriétaire du risque dans la plateforme (6.1.3 f).")
 
         if target is not None:
@@ -1358,7 +1396,13 @@ SPECS = {
             F("title", "Intitulé du risque", ["risque", "titre", "libellé", "intitulé", "scénario", "scénario de risque",
                                               "nom du risque", "risk", "événement redouté", "description du risque",
                                               "risk title"], required=True),
-            F("description", "Description", ["détail", "commentaire", "commentaires", "conséquences", "description détaillée",
+            F("domain", "Domaine", ["domaine", "domaine du risque", "catégorie de risque", "famille de risque", "norme",
+                                    "référentiel", "système de management"],
+              hint="sécurité, vie privée, IA, continuité, services, qualité"),
+            F("nature", "Nature (risque ou opportunité)", ["nature", "type", "risque ou opportunité", "sens"],
+              hint="risque, opportunité"),
+            F("consequence", "Conséquences", ["conséquences", "effets", "conséquence redoutée", "impacts redoutés"]),
+            F("description", "Description", ["détail", "commentaire", "commentaires", "description détaillée",
                                              "remarques", "contexte"]),
             F("asset", "Actif concerné", ["actif", "actifs", "actif concerné", "actifs concernés", "actif support",
                                           "bien support", "biens supports", "périmètre", "asset", "système", "processus"],
@@ -1386,7 +1430,7 @@ SPECS = {
                                                   "porteur"], hint="nom ou e-mail d'un utilisateur"),
             F("review_date", "Prochaine revue", ["date de revue", "revue", "échéance", "date cible",
                                                  "date de réévaluation", "review date", "date prévue"]),
-            F("controls", "Mesures Annexe A", ["mesures", "mesures de sécurité", "contrôles", "controls",
+            F("controls", "Mesures ISO/IEC 27001 (Annexe A)", ["mesures", "mesures de sécurité", "contrôles", "controls",
                                                "mesures annexe a", "mesures iso 27001", "plan de traitement",
                                                "mesures associées", "réf. mesures", "contrôles iso"],
               hint="A.5.15, 8.2… (2013 converties)"),

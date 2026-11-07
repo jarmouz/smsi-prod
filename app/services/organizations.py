@@ -98,9 +98,15 @@ def _remap(obj, target, log):
                                           ref=src.ref).first()
             setattr(obj, col, new.id if new else None)
     if hasattr(obj, "controls"):
-        obj.controls = [c2 for c2 in (Control.query.filter_by(organization_id=target.id, framework_id=c.framework_id,
-                                                              kind=c.kind, ref=c.ref).first()
-                                      for c in obj.controls) if c2]
+        mapped = []
+        for c in obj.controls:
+            c2 = Control.query.filter_by(organization_id=target.id, framework_id=c.framework_id,
+                                         kind=c.kind, ref=c.ref).first()
+            if c2:
+                mapped.append(c2)
+            else:
+                log(f"    mesure {c.annex_ref} ({c.framework.short_name}) non rattachée : norme inactive dans {target.name}")
+        obj.controls = mapped
     for col in _fk_columns(type(obj), "users"):
         uid = getattr(obj, col)
         if uid and db.session.get(User, uid).organization_id != target.id:
@@ -148,3 +154,17 @@ def move_records(kind, refs, source, target, log):
                 _remap(a, target, log)
         for a in getattr(obj, "actions", []):
             _remap(a, target, log)
+        # rattachements aux normes (FrameworkLink) : suivent l'objet
+        from app.models import FrameworkLink
+        for fl in FrameworkLink.query.filter_by(organization_id=source.id, entity_type=type(obj).__name__,
+                                                entity_id=obj.id).all():
+            fl.organization_id = target.id
+        # liens d'un risque vers les autres modules et actifs : ces éléments restent dans
+        # l'organisation d'origine, les liens sont retirés (sinon ils traverseraient deux organisations)
+        if kind == "risk":
+            for link in list(obj.links):
+                log(f"    lien vers {link.entity_type} n°{link.entity_id} retiré (élément resté dans {source.name})")
+                obj.links.remove(link)
+            for asset in [x for x in obj.assets if x.organization_id != target.id]:
+                log(f"    actif {asset.ref} détaché (resté dans {source.name})")
+                obj.assets.remove(asset)

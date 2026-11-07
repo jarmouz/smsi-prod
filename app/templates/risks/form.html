@@ -26,7 +26,8 @@
           <div class="hint">Les normes du domaine sont toujours incluses ; cochez celles que le risque concerne aussi (ex. un rançongiciel : 27001, 22301 et 20000-1).</div>
         </div>
         {%- endif %}
-        <div class="field"><label>Description</label><textarea name="description" rows="2">{{ risk.description if risk else '' }}</textarea></div>
+        <div class="field"><label>Événement redouté (description)</label><textarea name="description" rows="2" placeholder="Ce qui peut arriver">{{ risk.description if risk else '' }}</textarea></div>
+        <div class="field"><label>Conséquences</label><textarea name="consequence" rows="2" placeholder="Effets sur l'organisation, les clients, les personnes concernées...">{{ risk.consequence or '' if risk else '' }}</textarea></div>
         <div class="form-grid">
           <div class="field"><label>Actif / périmètre</label><input type="text" name="asset" value="{{ risk.asset if risk else '' }}"></div>
           <div class="field"><label>Menace ou cause</label><input type="text" name="threat" value="{{ risk.threat if risk else '' }}"></div>
@@ -48,6 +49,19 @@
           <div class="field"><label id="impact-label">Impact</label>
             <select name="impact">{% for n in range(1, risk_criteria()['scale']['impact'] + 1) %}<option value="{{ n }}" {{ 'selected' if risk and risk.impact==n or (not risk and n==(risk_criteria()['scale']['impact'] + 1) // 2) }}>{{ n }} - {{ risk_criteria()['impact'][n-1]|truncate(48) }}</option>{% endfor %}</select></div>
         </div>
+        {%- set _dims = impact_dimensions() %}
+        {%- set _det = risk.impact_by_dim if risk else {} %}
+        {%- if _dims %}
+        <input type="hidden" name="dims_present" value="1">
+        <details {{ 'open' if _det }} style="font-size:12.5px;"><summary class="muted" style="cursor:pointer;">Coter l'impact par dimension (l'impact retenu est le plus élevé)</summary>
+          <div class="form-grid" style="margin-top:8px;">
+          {% for k, l in _dims %}
+            <div class="field"><label>{{ l }}</label>
+              <select name="impact_{{ k }}" class="impact-dim"><option value="">-</option>{% for n in range(1, risk_criteria()['scale']['impact'] + 1) %}<option value="{{ n }}" {{ 'selected' if _det.get(k) == n }}>{{ n }} - {{ risk_criteria()['impact'][n-1]|truncate(40) }}</option>{% endfor %}</select></div>
+          {% endfor %}
+          </div>
+        </details>
+        {%- endif %}
         <div class="field"><label>Option de traitement</label>
           <select name="treatment" id="risk-treatment">
             <optgroup label="Risque" data-nature="">{% for t in Treatment.for_nature(None) %}<option value="{{ t.value }}" {{ 'selected' if risk and risk.treatment==t and not risk.is_opportunity }}>{{ t.label }}</option>{% endfor %}</optgroup>
@@ -125,6 +139,17 @@
       cb.title = forced ? 'Norme du domaine (toujours incluse)' : '';
     });
   }
+  var dims = document.querySelectorAll('.impact-dim'), impSel = document.querySelector('select[name=impact]');
+  function syncImpact() {
+    var m = 0;
+    Array.prototype.forEach.call(dims, function (d) { m = Math.max(m, parseInt(d.value || '0', 10)); });
+    if (m) { impSel.value = String(m); }
+    impSel.disabled = false;
+    impSel.style.opacity = m ? '.7' : '';
+    impSel.title = m ? 'Déduit des impacts par dimension (maximum)' : '';
+  }
+  Array.prototype.forEach.call(dims, function (d) { d.addEventListener('change', syncImpact); });
+  syncImpact();
   nat.addEventListener('change', syncNature); dom.addEventListener('change', syncDomain);
   syncNature(); syncDomain();
 })();

@@ -25,7 +25,7 @@
         <td>{% if c.risk_level.value == 'ELEVE' %}<span class="appl appl--out">Élevé</span>{% else %}<span class="muted">{{ c.risk_level.label }}</span>{% endif %}</td>
         <td class="muted">{{ c.planned_date|d }}</td>
         <td>{% if c.status.value == 'CLOTURE' %}<span class="appl appl--in">Clôturé</span>{% else %}<span class="muted">{{ c.status.label }}</span>{% endif %}</td></tr>
-    {% else %}<tr><td colspan="6"><div class="empty" style="padding:30px;"><h3>Aucun changement</h3><p>Les changements techniques (A.8.32) et les modifications planifiées du SMSI (6.3) passent par ce circuit.</p></div></td></tr>{% endfor %}
+    {% else %}<tr><td colspan="6"><div class="empty" style="padding:30px;"><h3>Aucun changement</h3><p>Les changements techniques (A.8.32) et les modifications planifiées du système de management (6.3) passent par ce circuit.</p></div></td></tr>{% endfor %}
     </tbody>
   </table>
 </div></div></div>

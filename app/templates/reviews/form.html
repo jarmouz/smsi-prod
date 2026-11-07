@@ -22,14 +22,14 @@
     <div class="panel">
       <div class="panel__head"><h2>Données d'entrée (clause 9.3.2)</h2></div>
       <div class="panel__body">
-        <div class="field"><textarea name="inputs" rows="6" placeholder="État des actions des revues précédentes, évolution du contexte, performance du SMSI (indicateurs, NC, audits), risques et opportunités, retours des parties intéressées…">{{ review.inputs if review else '' }}</textarea></div>
+        <div class="field"><textarea name="inputs" rows="6" placeholder="État des actions des revues précédentes, évolution du contexte, performance du système de management (indicateurs, NC, audits), risques et opportunités, retours des parties intéressées…">{{ review.inputs if review else '' }}</textarea></div>
       </div>
     </div>
 
     <div class="panel">
       <div class="panel__head"><h2>Décisions & conclusions (clause 9.3.3)</h2></div>
       <div class="panel__body">
-        <div class="field"><textarea name="decisions" rows="5" placeholder="Décisions relatives aux opportunités d'amélioration, aux changements du SMSI, aux besoins en ressources…">{{ review.decisions if review else '' }}</textarea></div>
+        <div class="field"><textarea name="decisions" rows="5" placeholder="Décisions relatives aux opportunités d'amélioration, aux changements du système de management, aux besoins en ressources…">{{ review.decisions if review else '' }}</textarea></div>
       </div>
     </div>
     {% if not review %}<div class="panel"><div class="panel__head"><h2>Pièces jointes</h2></div><div class="panel__body"><div class="field"><input type="file" name="attachments" multiple><div class="muted" style="font-size:11.5px;margin-top:4px;">PV, présentation… D'autres pourront être ajoutés ensuite.</div></div></div></div>{% endif %}{% with fw_entity=review %}{% include "partials/framework_picker.html" %}{% endwith %}
@@ -38,12 +38,12 @@
 
   <div class="stack">
     <div class="panel">
-      <div class="panel__head"><h2>Synthèse SMSI</h2></div>
+      <div class="panel__head"><h2>Synthèse du système de management</h2></div>
       <div class="panel__body">
         <p class="muted" style="font-size:12px;margin-bottom:10px;">Repères automatiques pour alimenter les données d'entrée.</p>
         <div class="meta-list">
-          <div><span>Mise en œuvre DdA</span><b>{{ digest.soa_rate }}% ({{ digest.applicable }} retenues)</b></div>
-          <div><span>Risques ouverts</span><b>{{ digest.risks_open }}</b></div>
+          {% for name, pct, ev, impl, appl in digest.norms %}<div><span>Conformité {{ name }}</span><b>{{ pct }} % ({{ impl }}/{{ appl }}), preuves {{ ev }} %</b></div>{% endfor %}
+          <div><span>Risques ouverts (6.1)</span><b>{{ digest.risks_open }}</b></div>
           <div><span>dont élevés</span><b>{{ digest.risks_high }}</b></div>
           <div><span>Risques à réévaluer (incident, NC, changement)</span><b>{{ digest.risks_reassess|default(0) }}</b></div>
           <div><span>Opportunités ouvertes</span><b>{{ digest.opps_open|default(0) }}</b></div>
@@ -51,11 +51,12 @@
           <div><span>Non-conformités ouvertes (10.2)</span><b>{{ digest.nc_open }} dont {{ digest.nc_major }} majeure(s) - {{ digest.nc_closed }} clôturée(s)</b></div>
           <div><span>Indicateurs (9.1)</span><b>{{ digest.kpi_ok }}/{{ digest.kpi_total }} dans la cible, {{ digest.kpi_off }} hors cible</b></div>
           <div><span>Objectifs (6.2)</span><b>{{ digest.obj_reached }}/{{ digest.obj_total }} atteints, {{ digest.obj_overdue }} en retard</b></div>
-          <div><span>Fournisseurs (A.5.19-22)</span><b>{{ digest.sup_gaps }}/{{ digest.sup_total }} avec écarts</b></div>
-          <div><span>Exigences (A.5.31)</span><b>{{ digest.req_nok }} non conformes ou partielles, {{ digest.req_todo }} à évaluer</b></div>
-          <div><span>Continuité (A.5.30)</span><b>{{ digest.bcp_overdue }} activité(s) critique(s) à tester</b></div>
-          <div><span>Changements (6.3, A.8.32)</span><b>{{ digest.chg_pending }} en attente de décision ou de revue</b></div>
+          <div><span>Fournisseurs</span><b>{{ digest.sup_gaps }}/{{ digest.sup_total }} avec écarts</b></div>
+          <div><span>Exigences légales et contractuelles</span><b>{{ digest.req_nok }} non conformes ou partielles, {{ digest.req_todo }} à évaluer</b></div>
+          <div><span>Continuité (BIA)</span><b>{{ digest.bcp_overdue }} activité(s) critique(s) à tester</b></div>
+          <div><span>Changements (6.3)</span><b>{{ digest.chg_pending }} en attente de décision ou de revue</b></div>
           <div><span>Compétences (7.2)</span><b>{{ digest.comp_gaps }} écart(s)</b></div>
+          {% for code, label, n, url in digest.modules|default([]) %}<div><span>{{ label }}</span><b><a href="{{ url }}">{{ n }}</a></b></div>{% endfor %}
         </div>
       </div>
     </div>

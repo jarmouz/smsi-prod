@@ -7,7 +7,7 @@
 <form method="post" enctype="multipart/form-data" style="max-width:680px;">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <div class="panel">
-    <div class="panel__head"><h2>Document du SMSI</h2></div>
+    <div class="panel__head"><h2>Document du système de management</h2></div>
     <div class="panel__body stack">
       <div class="form-grid">
         <div class="field"><label>Référence</label><input type="text" name="ref" value="{{ doc.ref if doc else '' }}" placeholder="Auto (DOC-00X) si vide"></div>

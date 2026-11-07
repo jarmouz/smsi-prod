@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% from 'partials/macros.html' import risk_chip, score_badge, acceptance_chip, export_menu with context %}
-{% block title %}Gestion des risques - {{ APP_NAME }}{% endblock %}
-{% block heading %}Gestion des risques{% endblock %}
+{% block title %}Risques et opportunités - {{ APP_NAME }}{% endblock %}
+{% block heading %}Risques et opportunités{% endblock %}
 {% block topactions %}{{ export_menu([('registre-risques', 'Registre des risques'), ('plan-traitement', 'Plan de traitement des risques')]) }} <a href="{{ url_for('risks.plan') }}" class="btn btn--subtle btn--sm">Plan de traitement</a> {% if current_user.can_edit %}<a href="{{ url_for('imports.upload', kind='risques') }}" class="btn btn--subtle btn--sm">Importer</a> <a href="{{ url_for('risks.create') }}" class="btn btn--primary btn--sm">+ Nouveau risque</a>{% endif %}{% endblock %}
 
 {% block content %}

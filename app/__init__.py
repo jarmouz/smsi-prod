@@ -144,7 +144,15 @@ def _register_jinja(app):
                 db.session.rollback()
                 return []
 
+        def control_groups(include_clauses=True):
+            from flask import g
+            key = f"_picker_{include_clauses}"
+            if key not in g:
+                g.setdefault(key, fw_svc.picker_groups(include_clauses) if current_user.is_authenticated else [])
+            return g.get(key)
+
         return {"fw_active": fw_active, "fw_codes_of": fw_codes_of, "fw_of": fw_svc.frameworks_of,
+                "control_groups": control_groups,
                 "login_frameworks": login_frameworks}
 
     # Modules qui ont plusieurs entrées dans le menu : page -> entrée de menu (préfixe d'endpoint)

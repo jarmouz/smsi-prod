@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% from 'partials/macros.html' import control_options with context %}
 {% block title %}Exigence - {{ APP_NAME }}{% endblock %}
 {% block heading %}{{ 'Modifier ' + r.ref if r else 'Nouvelle exigence' }}{% endblock %}
 {% block topactions %}<a href="{{ url_for('requirements.index') }}" class="btn btn--ghost btn--sm">Retour</a>{% endblock %}
@@ -17,7 +18,7 @@
     </div>
     <div class="field"><label>Obligation (ce qui est exigé)</label><textarea name="obligation" rows="3">{{ r.obligation or '' if r else '' }}</textarea></div>
     <div class="field"><label>Mise en conformité (comment l'organisme y répond)</label><textarea name="response" rows="3">{{ r.response or '' if r else '' }}</textarea></div>
-    <div class="field"><label>Mesures de l'Annexe A associées</label><select name="controls" multiple size="6">{% for c in controls %}<option value="{{ c.id }}" {{ 'selected' if r and c in r.controls }}>{{ c.annex_ref }} - {{ c.title|truncate(60) }}</option>{% endfor %}</select>
+    <div class="field"><label>Mesures et exigences associées</label><select name="controls" multiple size="6">{{ control_options(r.controls|map(attribute='id')|list if r else [], current=r.controls if r else []) }}</select>
       <div class="muted" style="font-size:11px;margin-top:3px;">Ctrl / Cmd + clic pour une sélection multiple.</div></div>
     <div class="form-grid">
       <div class="field"><label>Conformité</label><select name="status">{% for x in ComplianceStatus %}<option value="{{ x.value }}" {{ 'selected' if r and r.status==x }}>{{ x.label }}</option>{% endfor %}</select></div>

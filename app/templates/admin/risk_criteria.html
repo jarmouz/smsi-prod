@@ -4,7 +4,7 @@
 {% block heading %}Critères de risque{% endblock %}
 {% block content %}
 {% set nl, ni = crit.scale.likelihood, crit.scale.impact %}
-<p class="muted" style="font-size:12.5px;margin:0 0 14px;max-width:860px;">Méthode d'appréciation et critères d'acceptation des risques de l'organisation (ISO/IEC 27001, 6.1.2 a). Échelle actuelle : <b>{{ nl }} niveaux de vraisemblance × {{ ni }} niveaux d'impact</b>, score de 1 à {{ top }}. Les critères s'appliquent immédiatement à tous les risques, tableaux de bord et exports ; toute modification est tracée dans le journal d'activité.</p>
+<p class="muted" style="font-size:12.5px;margin:0 0 14px;max-width:860px;">Méthode d'appréciation et critères d'acceptation des risques de l'organisation (chapitre 6.1 des normes de systèmes de management ; ISO/IEC 27001 et 42001, 6.1.2 a). Échelle actuelle : <b>{{ nl }} niveaux de vraisemblance × {{ ni }} niveaux d'impact</b>, score de 1 à {{ top }}. Les critères s'appliquent immédiatement à tous les risques, tableaux de bord et exports ; toute modification est tracée dans le journal d'activité.</p>
 
 <div class="panel" style="margin-bottom:16px;">
   <div class="panel__head"><h2>Taille des échelles</h2><span class="rail__badge">{{ nl }}×{{ ni }}</span></div>
@@ -41,6 +41,13 @@
         <div class="panel__body stack">
           <div class="field"><label>Seuil d'acceptation : score résiduel maximal acceptable sans acceptation formelle</label><input type="number" name="acceptance" min="1" max="{{ top }}" value="{{ crit.acceptance }}"></div>
           <p class="muted" style="font-size:12px;margin:0;">Au-delà de ce seuil, le propriétaire du risque doit accepter formellement le risque résiduel (justification et date de validité), ou le traiter davantage.</p>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel__head"><h2>Dimensions d'impact</h2></div>
+        <div class="panel__body stack">
+          <p class="muted" style="font-size:12px;margin:0;">Sur la fiche d'un risque, l'impact peut être coté par dimension (sur l'échelle d'impact ci-contre) ; l'impact retenu est le plus élevé des impacts cotés. Une cotation directe reste possible.</p>
+          {% for k, l in all_dimensions %}<label style="display:flex;align-items:center;gap:8px;font-size:13px;"><input type="checkbox" name="dimensions" value="{{ k }}" {{ 'checked' if k in crit.dimensions }} style="width:auto;"> {{ l }}</label>{% endfor %}
         </div>
       </div>
       <div><button class="btn btn--primary" type="submit">Enregistrer les critères</button></div>

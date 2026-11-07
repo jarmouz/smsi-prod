@@ -431,3 +431,50 @@ def migrate():
             ensure_common()
     db.session.commit()
     return fid
+
+
+# --------------------------------------------------------------------------
+# Sélecteurs de mesures et d'exigences (3.9) : toutes les normes actives
+# --------------------------------------------------------------------------
+def picker_groups(include_clauses=True):
+    """Mesures d'annexe et exigences proposées dans les formulaires (preuves, incidents, NC,
+    indicateurs, exigences légales, constats) : [(libellé du groupe, [Control])], socle commun et
+    normes actives. Les exigences héritées du socle n'y figurent pas : on rattache au socle."""
+    out = []
+    for fw in controls_frameworks():
+        kinds = []
+        if fw.kind == "controls":
+            kinds.append(("control", "mesures"))
+            if include_clauses and has_clauses(fw):
+                kinds.append(("clause", "exigences"))
+        elif include_clauses:
+            kinds.append(("clause", "exigences"))
+        for kind, label in kinds:
+            cs = [c for c in Control.of(fw.code, kind).order_by(Control.id).all() if not c.inherited]
+            if cs:
+                out.append((f"{fw.name} - {label}", cs))
+    return out
+
+
+def offered_ids(groups):
+    return {c.id for _, cs in groups for c in cs}
+
+
+def controls_from_ids(current, ids, groups):
+    """Sélection multiple : les éléments cochés parmi ceux proposés, plus ceux déjà rattachés
+    qui ne sont plus proposés (norme désactivée depuis)."""
+    offered = offered_ids(groups)
+    wanted = set(ids) & offered
+    kept = [c for c in (current or []) if c.id not in offered]
+    return kept + (Control.query.filter(Control.id.in_(wanted)).all() if wanted else [])
+
+
+def control_id_from_form(value, current_id, groups):
+    """Sélection simple : l'élément choisi s'il est proposé ; l'élément actuel s'il n'a pas changé."""
+    try:
+        cid = int(value) if value else None
+    except (TypeError, ValueError):
+        return current_id
+    if cid is None or cid in offered_ids(groups) or cid == current_id:
+        return cid
+    return current_id

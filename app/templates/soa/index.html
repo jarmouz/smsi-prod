@@ -2,7 +2,7 @@
 {% from 'partials/macros.html' import control_status, applicability, export_menu with context %}
 {% block title %}Déclaration d'applicabilité - {{ APP_NAME }}{% endblock %}
 {% block heading %}{{ "Déclaration d'applicabilité (DdA)" if not reqs else ('Socle commun du système de management intégré' if fw.kind == 'common' else 'Conformité aux exigences - ' ~ fw.name) }}{% endblock %}
-{% block topactions %}{% if not norme and not vue %}{{ export_menu([('dda', "Déclaration d'applicabilité")]) }}{% if current_user.can_edit %} <a href="{{ url_for('imports.upload', kind='dda') }}" class="btn btn--subtle btn--sm">Importer</a>{% endif %}{% endif %}{% endblock %}
+{% block topactions %}{{ export_menu([('dda', "Déclaration d'applicabilité" if not reqs else 'Conformité aux exigences')], {'norme': norme, 'vue': vue}) }}{% if not norme and not vue %}{% if current_user.can_edit %} <a href="{{ url_for('imports.upload', kind='dda') }}" class="btn btn--subtle btn--sm">Importer</a>{% endif %}{% endif %}{% endblock %}
 
 {% block content %}
 {% set can_edit = current_user.can_edit %}

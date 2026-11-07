@@ -820,3 +820,18 @@ table.grid tbody tr.imp-row--error td { background: #fdf6f4; }
 .fw-subtabs .fw-subtab__n { font-size: 11px; font-weight: 700; padding: 0 6px; border-radius: 8px; background: var(--line); color: var(--ink-700); }
 .fw-subtabs .fw-subtab.is-active .fw-subtab__n { background: var(--teal-050); color: var(--teal-700); }
 .side-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin-top: 3px; }
+
+/* ------------------------------------------------------------ Tableau de bord SMI (3.9) */
+.norm-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+.norm-card { display: block; padding: 12px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface);
+  text-decoration: none; color: inherit; transition: border-color .15s, box-shadow .15s; }
+.norm-card:hover { border-color: var(--teal-500); box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,.08)); }
+.norm-card--socle { background: var(--paper); }
+.norm-card__head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.norm-card__name { font-family: var(--font-display); font-weight: 700; font-size: 15px; }
+.norm-card__pct { font-family: var(--font-display); font-weight: 700; font-size: 20px; color: var(--teal-500); }
+.norm-card__domain { font-size: 11.5px; color: var(--text-dim); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.norm-card__foot { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-size: 11px; color: var(--text-dim); margin-top: 8px; }
+.sev-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
+.sev-dot--0 { background: #C0392B; } .sev-dot--1 { background: #B4532C; } .sev-dot--2 { background: #E8B04A; } .sev-dot--3 { background: #5B6676; }
+@media (max-width: 640px) { .norm-cards { grid-template-columns: 1fr; } }

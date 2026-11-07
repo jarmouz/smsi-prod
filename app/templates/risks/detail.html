@@ -28,7 +28,8 @@
         <div class="meta-list">
           <div><span>Domaine</span><b>{{ r.domain_label }}{{ ' - opportunité' if r.is_opportunity }}</b></div>
           <div><span>Normes concernées</span><b>{% for f in fw_active() if f.code in r.framework_codes %}<span class="chip">{{ f.short_name }}</span> {% else %}-{% endfor %}</b></div>
-          <div><span>Description</span><b>{{ r.description or '-' }}</b></div>
+          <div><span>Événement redouté</span><b>{{ r.description or '-' }}</b></div>
+          <div><span>Conséquences</span><b>{{ r.consequence or '-' }}</b></div>
           <div><span>Actif / périmètre</span><b>{{ r.asset or '-' }}{% for a in r.assets %} <a class="chip" href="{{ url_for('assets.detail', asset_id=a.id) }}">{{ a.ref }}</a>{% endfor %}</b></div>
           <div><span>Menace ou cause</span><b>{{ r.threat or '-' }}</b></div>
           <div><span>Vulnérabilité ou facteur aggravant</span><b>{{ r.vulnerability or '-' }}</b></div>
@@ -47,6 +48,7 @@
     </div>
 
     <div class="panel" id="liens">
+      {%- set _ctx = risk_context(r) %}
       <div class="panel__head"><h2>Liens avec les autres modules</h2><span class="rail__badge">{{ r.links|length }}</span></div>
       <div class="panel__body">
         {% for label, rows in linked %}
@@ -58,7 +60,11 @@
           {% if current_user.can_edit %}<form method="post" action="{{ url_for('risks.delete_link', link_id=link.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn--ghost btn--sm" type="submit" title="Retirer le lien" style="padding:0 6px;">×</button></form>{% endif %}
         </div>
         {% endfor %}
-        {% else %}<p class="muted" style="font-size:12.5px;margin:0 0 8px;">Aucun lien : rattachez les incidents survenus, les fournisseurs, les activités de la BIA, les systèmes d'IA, les traitements de données... concernés par ce risque.</p>{% endfor %}
+        {% else %}{% if not (_ctx[0] or _ctx[1]) %}<p class="muted" style="font-size:12.5px;margin:0 0 8px;">Aucun lien : rattachez les incidents survenus, les fournisseurs, les activités de la BIA, les systèmes d'IA, les traitements de données... concernés par ce risque.</p>{% endif %}{% endfor %}
+        {% if _ctx[0] %}<div class="section-title" style="margin:4px 0 2px;">Enjeux du contexte (4.1)</div>
+        {% for i in _ctx[0] %}<div style="font-size:12.5px;padding:3px 0;"><a href="{{ url_for('context.index') }}#i{{ i.id }}" class="ref">{{ i.ref }}</a> {{ i.title }}</div>{% endfor %}{% endif %}
+        {% if _ctx[1] %}<div class="section-title" style="margin:4px 0 2px;">Processus (4.4)</div>
+        {% for p in _ctx[1] %}<div style="font-size:12.5px;padding:3px 0;"><a href="{{ url_for('quality.process_detail', pid=p.id) }}" class="ref">{{ p.ref }}</a> {{ p.name }}</div>{% endfor %}{% endif %}
         {% if current_user.can_edit and link_candidates %}
         <form method="post" action="{{ url_for('risks.add_link', risk_id=r.id) }}" style="display:flex;gap:6px;margin-top:10px;border-top:1px solid var(--line);padding-top:10px;">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -128,6 +134,7 @@
           <div style="text-align:center;"><div class="muted" style="font-size:11px;">Résiduel</div>{{ score_badge(r.residual_score, r.display_level) }}<div class="muted" style="font-size:11px;margin-top:3px;">{% if r.residual_score %}V{{ r.residual_likelihood }}×I{{ r.residual_impact }}{% else %}non coté{% endif %}</div></div>
         </div>
         <div style="text-align:center;">{{ risk_chip(r.display_level) }}</div>
+        {% if r.impact_by_dim %}<div class="meta-list" style="font-size:12px;margin-top:10px;">{% for k, v in r.impact_by_dim|dictsort %}<div><span>Impact {{ dimension_label(k)|lower }}</span><b>{{ v }}{{ ' (retenu)' if v == r.impact }}</b></div>{% endfor %}</div>{% endif %}
         {% if r.is_opportunity %}<p class="muted" style="font-size:11.5px;margin:8px 0 0;text-align:center;">Opportunité : le score mesure le bénéfice attendu, il n'entre pas dans les risques élevés.</p>{% endif %}
       </div>
     </div>

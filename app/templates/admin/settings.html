@@ -64,7 +64,7 @@
           <div><span>Dossier des pièces jointes</span><b>{{ v.nc_folder }}</b></div>
           <div><span>Dossier Docs</span><b>{{ v.docs_root }}</b></div>
         </div>
-        <p class="muted" style="font-size:11.5px;margin:10px 0;">Les pièces jointes du SMSI sont stockées dans Nextcloud via un compte de service - transparent pour les utilisateurs.</p>
+        <p class="muted" style="font-size:11.5px;margin:10px 0;">Les pièces jointes de l'application sont stockées dans Nextcloud via un compte de service - transparent pour les utilisateurs.</p>
         <form method="post" action="{{ url_for('admin.test_nextcloud') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button class="btn btn--subtle" type="submit">Tester la connexion Nextcloud</button>

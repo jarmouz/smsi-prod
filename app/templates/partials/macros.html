@@ -120,13 +120,13 @@
 {%- endmacro %}
 
 {# Menu d'export des livrables (DdA, registre, plan de traitement) #}
-{%- macro export_menu(items) -%}
+{%- macro export_menu(items, params={}) -%}
 <details style="display:inline-block;position:relative;"><summary class="btn btn--subtle btn--sm" style="list-style:none;">Exporter</summary>
   <div style="position:absolute;right:0;z-index:20;background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow-lg);padding:8px;min-width:250px;">
   {%- for kind, label in items %}
     <div style="font-size:11px;font-weight:700;color:var(--text-dim);padding:6px 6px 2px;">{{ label }}</div>
     <div style="display:flex;gap:6px;padding:0 6px 6px;">
-      {%- for fmt, fl in [('xlsx', 'Excel'), ('pdf', 'PDF'), ('docx', 'Word')] %}{% if fmt != 'pdf' or oo_enabled %}<a class="btn btn--ghost btn--sm" href="{{ url_for('soa.export', kind=kind, fmt=fmt) }}">{{ fl }}</a>{% endif %}{% endfor %}
+      {%- for fmt, fl in [('xlsx', 'Excel'), ('pdf', 'PDF'), ('docx', 'Word')] %}{% if fmt != 'pdf' or oo_enabled %}<a class="btn btn--ghost btn--sm" href="{{ url_for('soa.export', kind=kind, fmt=fmt, **params) }}">{{ fl }}</a>{% endif %}{% endfor %}
     </div>
   {%- endfor %}
   </div>
@@ -170,4 +170,23 @@
   {%- endfor %}
   {%- if c.points and not mini %}{% set lp = c.points[-1] %}<text x="{{ lp.x }}" y="{{ lp.y - 10 }}" text-anchor="middle" font-size="11" font-weight="700" fill="var(--ink-900)">{{ lp.value }}</text>{% endif %}
 </svg>
+{%- endmacro %}
+
+{#- Options d'un sélecteur de mesure / exigence (toutes normes actives, 3.9). selected : id ou liste d'ids. -#}
+{%- macro control_options(selected, include_clauses=True, current=None) -%}
+{%- set _sel = selected if selected is iterable and selected is not string else [selected] -%}
+{%- set _groups = control_groups(include_clauses) -%}
+{%- set _offered = [] -%}{%- for _, cs in _groups %}{% for c in cs %}{% set _ = _offered.append(c.id) %}{% endfor %}{% endfor -%}
+{%- for c in (current or []) if c and c.id not in _offered %}<option value="{{ c.id }}" selected>{{ c.framework.short_name }} {{ c.annex_ref }} - {{ c.title|truncate(70) }} (norme inactive)</option>{% endfor -%}
+{%- for label, cs in _groups %}<optgroup label="{{ label }}">{% for c in cs %}<option value="{{ c.id }}" {{ 'selected' if c.id in _sel }}>{{ c.framework.short_name if c.framework.kind != 'common' else 'Socle' }} {{ c.annex_ref }} - {{ c.title|truncate(70) }}</option>{% endfor %}</optgroup>{% endfor -%}
+{%- endmacro %}
+
+{#- Cases à cocher de mesures / exigences, groupées et repliables (preuves). -#}
+{%- macro control_checklist(selected_ids, name='controls') -%}
+{%- for label, cs in control_groups(True) %}
+{%- set _n = cs|selectattr('id', 'in', selected_ids)|list|length %}
+<details {{ 'open' if _n or loop.first }} style="margin-bottom:4px;"><summary class="section-title" style="cursor:pointer;margin:6px 0 2px;">{{ label }}{% if _n %} ({{ _n }}){% endif %}</summary>
+  {% for c in cs %}<label><input type="checkbox" name="{{ name }}" value="{{ c.id }}" {{ 'checked' if c.id in selected_ids }}><span class="ref">{{ c.annex_ref }}</span><span>{{ c.title }}</span></label>{% endfor %}
+</details>
+{%- endfor %}
 {%- endmacro %}

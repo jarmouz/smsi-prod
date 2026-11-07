@@ -27,11 +27,11 @@
 <form method="post">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <div class="panel">
-    <div class="panel__head"><h2>Associer vos colonnes aux champs du SMSI</h2><span class="spacer"></span><span class="muted" style="font-size:12px;">{{ "Proposition de l'IA : vérifiez-la." if st.ai_mapped else "Proposition automatique d'après vos en-têtes : vérifiez-la." }}</span>
+    <div class="panel__head"><h2>Associer vos colonnes aux champs d'Integra</h2><span class="spacer"></span><span class="muted" style="font-size:12px;">{{ "Proposition de l'IA : vérifiez-la." if st.ai_mapped else "Proposition automatique d'après vos en-têtes : vérifiez-la." }}</span>
       {% if ai_on %}<button class="btn btn--subtle btn--sm ai-btn" form="ai-form" title="Envoie les en-têtes et quelques valeurs d'exemple à l'IA">{{ svgicon_spark|safe }}Proposer avec l'IA</button>{% endif %}</div>
     <div class="panel__body--flush"><div class="table-wrap">
       <table class="grid imp-map">
-        <thead><tr><th style="width:230px;">Champ SMSI</th><th style="width:320px;">Colonne de votre fichier</th><th>Exemples de valeurs</th></tr></thead>
+        <thead><tr><th style="width:230px;">Champ</th><th style="width:320px;">Colonne de votre fichier</th><th>Exemples de valeurs</th></tr></thead>
         <tbody>
         {% for f in spec.fields %}
           {% set cur = st.mapping.get(f.key) %}

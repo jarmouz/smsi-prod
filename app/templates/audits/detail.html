@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% from 'partials/macros.html' import control_options with context %}
 {% from 'partials/macros.html' import finding_type, attachments_panel %}
 {% block title %}{{ a.ref }} - {{ APP_NAME }}{% endblock %}
 {% block heading %}{{ a.ref }} - {{ a.title }}{% endblock %}
@@ -78,8 +79,8 @@
           </div>
           <div class="field"><label>Libellé *</label><input type="text" name="title" required></div>
           <div class="field"><label>Description</label><textarea name="description" rows="2"></textarea></div>
-          <div class="field"><label>Mesure concernée (Annexe A)</label>
-            <select name="control_id"><option value="">-</option>{% for c in controls %}<option value="{{ c.id }}">{{ c.annex_ref }} - {{ c.title }}</option>{% endfor %}</select></div>
+          <div class="field"><label>Mesure ou exigence concernée</label>
+            <select name="control_id"><option value="">-</option>{{ control_options(None, current=[]) }}</select></div>
           <div><button class="btn btn--primary" type="submit">Ajouter le constat</button></div>
         </form>
       </div>

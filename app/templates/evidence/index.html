@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% from 'partials/macros.html' import control_chip %}
+{% from 'partials/macros.html' import control_chip, control_options with context %}
 {% block title %}Preuves - {{ APP_NAME }}{% endblock %}
 {% block heading %}Gestion des preuves{% endblock %}
 {% block topactions %}{% if current_user.can_edit %}<a href="{{ url_for('evidence.create') }}" class="btn btn--primary btn--sm">+ Nouvelle preuve</a>{% endif %}{% endblock %}
@@ -7,8 +7,8 @@
 {% block content %}
 <form class="toolbar" method="get">
   <select name="mesure" onchange="this.form.submit()">
-    <option value="">Toutes les mesures</option>
-    {% for c in controls %}<option value="{{ c.id }}" {{ 'selected' if f_control==c.id }}>{{ c.annex_ref }} - {{ c.title }}</option>{% endfor %}
+    <option value="">Toutes les mesures et exigences</option>
+    {{ control_options(f_control) }}
   </select>
   {% if f_control %}<a href="{{ url_for('evidence.index') }}" class="btn btn--ghost btn--sm">Réinitialiser</a>{% endif %}
 </form>

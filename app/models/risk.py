@@ -52,6 +52,10 @@ class Risk(TenantMixin, db.Model):
     asset = db.Column(db.String(255), nullable=True)          # actif / périmètre concerné
     threat = db.Column(db.String(255), nullable=True)         # menace
     vulnerability = db.Column(db.String(255), nullable=True)  # vulnérabilité
+    # 3.9 : conséquences de l'événement redouté (cause = threat, événement = title/description)
+    consequence = db.Column(db.Text, nullable=True)
+    # 3.9 : impact inhérent coté par dimension, JSON {"financier": 4, ...} ; impact = maximum
+    impact_details = db.Column(db.Text, nullable=True)
     # ISO 9001 (6.1) : domaine (NULL = sécurité de l'information, QUALITE) et nature (NULL = risque, OPPORTUNITE)
     risk_domain = db.Column(db.String(16), nullable=True, index=True)
     nature = db.Column(db.String(12), nullable=True)
@@ -119,6 +123,23 @@ class Risk(TenantMixin, db.Model):
 
     def concerns(self, code):
         return code in self.framework_codes
+
+    @property
+    def impact_by_dim(self):
+        import json
+        try:
+            d = json.loads(self.impact_details) if self.impact_details else {}
+            return {k: int(v) for k, v in d.items() if v}
+        except (ValueError, TypeError, AttributeError):
+            return {}
+
+    def set_impact_details(self, details):
+        """Enregistre les impacts par dimension et en déduit l'impact (maximum). Vide : impact inchangé."""
+        import json
+        details = {k: int(v) for k, v in (details or {}).items() if v}
+        self.impact_details = json.dumps(details, sort_keys=True) if details else None
+        if details:
+            self.impact = max(details.values())
 
     def flag_reassess(self, reason):
         """Demande une réévaluation (cumule les motifs tant qu'elle n'est pas faite)."""

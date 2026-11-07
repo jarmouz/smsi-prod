@@ -66,7 +66,8 @@ def edit_issue(issue_id):
 
 
 def _issue_form(i):
-    risks = Risk.query.order_by(Risk.ref).all()
+    from app.services.risk_links import risk_choices
+    risks = risk_choices()
     if request.method == "POST":
         title = (request.form.get("title") or "").strip()
         if not title:

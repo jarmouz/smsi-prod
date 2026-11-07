@@ -12,10 +12,10 @@
       <div class="field"><label>Catégorie</label><select name="category">{% for x in IssueCategory %}<option value="{{ x.value }}" {{ 'selected' if i and i.category==x }}>{{ x.label }}</option>{% endfor %}</select></div>
     </div>
     <div class="field"><label>Description</label><textarea name="description" rows="2">{{ i.description if i else '' }}</textarea></div>
-    <div class="field"><label>Effet sur la capacité du SMSI à atteindre ses résultats</label><textarea name="effect" rows="2">{{ i.effect if i else '' }}</textarea></div>
+    <div class="field"><label>Effet sur la capacité du système de management à atteindre ses résultats</label><textarea name="effect" rows="2">{{ i.effect if i else '' }}</textarea></div>
     <div class="field"><label>Prise en compte (risques, objectifs, mesures)</label><textarea name="response" rows="2">{{ i.response if i else '' }}</textarea></div>
     <div class="field"><label>Risques liés</label>
-      <select name="risks" multiple size="6">{% for r in risks %}<option value="{{ r.id }}" {{ 'selected' if i and r in i.risks }}>{{ r.ref }} - {{ r.title }}</option>{% endfor %}</select>
+      <select name="risks" multiple size="6">{% for r in risks %}<option value="{{ r.id }}" {{ 'selected' if i and r in i.risks }}>{{ risk_label(r) }}</option>{% endfor %}</select>
       <div class="muted" style="font-size:11px;margin-top:3px;">Ctrl / Cmd + clic pour une sélection multiple.</div></div>
     <label style="display:flex;align-items:center;gap:8px;font-size:13px;"><input type="checkbox" name="active" {{ 'checked' if not i or i.active }} style="width:auto;"> Enjeu toujours d'actualité</label>
     <div><button class="btn btn--primary" type="submit">Enregistrer</button></div>

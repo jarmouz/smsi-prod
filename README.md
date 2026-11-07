@@ -57,7 +57,7 @@ communs (audits, revues, documents, objectifs, non-conformités) peuvent être
 rattachés à une ou plusieurs normes. Les écrans historiques restent limités à
 l'ISO 27001 (`Control.of()`).
 
-Normes disponibles (3.8) :
+Normes disponibles (3.9) :
 
 | Norme | Type | Module propre |
 |---|---|---|
@@ -211,6 +211,63 @@ de données (27701), systèmes d'IA et études d'impact (42001).
 - Correctif démo : la réinitialisation recopie le catalogue des normes restées
   actives (auparavant seule la 27001 était rechargée).
 - Migration : table créée par `flask upgrade-db`, colonnes `reassess_*` ajoutées.
+
+### Cohérence SMI et tableau de bord (3.9)
+
+**Tableau de bord** (`app/services/readiness.py`), inspiré des plateformes de
+conformité continue :
+- **Préparation par norme** : une carte par norme active (socle commun en tête),
+  avec la part des mesures et des exigences retenues qui sont mises en œuvre,
+  la part qui dispose d'une preuve, les risques concernés et la date de
+  certification visée. Le taux global est la moyenne des normes.
+- **Points à traiter** : une seule liste pour tous les modules, triée par
+  gravité, chaque ligne avec son lien. Elle couvre l'acceptation et la
+  réévaluation des risques, les actions en retard (traitement, correctives,
+  revue), les NC, les preuves manquantes, les documents, les fournisseurs, les
+  exigences légales, ainsi que les modules des normes actives (demandes de
+  personnes, AIPD, systèmes d'IA, plans de continuité, services IT,
+  réclamations, satisfaction, processus).
+- **Risques** : matrice, acceptations, réévaluations, plan de traitement
+  (actions ouvertes ou en retard, avancement) et opportunités.
+- **Mes tâches** : les relances de l'utilisateur connecté.
+- **Pilotage** : indicateurs, objectifs, fournisseurs, exigences légales.
+
+**Risques**
+- Description structurée en cause (« menace ou cause »), événement redouté et
+  conséquences (`consequence`).
+- **Impact par dimension** (`impact_details`) : financier, clients, juridique,
+  personnes concernées, continuité, image. L'organisation choisit ses
+  dimensions dans les critères de risque. L'impact retenu est le maximum des
+  dimensions cotées. Les cotations sont converties quand l'échelle change.
+- Les enjeux du contexte (4.1) et les processus qualité (4.4) liés au risque
+  sont affichés sur sa fiche.
+- Import : domaine, nature, conséquences, traitements des opportunités (avec
+  contrôle de cohérence).
+
+**Multi-normes partout**
+- Sélecteurs de mesures et d'exigences pour toutes les normes actives, socle
+  compris (`frameworks.picker_groups`, macros `control_options` et
+  `control_checklist`) : preuves, incidents, NC, indicateurs, exigences
+  légales, constats d'audit.
+- Revue de direction : conformité et preuves par norme, points des modules
+  des normes, libellés « système de management ».
+- Exports : DdA ou conformité de la norme affichée (`?norme=`, `?vue=`) ;
+  références de clauses génériques pour les registres communs.
+- Menu « Risques et opportunités » et « Conformité et DdA » ; plus de libellé
+  « SMSI » dans les écrans multi-normes.
+
+**Corrections**
+- Réinitialisation de la démo : les données des modules des normes et les
+  rattachements sont effacés avant les comptes. Avant, l'effacement échouait
+  dès qu'un compte de démo était responsable d'un élément de ces modules.
+- Purge de maintenance : rattachements et liens supprimés, et les actions
+  correctives des NC (conservées) ne sont plus effacées ; le texte décrit
+  exactement ce qui est supprimé.
+- `move-records` : les rattachements aux normes suivent le risque. Les liens
+  vers les autres modules et les actifs restés dans l'origine sont retirés,
+  et les mesures non reprises sont signalées.
+- Page plateforme : les opportunités ne sont plus comptées comme des risques.
+- Migration : colonnes `risks.consequence` et `risks.impact_details`.
 
 ## Modules
 

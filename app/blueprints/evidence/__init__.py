@@ -26,7 +26,7 @@ def index():
     evidences = Evidence.query.order_by(Evidence.ref).all()
     if f_control:
         evidences = [e for e in evidences if any(c.id == f_control for c in e.controls)]
-    controls = Control.of().order_by(Control.theme, Control.id).all()
+    controls = []
     att_counts = att_svc.counts_for("evidence", [e.id for e in evidences])
     return render_template("evidence/index.html", evidences=evidences,
                            controls=controls, f_control=f_control, att_counts=att_counts)
@@ -35,7 +35,9 @@ def index():
 @bp.route("/nouvelle", methods=["GET", "POST"])
 @editor_required
 def create():
-    controls = Control.of().order_by(Control.theme, Control.id).all()
+    from app.services import frameworks as fw_svc
+    groups = fw_svc.picker_groups()
+    controls = []
     users = User.query.filter_by(is_active_flag=True).order_by(User.name).all()
     if request.method == "POST":
         title = (request.form.get("title") or "").strip()
@@ -48,8 +50,7 @@ def create():
                 collected_at=_date(request.form.get("collected_at")),
                 owner_id=request.form.get("owner_id", type=int) or None,
                 location=request.form.get("location"))
-            ctrl_ids = request.form.getlist("controls", type=int)
-            e.controls = Control.query.filter(Control.id.in_(ctrl_ids)).all()
+            e.controls = fw_svc.controls_from_ids([], request.form.getlist("controls", type=int), groups)
             db.session.add(e)
             db.session.commit()
             att_svc.save_many(request.files.getlist("attachments"), "evidence", e.id, current_user)
@@ -62,7 +63,9 @@ def create():
 @editor_required
 def edit(ev_id):
     e = db.session.get(Evidence, ev_id) or abort(404)
-    controls = Control.of().order_by(Control.theme, Control.id).all()
+    from app.services import frameworks as fw_svc
+    groups = fw_svc.picker_groups()
+    controls = []
     users = User.query.filter_by(is_active_flag=True).order_by(User.name).all()
     if request.method == "POST":
         e.title = (request.form.get("title") or e.title).strip()
@@ -70,8 +73,7 @@ def edit(ev_id):
         e.collected_at = _date(request.form.get("collected_at"))
         e.owner_id = request.form.get("owner_id", type=int) or None
         e.location = request.form.get("location")
-        ctrl_ids = request.form.getlist("controls", type=int)
-        e.controls = Control.query.filter(Control.id.in_(ctrl_ids)).all()
+        e.controls = fw_svc.controls_from_ids(e.controls, request.form.getlist("controls", type=int), groups)
         db.session.commit()
         flash(f"Preuve {e.ref} mise à jour.", "success")
         return redirect(url_for("evidence.index"))

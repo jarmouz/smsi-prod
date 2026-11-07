@@ -13,7 +13,7 @@
             {% for o in orgs %}
             <tr>
               <td class="subj">{{ o.name }}{% if current_org and o.id == current_org.id %} <span class="appl appl--in">courante</span>{% endif %}
-                <div class="muted" style="font-size:11.5px;">{{ o.slug }}{{ ' - Docs : ' + o.docs_folder if o.docs_folder }} - {{ controls.get(o.id, 0) }} mesures</div></td>
+                <div class="muted" style="font-size:11.5px;">{{ o.slug }}{{ ' - Docs : ' + o.docs_folder if o.docs_folder }} - {{ controls.get(o.id, 0) }} mesures et exigences</div></td>
               <td class="muted">{{ users.get(o.id, 0) }}</td>
               <td class="muted">{{ risks.get(o.id, 0) }}</td>
               <td>{% if o.is_active %}<span class="appl appl--in">Active</span>{% else %}<span class="appl appl--out">Inactive</span>{% endif %}</td>
@@ -92,7 +92,7 @@
   <div class="panel">
     <div class="panel__head"><h2>Organisation de démonstration</h2></div>
     <div class="panel__body stack">
-      <p class="muted" style="font-size:12px;margin:0;">Entreprise fictive « {{ demo_content.ORG_NAME }} » : SMSI complet en phase de pré-certification (93 mesures, risques, audits, revues, incidents, documents et fichiers Docs).</p>
+      <p class="muted" style="font-size:12px;margin:0;">Entreprise fictive « {{ demo_content.ORG_NAME }} » : système de management complet en phase de pré-certification (ISO/IEC 27001, risques et plan de traitement, audits, revues, incidents, documents et fichiers Docs).</p>
       {% if demo %}
       <div class="meta-list" style="font-size:12.5px;">
         <div><span>Prospects (lecture seule)</span><b class="mono">{{ demo_content.PROSPECT[0] }}@{{ demo_content.DOMAIN }}</b></div>
@@ -122,7 +122,7 @@
         <div class="field"><label>Nom</label><input type="text" name="admin_name"></div>
         <div class="field"><label>E-mail</label><input type="email" name="admin_email"></div>
         <div class="field"><label>Mot de passe</label><input type="text" name="admin_password" placeholder="Vide : mot de passe temporaire généré"></div>
-        <p class="muted" style="font-size:11.5px;margin:0;">Le catalogue des 93 mesures de l'Annexe A est créé automatiquement.</p>
+        <p class="muted" style="font-size:11.5px;margin:0;">L'ISO/IEC 27001 (93 mesures et ses exigences) et le socle commun sont activés automatiquement ; les autres normes s'activent dans Administration › Référentiels.</p>
         <button class="btn btn--primary" type="submit">Créer</button>
       </form>
     </div>

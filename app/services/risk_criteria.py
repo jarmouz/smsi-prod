@@ -42,6 +42,18 @@ DEFAULT_TEXTS = {
     },
 }
 
+# Dimensions d'impact (3.9) : l'impact d'un risque peut être coté par dimension ; l'impact
+# retenu est le maximum des dimensions cotées (approche ISO/IEC 27005). Activables par l'organisation.
+DIMENSIONS = [
+    ("financier", "Financier"),
+    ("clients", "Clients et engagements contractuels"),
+    ("reglementaire", "Juridique et réglementaire"),
+    ("personnes", "Personnes concernées (vie privée, santé, droits)"),
+    ("continuite", "Activité et continuité"),
+    ("image", "Image et réputation"),
+]
+DIMENSION_LABELS = dict(DIMENSIONS)
+
 DEFAULT = {
     "scale": {"likelihood": 5, "impact": 5},
     "levels": {"faible": {"label": "Faible", "min": 1}, "modere": {"label": "Modéré", "min": 5},
@@ -49,6 +61,7 @@ DEFAULT = {
     # score résiduel <= seuil : acceptable au regard des critères ; au-delà,
     # acceptation formelle du propriétaire du risque requise
     "acceptance": 9,
+    "dimensions": ["financier", "clients", "reglementaire", "personnes", "continuite"],
     "likelihood": DEFAULT_TEXTS["likelihood"][5],
     "impact": DEFAULT_TEXTS["impact"][5],
 }
@@ -86,6 +99,8 @@ def get():
             for k in ("acceptance", "likelihood", "impact"):
                 if k in data:
                     crit[k] = data[k]
+            if isinstance(data.get("dimensions"), list):
+                crit["dimensions"] = [d for d in data["dimensions"] if d in DIMENSION_LABELS]
         except (ValueError, TypeError, AttributeError):
             pass
     # une description par échelon (complétée par défaut si besoin)
@@ -111,6 +126,11 @@ def validate(levels, acceptance, top):
     if not 1 <= acceptance <= top:
         return f"Le seuil d'acceptation doit être compris entre 1 et {top}."
     return None
+
+
+def dimensions():
+    """Dimensions d'impact activées : [(clé, libellé)]."""
+    return [(k, DIMENSION_LABELS[k]) for k in get()["dimensions"] if k in DIMENSION_LABELS]
 
 
 def max_score():
@@ -156,10 +176,13 @@ def change_scale(new_l, new_i, rescale):
             r.residual_likelihood = convert(r.residual_likelihood, old_l, new_l)
             r.impact = convert(r.impact, old_i, new_i)
             r.residual_impact = convert(r.residual_impact, old_i, new_i)
+            if r.impact_by_dim:
+                r.set_impact_details({k: convert(v, old_i, new_i) for k, v in r.impact_by_dim.items()})
             n += before != (r.likelihood, r.impact, r.residual_likelihood, r.residual_impact)
     levels, acceptance = suggested(new_l, new_i)
     save({"scale": {"likelihood": new_l, "impact": new_i}, "levels": levels, "acceptance": acceptance,
-          "likelihood": DEFAULT_TEXTS["likelihood"][new_l], "impact": DEFAULT_TEXTS["impact"][new_i]})
+          "likelihood": DEFAULT_TEXTS["likelihood"][new_l], "impact": DEFAULT_TEXTS["impact"][new_i],
+          "dimensions": crit["dimensions"]})
     db.session.commit()
     return n, None
 
@@ -194,4 +217,5 @@ def init_app(app):
     @app.context_processor
     def _inject():
         return {"risk_level": level_of, "risk_level_label": label_of, "risk_criteria": get,
+                "impact_dimensions": dimensions, "dimension_label": lambda k: DIMENSION_LABELS.get(k, k),
                 "risk_max_score": max_score}

@@ -24,7 +24,7 @@
       <div><span>a) Correction</span><b style="white-space:pre-wrap;">{{ nc.correction or '-' }}</b></div>
       <div><span>b) Cause(s) racine(s)</span><b style="white-space:pre-wrap;">{% if nc.root_cause %}{{ nc.root_cause }}{% if nc.cause_method %} <span class="muted">({{ nc.cause_method }})</span>{% endif %}{% else %}<span class="due-cell">À analyser</span>{% endif %}</b></div>
       <div><span>b) NC similaires</span><b style="white-space:pre-wrap;">{{ nc.extent or '-' }}</b></div>
-      <div><span>e) Modifications du SMSI</span><b style="white-space:pre-wrap;">{{ nc.isms_changes or '-' }}</b></div>
+      <div><span>e) Modifications du système de management</span><b style="white-space:pre-wrap;">{{ nc.isms_changes or '-' }}</b></div>
     </div></div></div>
 
     <div class="panel"><div class="panel__head"><h2>c) Actions correctives</h2><span class="rail__badge">{{ nc.actions|length }}</span></div><div class="panel__body">

@@ -172,6 +172,9 @@ UPGRADE_DDL = [
     # Maillage SMI (3.8) : réévaluation demandée par un incident, une NC ou un changement lié
     "ALTER TABLE risks ADD COLUMN IF NOT EXISTS reassess_at TIMESTAMP NULL",
     "ALTER TABLE risks ADD COLUMN IF NOT EXISTS reassess_reason VARCHAR(300) NULL",
+    # Cohérence SMI (3.9) : conséquences, impact par dimension
+    "ALTER TABLE risks ADD COLUMN IF NOT EXISTS consequence TEXT NULL",
+    "ALTER TABLE risks ADD COLUMN IF NOT EXISTS impact_details TEXT NULL",
 ]
 
 # Tables rattachées à une organisation (voir TenantMixin)

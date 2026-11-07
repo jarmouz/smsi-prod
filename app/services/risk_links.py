@@ -126,13 +126,36 @@ def add(risk, etype, eid):
     return link, None
 
 
+def risk_choices(domain_first=None):
+    """Risques proposés dans les sélecteurs : ouverts d'abord (ceux du domaine indiqué en tête),
+    puis clôturés."""
+    from app.models import Risk
+    rs = Risk.query.all()
+    return sorted(rs, key=lambda r: (not r.status.is_open, domain_first is not None and r.risk_domain != domain_first,
+                                     r.ref))
+
+
+def risk_label(r):
+    tags = [t for t in ("opportunité" if r.is_opportunity else None,
+                        r.domain_label if r.risk_domain else None,
+                        "clôturé" if not r.status.is_open else None) if t]
+    return f"{r.ref} - {r.title[:80]}" + (f" ({', '.join(tags)})" if tags else "")
+
+
+def risk_context(risk):
+    """Liens historiques vers le risque (hors RiskLink) : enjeux du contexte (4.1), processus qualité (4.4)."""
+    from app.models import ContextIssue
+    from app.models.quality import QmsProcess
+    issues = [i for i in ContextIssue.query.all() if risk in i.risks]
+    procs = [p for p in QmsProcess.query.all() if risk in p.risks]
+    return issues, procs
+
+
 def init_app(app):
     @app.context_processor
     def _ctx():
-        def risk_choices():
-            from app.models import Risk
-            return Risk.query.order_by(Risk.ref).all()
         return {"risks_for": risks_for, "risk_link_types": types, "risk_choices": risk_choices,
+                "risk_label": risk_label, "risk_context": risk_context,
                 "entity_type_of": lambda obj: type(obj).__name__}
 
     # Suppression d'un élément lié : ses liens disparaissent avec lui (pas de lien orphelin)

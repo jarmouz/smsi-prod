@@ -84,6 +84,16 @@ def _wipe(org, log):
                             ("test_processes", "test_id", "continuity_tests"), ("change_assets", "change_id", "change_requests"),
                             ("competence_users", "requirement_id", "competence_requirements")):
         db.session.execute(text(f"DELETE FROM {table} WHERE {col} IN (SELECT id FROM {src} WHERE organization_id = :o)"), {"o": oid})
+    # modules des normes (27701, 42001, 22301, 20000-1, 9001) et rattachements : avant les comptes,
+    # que leurs responsables référencent sans suppression en cascade
+    from app.models import FrameworkLink, RiskLink
+    from app.models.ai_system import AiSystem, AiImpactAssessment
+    from app.models.privacy import ProcessingActivity, SubjectRequest
+    from app.models.service_mgmt import ContinuityPlan, ItService, ServiceMeasure, Problem, Release
+    from app.models.quality import QmsProcess, CustomerSurvey, Complaint
+    for model in (FrameworkLink, RiskLink, AiImpactAssessment, AiSystem, SubjectRequest, ProcessingActivity,
+                  ServiceMeasure, Problem, Release, ItService, ContinuityPlan, Complaint, CustomerSurvey, QmsProcess):
+        model.query.filter(model.organization_id == oid).delete(synchronize_session=False)
     for model in (ActivityLog, Attachment, CorrectiveAction, NonConformity, AuditPlanItem, CompetenceRecord,
                   CompetenceRequirement, ContinuityTest, BusinessProcess, ChangeRequest, Measurement, Indicator, Objective,
                   Requirement, InterestedParty, ContextIssue, Supplier, Finding, Audit, ReviewAction, ManagementReview,

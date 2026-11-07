@@ -8,6 +8,7 @@ from flask_login import login_required
 
 from app.extensions import db
 from app.models import User, Risk, Document, Indicator, NonConformity
+from app.services.risk_links import risk_choices
 from app.models.quality import (QmsProcess, ProcessType, QmsProcessStatus, CustomerSurvey, SurveyMethod, Complaint,
                                 ComplaintStatus, ComplaintSeverity)
 from app.services import attachments as att_svc
@@ -126,7 +127,7 @@ def _process_form(p):
     return render_template("quality/process_form.html", p=p, users=_users(), ProcessType=ProcessType,
                            QmsProcessStatus=QmsProcessStatus, others=others,
                            indicators=Indicator.query.order_by(Indicator.ref).all(),
-                           risks=Risk.query.order_by(Risk.ref).all(), documents=Document.query.order_by(Document.ref).all())
+                           risks=risk_choices("QUALITE"), documents=Document.query.order_by(Document.ref).all())
 
 
 # --- Satisfaction client ------------------------------------------------------

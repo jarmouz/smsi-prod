@@ -25,9 +25,9 @@ def superadmin_required(fn):
     return w
 
 
-def _counts(model):
+def _counts(model, *filters):
     rows = (db.session.query(model.organization_id, db.func.count(model.id))
-            .execution_options(all_tenants=True)
+            .execution_options(all_tenants=True).filter(*filters)
             .group_by(model.organization_id).all())
     return dict(rows)
 
@@ -54,7 +54,7 @@ def home():
     else:
         # administrateur en lecture seule : sa seule organisation, sans paramètres plateforme
         orgs = [db.session.get(Organization, current_user.organization_id)]
-        return render_template("platform/home.html", orgs=orgs, users=_counts(User), risks=_counts(Risk),
+        return render_template("platform/home.html", orgs=orgs, users=_counts(User), risks=_counts(Risk, Risk.nature.is_(None)),
                                controls=_counts(Control), smtp=None, demo=None, demo_content=None,
                                readonly=True)
     smtp = {k: settings_svc._row(k, None) for k in SMTP_KEYS + ["smtp_use_tls", "smtp_use_ssl"]}
@@ -62,7 +62,7 @@ def home():
     from app import demo_content
     from app.services import demo
     return render_template("platform/home.html", orgs=orgs, demo=demo.demo_org(), demo_content=demo_content,
-                           users=_counts(User), risks=_counts(Risk), controls=_counts(Control),
+                           users=_counts(User), risks=_counts(Risk, Risk.nature.is_(None)), controls=_counts(Control),
                            smtp=smtp, readonly=False, ai_key=_ai_key())
 
 

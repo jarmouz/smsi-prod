@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% from 'partials/macros.html' import control_options with context %}
 {% block title %}Indicateur - {{ APP_NAME }}{% endblock %}
 {% block heading %}{{ 'Modifier ' + i.ref if i else 'Nouvel indicateur' }}{% endblock %}
 {% block topactions %}<a href="{{ url_for('objectives.indicator', ind_id=i.id) if i else url_for('objectives.index') }}" class="btn btn--ghost btn--sm">Retour</a>{% endblock %}
@@ -9,7 +10,7 @@
     <div class="field"><label>Ce qui est mesuré *</label><input type="text" name="name" required value="{{ i.name if i else '' }}" placeholder="Ex. Taux de clic aux campagnes de phishing"></div>
     <div class="form-grid">
       <div class="field"><label>Objectif</label><select name="objective_id"><option value="">- (surveillance seule)</option>{% for o in objectives %}<option value="{{ o.id }}" {{ 'selected' if (i and i.objective_id==o.id) or (not i and preset_objective==o.id) }}>{{ o.ref }} - {{ o.title|truncate(50) }}</option>{% endfor %}</select></div>
-      <div class="field"><label>Mesure de l'Annexe A</label><select name="control_id"><option value="">-</option>{% for c in controls %}<option value="{{ c.id }}" {{ 'selected' if i and i.control_id==c.id }}>{{ c.annex_ref }} - {{ c.title|truncate(45) }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Mesure ou exigence suivie</label><select name="control_id"><option value="">-</option>{{ control_options(i.control_id if i else None, current=[i.control] if i and i.control else []) }}</select></div>
     </div>
     <div class="form-grid">
       <div class="field"><label>Sens</label><select name="direction">{% for x in Direction %}<option value="{{ x.value }}" {{ 'selected' if i and i.direction==x }}>{{ x.label }}</option>{% endfor %}</select></div>

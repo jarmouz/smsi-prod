@@ -18,7 +18,7 @@
   <div class="panel" style="border-color:var(--red-100);">
     <div class="panel__head"><h2 style="color:var(--red-600);">Réinitialiser</h2></div>
     <div class="panel__body">
-      <p class="muted" style="font-size:13px;margin-bottom:12px;">Supprime <b>toutes</b> les données opérationnelles ({{ total }} enregistrement(s)) : risques, audits, constats, actions, revues, documents et preuves. Le <b>catalogue Annexe A</b>, les <b>utilisateurs</b> et les <b>paramètres</b> sont conservés. Utile pour repartir propre après la démonstration.</p>
+      <p class="muted" style="font-size:13px;margin-bottom:12px;">Supprime les données opérationnelles suivantes ({{ total }} enregistrement(s)) : risques (avec leurs plans de traitement et leurs liens), audits, constats et leurs actions, revues de direction, documents et preuves. Les <b>catalogues des référentiels</b>, les <b>utilisateurs</b>, les <b>paramètres</b> et les registres des autres modules (non-conformités, incidents, fournisseurs, modules des normes...) sont conservés. Utile pour repartir propre après la démonstration.</p>
       <form method="post" action="{{ url_for('admin.reset_operational') }}" class="stack" onsubmit="return confirm('Confirmer la réinitialisation des données opérationnelles ?');">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="field"><label>Tapez REINITIALISER pour confirmer</label><input type="text" name="confirm" placeholder="REINITIALISER"></div>

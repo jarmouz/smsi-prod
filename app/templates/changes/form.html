@@ -13,7 +13,7 @@
     </div>
     <div class="field"><label>Description</label><textarea name="description" rows="2">{{ c.description or '' if c else '' }}</textarea></div>
     <div class="field"><label>Justification / objectif</label><textarea name="reason" rows="2">{{ c.reason or '' if c else '' }}</textarea></div>
-    <div class="field"><label>Analyse d'impact sur la sécurité de l'information *</label><textarea name="security_impact" rows="3" required placeholder="Confidentialité, intégrité, disponibilité ; risques et mesures concernés ; pour une modification du SMSI : conséquences, ressources, responsabilités (6.3)">{{ c.security_impact or '' if c else '' }}</textarea></div>
+    <div class="field"><label>Analyse d'impact (sécurité, continuité, services, qualité selon le cas) *</label><textarea name="security_impact" rows="3" required placeholder="Confidentialité, intégrité, disponibilité ; risques et mesures concernés ; pour une modification du système de management : conséquences, ressources, responsabilités (6.3)">{{ c.security_impact or '' if c else '' }}</textarea></div>
     <div class="form-grid">
       <div class="field"><label>Niveau de risque du changement</label><select name="risk_level">{% for x in ChangeRisk %}<option value="{{ x.value }}" {{ 'selected' if c and c.risk_level==x }}>{{ x.label }}</option>{% endfor %}</select></div>
       <div class="field"><label>Actifs concernés</label><select name="assets" multiple size="4">{% for a in assets %}<option value="{{ a.id }}" {{ 'selected' if c and a in c.assets }}>{{ a.ref }} - {{ a.name|truncate(40) }}</option>{% endfor %}</select></div>

@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% from 'partials/macros.html' import control_options with context %}
 {% block title %}{{ 'Modifier' if inc else 'Déclarer' }} incident - {{ APP_NAME }}{% endblock %}
 {% block heading %}{{ 'Modifier ' + inc.ref if inc else 'Déclarer un incident' }}{% endblock %}
 {% block topactions %}<a href="{{ url_for('incidents.index') }}" class="btn btn--ghost btn--sm">Retour</a>{% endblock %}
@@ -22,7 +23,7 @@
       <div class="field"><label>Date de détection</label><input type="date" name="detected_at" value="{{ inc.detected_at.isoformat() if inc and inc.detected_at else '' }}"></div>
       <div class="field"><label>Déclarant</label><input type="text" name="reporter" value="{{ inc.reporter if inc else '' }}"></div>
       <div class="field"><label>Responsable du traitement</label><select name="assignee_id"><option value="">-</option>{% for u in users %}<option value="{{ u.id }}" {{ 'selected' if inc and inc.assignee_id==u.id }}>{{ u.name }}</option>{% endfor %}</select></div>
-      <div class="field"><label>Mesure concernée (Annexe A)</label><select name="control_id"><option value="">-</option>{% for c in controls %}<option value="{{ c.id }}" {{ 'selected' if inc and inc.control_id==c.id }}>{{ c.annex_ref }} - {{ c.title }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Mesure ou exigence concernée</label><select name="control_id"><option value="">-</option>{{ control_options(inc.control_id if inc else None, current=[inc.control] if inc and inc.control else []) }}</select></div>
       <div><button class="btn btn--primary" type="submit">{{ 'Enregistrer' if inc else 'Déclarer' }}</button></div>
     </div></div>
   </div>

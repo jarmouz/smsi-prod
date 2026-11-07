@@ -1,4 +1,4 @@
-"""Exports des livrables du SMSI pour l'auditeur : Déclaration d'applicabilité,
+"""Exports des livrables du système de management pour l'auditeur : Déclaration d'applicabilité,
 registre des risques, plan de traitement des risques (Excel, Word, PDF).
 Chaque export porte l'organisation, la date, l'auteur et un cadre d'approbation."""
 import re
@@ -32,12 +32,35 @@ def _criteria_text():
 
 
 # --- Données ------------------------------------------------------------------
+def _dda_scope():
+    """Norme et vue de l'export DdA / conformité (paramètres norme et vue de la page) : 27001 par défaut."""
+    from flask import has_request_context, request
+    from app.services import frameworks as fw_svc
+    fw = None
+    if has_request_context() and request.args.get("norme"):
+        fw = next((f for f in fw_svc.controls_frameworks() if f.code == request.args["norme"]), None)
+    fw = fw or fw_svc.get(fw_svc.CORE)
+    clauses = fw.kind != "controls" or (has_request_context() and request.args.get("vue") == "exigences")
+    return fw, ("clause" if clauses else "control")
+
+
+def _dda_meta():
+    fw, kind = _dda_scope()
+    if kind == "control":
+        return f"Déclaration d'applicabilité - {fw.name}", f"{fw.name}, Annexe A ; ISO/IEC 27001:2022 6.1.3 d)"
+    if fw.kind == "common":
+        return "Conformité au socle commun du système de management", "Chapitres 4 à 10 (structure harmonisée ISO)"
+    return f"Conformité aux exigences - {fw.name}", f"{fw.name}, chapitres 4 à 10"
+
+
 def soa_rows():
-    rows = [["Mesure", "Intitulé", "Applicable", "Justification", "Statut", "Mise en œuvre", "Responsable", "Preuves"]]
-    for c in Control.of().order_by(Control.id).all():
+    fw, kind = _dda_scope()
+    rows = [["Mesure" if kind == "control" else "Exigence", "Intitulé", "Applicable", "Justification", "Statut",
+             "Mise en œuvre", "Responsable", "Preuves"]]
+    for c in Control.of(fw.code, kind).order_by(Control.id).all():
         rows.append([c.annex_ref, c.title, "Oui" if c.applicable else "Non", c.justification or "",
-                     c.status.label, c.implementation or "", c.owner.name if c.owner else "",
-                     ", ".join(e.ref for e in c.evidences)])
+                     c.status.label + (" (socle commun)" if c.inherited else ""), c.implementation or "",
+                     c.owner.name if c.owner else "", ", ".join(e.ref for e in c.all_evidences)])
     return rows
 
 
@@ -53,6 +76,10 @@ def _norms(r):
     from app.services import frameworks as fw_svc
     names = {f.code: f.short_name for f in fw_svc.active()}
     return ", ".join(names[c] for c in r.framework_codes if c in names)
+
+
+def _dims(r):
+    return ", ".join(f"{risk_criteria.DIMENSION_LABELS.get(k, k)} {v}" for k, v in sorted(r.impact_by_dim.items()))
 
 
 def _links(r):
@@ -73,7 +100,8 @@ def risk_rows():
     rows = [["Réf.", "Risque", "Nature", "Domaine", "Normes", "Actif / périmètre", "Menace ou cause",
              "Vulnérabilité ou facteur aggravant", "V", "I", "Score inhérent",
              "Niveau inhérent", "Traitement", "V rés.", "I rés.", "Score résiduel", "Niveau résiduel",
-             "Acceptation", "Statut", "Propriétaire", "Prochaine revue", "Éléments liés", "Réévaluation demandée"]]
+             "Acceptation", "Statut", "Propriétaire", "Prochaine revue", "Éléments liés", "Réévaluation demandée",
+             "Conséquences", "Impacts par dimension"]]
     for r in _risks():
         rows.append([r.ref, r.title, "Opportunité" if r.is_opportunity else "Risque", r.domain_label, _norms(r),
                      r.asset or "", r.threat or "", r.vulnerability or "", r.likelihood, r.impact,
@@ -81,7 +109,7 @@ def risk_rows():
                      r.residual_likelihood or "", r.residual_impact or "", r.residual_score or "",
                      risk_criteria.label_of(r.display_level), _acceptance(r), r.status.label,
                      r.owner.name if r.owner else "", r.review_date.strftime("%d/%m/%Y") if r.review_date else "",
-                     _links(r), r.reassess_reason or ""])
+                     _links(r), r.reassess_reason or "", r.consequence or "", _dims(r)])
     return rows
 
 
@@ -125,6 +153,7 @@ def action_rows():
 # --- Mise en forme --------------------------------------------------------------
 DOCS = {
     "dda": {"title": "Déclaration d'applicabilité", "rows": soa_rows, "clause": "ISO/IEC 27001:2022, 6.1.3 d)",
+            "meta": _dda_meta,
             "widths": [900, 2600, 900, 3300, 1100, 3300, 1300, 1170], "approver": "Direction / RSSI"},
     "registre-risques": {"title": "Registre des risques", "rows": risk_rows, "clause": "Chapitres 6.1 et 8 des normes de systèmes de management (ISO/IEC 27001:2022, 6.1.2 et 8.2)",
                          "widths": None, "approver": "RSSI",
@@ -152,11 +181,11 @@ def context_sections():
     from app.models import ContextIssue, InterestedParty
     sc = scope()
     scope_rows = [["Élément", "Description"]] + [[label, sc[k] or "-"] for k, label in SCOPE_FIELDS]
-    issues = [["Réf.", "Type", "Catégorie", "Enjeu", "Effet sur le SMSI", "Prise en compte", "Risques"]]
+    issues = [["Réf.", "Type", "Catégorie", "Enjeu", "Effet sur le système de management", "Prise en compte", "Risques"]]
     for i in ContextIssue.query.filter_by(active=True).order_by(ContextIssue.kind, ContextIssue.ref):
         issues.append([i.ref, i.kind.label, i.category.label, i.title, i.effect or "", i.response or "",
                        ", ".join(r.ref for r in i.risks)])
-    parties = [["Réf.", "Partie intéressée", "Catégorie", "Besoins et attentes", "Retenues", "Réponse du SMSI",
+    parties = [["Réf.", "Partie intéressée", "Catégorie", "Besoins et attentes", "Retenues", "Réponse du système de management",
                 "Exigences"]]
     for p in InterestedParty.query.order_by(InterestedParty.ref):
         parties.append([p.ref, p.name, p.category.label, p.expectations or "", "Oui" if p.retained else "Non",
@@ -219,15 +248,15 @@ def requirement_sections():
 
 DOCS.update({
     "contexte": {"title": "Contexte, parties intéressées et périmètre", "sections": context_sections,
-                 "clause": "ISO/IEC 27001:2022, 4.1 à 4.3", "approver": "Direction", "criteria": False},
-    "indicateurs": {"title": "Objectifs de sécurité et indicateurs", "sections": indicator_sections,
-                    "clause": "ISO/IEC 27001:2022, 6.2 et 9.1", "approver": "RSSI", "criteria": False},
+                 "clause": "Chapitres 4.1 à 4.3 des normes de systèmes de management", "approver": "Direction", "criteria": False},
+    "indicateurs": {"title": "Objectifs et indicateurs", "sections": indicator_sections,
+                    "clause": "Chapitres 6.2 et 9.1 des normes de systèmes de management", "approver": "RSSI", "criteria": False},
     "non-conformites": {"title": "Registre des non-conformités", "sections": nc_sections,
-                        "clause": "ISO/IEC 27001:2022, 10.2", "approver": "RSSI", "criteria": False},
+                        "clause": "Chapitre 10.2 des normes de systèmes de management", "approver": "RSSI", "criteria": False},
     "fournisseurs": {"title": "Registre des fournisseurs", "sections": supplier_sections,
-                     "clause": "ISO/IEC 27001:2022, A.5.19 à A.5.22", "approver": "RSSI", "criteria": False},
+                     "clause": "Maîtrise des prestataires (ISO/IEC 27001 A.5.19 à A.5.22, ISO 9001 8.4, ISO/IEC 20000-1 8.2.3)", "approver": "RSSI", "criteria": False},
     "exigences": {"title": "Registre des exigences légales et contractuelles", "sections": requirement_sections,
-                  "clause": "ISO/IEC 27001:2022, 4.2 et A.5.31", "approver": "Juridique / RSSI", "criteria": False},
+                  "clause": "Chapitre 4.2 des normes de systèmes de management (ISO/IEC 27001 A.5.31)", "approver": "Juridique / RSSI", "criteria": False},
 })
 
 
@@ -293,13 +322,13 @@ def change_sections():
 
 DOCS.update({
     "programme-audit": {"title": "Programme d'audit interne", "sections": programme_sections,
-                        "clause": "ISO/IEC 27001:2022, 9.2.2", "approver": "Direction / RSSI", "criteria": False},
+                        "clause": "Chapitre 9.2.2 des normes de systèmes de management", "approver": "Direction / RSSI", "criteria": False},
     "competences": {"title": "Registre des compétences", "sections": competence_sections,
-                    "clause": "ISO/IEC 27001:2022, 7.2", "approver": "RSSI / RH", "criteria": False},
+                    "clause": "Chapitre 7.2 des normes de systèmes de management", "approver": "RSSI / RH", "criteria": False},
     "continuite": {"title": "Analyse d'impact et exercices de continuité", "sections": continuity_sections,
-                   "clause": "ISO/IEC 27001:2022, A.5.29 et A.5.30", "approver": "Direction", "criteria": False},
+                   "clause": "ISO 22301 8.2 et 8.5 ; ISO/IEC 27001 A.5.29 et A.5.30", "approver": "Direction", "criteria": False},
     "changements": {"title": "Registre des changements", "sections": change_sections,
-                    "clause": "ISO/IEC 27001:2022, 6.3 et A.8.32", "approver": "RSSI", "criteria": False},
+                    "clause": "Chapitre 6.3 des normes de systèmes de management (ISO/IEC 27001 A.8.32, ISO/IEC 20000-1 8.5.1)", "approver": "RSSI", "criteria": False},
 })
 
 
@@ -325,7 +354,9 @@ def _header(spec, now):
 
 def build(kind, fmt):
     """Retourne (octets, nom de fichier) ; fmt ∈ xlsx, docx, pdf."""
-    spec = DOCS[kind]
+    spec = dict(DOCS[kind])
+    if "meta" in spec:                      # titre et référence selon la norme exportée
+        spec["title"], spec["clause"] = spec["meta"]()
     now = datetime.utcnow()
     org = current_org()
     base = f"{spec['title']} - {org.slug if org else ''} - {now:%Y-%m-%d}"
@@ -354,7 +385,7 @@ def build(kind, fmt):
 
 def response(kind, fmt):
     data, name = build(kind, fmt)
-    log_event("export", f"Export {DOCS[kind]['title']} ({fmt.upper()})")
+    log_event("export", f"Export {_dda_meta()[0] if kind == 'dda' else DOCS[kind]['title']} ({fmt.upper()})")
     from urllib.parse import quote
     return Response(data, mimetype=MIMES[fmt],
                     headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(name)}"})

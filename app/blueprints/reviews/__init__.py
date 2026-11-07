@@ -115,23 +115,20 @@ def action_status(action_id):
 
 
 def _digest():
-    """Synthèse automatique pour préparer les données d'entrée (clause 9.3.2)."""
-    controls = Control.of().all()
-    appl = [c for c in controls if c.applicable]
-    impl = [c for c in appl if c.status == ControlStatus.IMPLEMENTE]
+    """Synthèse automatique pour préparer les données d'entrée (clause 9.3.2), toutes normes actives."""
+    from app.services import readiness
+    cards = readiness.norm_cards()
     risks = Risk.query.all()
-    open_ncs = Finding.query.filter(
-        Finding.type.in_([FindingType.NC_MAJEURE, FindingType.NC_MINEURE]),
-        Finding.closed.is_(False)).count()
     return {
-        "soa_rate": round(100 * len(impl) / len(appl)) if appl else 0,
-        "applicable": len(appl),
+        "norms": [(c["fw"].short_name if not c["is_socle"] else "Socle commun", c["pct"], c["evidence_pct"],
+                   c["implemented"], c["applicable"]) for c in cards],
+        "overall": readiness.overall(cards),
+        "modules": readiness.module_inputs(),
         "risks_open": len([r for r in risks if r.status.is_open and not r.is_opportunity]),
         "risks_high": len([r for r in risks if r.is_high]),
         "opps_open": len([r for r in risks if r.status.is_open and r.is_opportunity]),
         "rtp_open": sum(len(r.open_actions) for r in risks),
         "rtp_overdue": sum(len(r.overdue_actions) for r in risks),
         "risks_reassess": sum(1 for r in risks if r.reassess_at and r.status.is_open),
-        "open_ncs": open_ncs,
         **governance.summary(),
     }

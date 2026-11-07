@@ -184,7 +184,7 @@ def save_settings():
 def test_email():
     to = (request.form.get("test_to") or current_user.email).strip()
     html = ("<div style='font-family:sans-serif;padding:20px'>"
-            "<h2>Test SMSI</h2><p>La configuration SMTP fonctionne.</p></div>")
+            "<h2>Test Integra</h2><p>La configuration SMTP fonctionne.</p></div>")
     ok, msg = mailer.send_test(to, html)
     flash(msg, "success" if ok else "danger")
     return redirect(url_for("admin.settings_page"))
@@ -220,7 +220,8 @@ def risk_criteria_page():
                    "likelihood": [(request.form.get(f"likelihood_{i}") or "").strip()[:200]
                                   for i in range(1, crit["scale"]["likelihood"] + 1)],
                    "impact": [(request.form.get(f"impact_{i}") or "").strip()[:200]
-                              for i in range(1, crit["scale"]["impact"] + 1)]}
+                              for i in range(1, crit["scale"]["impact"] + 1)],
+                   "dimensions": [d for d in request.form.getlist("dimensions") if d in risk_criteria.DIMENSION_LABELS]}
             risk_criteria.save(new)
             log_event("admin", "Critères d'appréciation et d'acceptation des risques modifiés",
                       changes={"criteres": [None, f"échelle {crit['scale']['likelihood']}×{crit['scale']['impact']}, "
@@ -230,6 +231,7 @@ def risk_criteria_page():
             return redirect(url_for("admin.risk_criteria_page"))
     from app.models import Risk
     return render_template("admin/risk_criteria.html", crit=crit, keys=risk_criteria.LEVEL_KEYS,
+                           all_dimensions=risk_criteria.DIMENSIONS,
                            top=risk_criteria.max_score(), sizes=range(risk_criteria.SCALE_MIN, risk_criteria.SCALE_MAX + 1),
                            nb_risks=Risk.query.count())
 
@@ -285,7 +287,7 @@ def reminders_test():
     if not sections:
         flash("Vous n'avez aucune échéance à signaler : rien à envoyer.", "warning")
     else:
-        ok, msg = mailer.send_now(current_user.email, "SMSI - votre récapitulatif (test)",
+        ok, msg = mailer.send_now(current_user.email, "Integra - votre récapitulatif (test)",
                                   reminders.render(current_user, current_org(), sections, settings_svc.get_base_url()))
         flash(f"Récapitulatif envoyé à {current_user.email}." if ok else f"Échec de l'envoi : {msg}",
               "success" if ok else "danger")
@@ -370,12 +372,19 @@ def maintenance():
 @bp.route("/maintenance/reinitialiser-donnees", methods=["POST"])
 @rssi_required
 def reset_operational():
-    """Supprime les données opérationnelles (démo comprise). Conserve le
-    catalogue Annexe A, les utilisateurs et les paramètres."""
+    """Supprime les données opérationnelles listées (risques et leurs plans de traitement et liens,
+    audits, revues, documents, preuves). Conserve les catalogues des référentiels, les
+    utilisateurs, les paramètres et les registres des autres modules."""
     if (request.form.get("confirm") or "").strip().upper() != "REINITIALISER":
         flash("Saisissez REINITIALISER pour confirmer.", "warning")
         return redirect(url_for("admin.maintenance"))
-    CorrectiveAction.query.delete()
+    from app.models import FrameworkLink, RiskLink, RiskAction
+    FrameworkLink.query.filter(FrameworkLink.entity_type.in_(
+        ["Risk", "Audit", "Finding", "CorrectiveAction", "ManagementReview", "ReviewAction", "Document", "Evidence"]
+    )).delete(synchronize_session=False)
+    RiskLink.query.delete()
+    RiskAction.query.delete()
+    CorrectiveAction.query.filter(CorrectiveAction.finding_id.isnot(None)).delete(synchronize_session=False)
     Finding.query.delete()
     Audit.query.delete()
     ReviewAction.query.delete()
@@ -393,7 +402,7 @@ def reset_operational():
     db.session.commit()
     from app.services.audit_trail import log_event
     log_event("admin", "Réinitialisation des données opérationnelles (maintenance)")
-    flash("Données opérationnelles réinitialisées. Catalogue Annexe A et utilisateurs conservés.", "success")
+    flash("Données opérationnelles réinitialisées. Catalogues des référentiels, utilisateurs et autres registres conservés.", "success")
     return redirect(url_for("admin.maintenance"))
 
 

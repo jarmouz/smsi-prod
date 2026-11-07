@@ -27,7 +27,7 @@
   <div class="panel" style="margin-top:16px;"><div class="panel__head"><h2>Liens</h2></div><div class="panel__body stack">
     <div class="field"><label>Processus alimentés (en aval)</label><select name="next_ids" multiple size="4">{% for x in others %}<option value="{{ x.id }}" {{ 'selected' if x.id in sel_n }}>{{ x.ref }} - {{ x.name }}</option>{% endfor %}</select><div class="hint">Ctrl + clic pour en sélectionner plusieurs.</div></div>
     <div class="field"><label>Indicateurs de performance</label><select name="indicator_ids" multiple size="4">{% for k in indicators %}<option value="{{ k.id }}" {{ 'selected' if k.id in sel_k }}>{{ k.ref }} - {{ k.name }}</option>{% endfor %}</select></div>
-    <div class="field"><label>Risques et opportunités</label><select name="risk_ids" multiple size="4">{% for r in risks %}<option value="{{ r.id }}" {{ 'selected' if r.id in sel_r }}>{{ r.ref }} - {{ r.title }}{{ ' (opportunité)' if r.nature == 'OPPORTUNITE' }}</option>{% endfor %}</select></div>
+    <div class="field"><label>Risques et opportunités</label><select name="risk_ids" multiple size="4">{% for r in risks %}<option value="{{ r.id }}" {{ 'selected' if r.id in sel_r }}>{{ risk_label(r) }}</option>{% endfor %}</select></div>
     <div class="field"><label>Documents</label><select name="document_ids" multiple size="4">{% for d in documents %}<option value="{{ d.id }}" {{ 'selected' if d.id in sel_d }}>{{ d.ref }} - {{ d.title }}</option>{% endfor %}</select></div>
   </div></div>
   <div class="panel" style="margin-top:16px;"><div class="panel__head"><h2>Suivi</h2></div><div class="panel__body stack">

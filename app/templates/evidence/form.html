@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% from 'partials/macros.html' import attachments_panel %}
+{% from 'partials/macros.html' import attachments_panel, control_checklist with context %}
 {% block title %}{{ 'Modifier' if ev else 'Nouvelle' }} preuve - {{ APP_NAME }}{% endblock %}
 {% block heading %}{{ 'Modifier ' + ev.ref if ev else 'Nouvelle preuve' }}{% endblock %}
 {% block topactions %}<a href="{{ url_for('evidence.index') }}" class="btn btn--ghost btn--sm">Retour</a>{% endblock %}
@@ -25,16 +25,13 @@
   </div>
   <div class="stack">
     <div class="panel">
-      <div class="panel__head"><h2>Mesures prouvées</h2></div>
+      <div class="panel__head"><h2>Mesures et exigences prouvées</h2></div>
       <div class="panel__body">
-        <p class="muted" style="font-size:12px;margin-bottom:8px;">Rattachez cette preuve aux mesures qu'elle atteste.</p>
+        <p class="muted" style="font-size:12px;margin-bottom:8px;">Rattachez cette preuve aux mesures et exigences qu'elle atteste, toutes normes confondues (une exigence commune se prouve dans le socle).</p>
         <div class="ctrl-picker">
-          {% for t in Theme %}
-          <div class="section-title" style="margin:6px 0 2px;">{{ t.annex }} - {{ t.label }}</div>
-          {% for c in controls if c.theme == t %}
-          <label><input type="checkbox" name="controls" value="{{ c.id }}" {{ 'checked' if c.id in sel }}><span class="ref">{{ c.annex_ref }}</span><span>{{ c.title }}</span></label>
-          {% endfor %}
-          {% endfor %}
+          {{ control_checklist(sel) }}
+          {%- set _other = ev.controls|rejectattr('id', 'in', control_groups(True)|map(attribute=1)|sum(start=[])|map(attribute='id')|list)|list if ev else [] %}
+          {% for c in _other %}<label><input type="checkbox" name="controls" value="{{ c.id }}" checked disabled><span class="ref">{{ c.annex_ref }}</span><span>{{ c.title }} ({{ c.framework.short_name }}, norme inactive : conservée)</span></label>{% endfor %}
         </div>
       </div>
     </div>

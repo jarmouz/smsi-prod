@@ -72,6 +72,23 @@ def _smi_fields(r):
         fw_svc.set_links(r, [c for c in f.getlist("fw") if c not in base], collapse=False)
 
 
+def _analysis_fields(r):
+    """Conséquences et impact par dimension (l'impact retenu est le maximum des dimensions cotées)."""
+    from app.services import risk_criteria
+    f = request.form
+    if "consequence" in f:
+        r.consequence = (f.get("consequence") or "").strip() or None
+    if f.get("dims_present"):
+        details = {k: _rating("impact", f.get(f"impact_{k}")) for k, _ in risk_criteria.dimensions()}
+        details = {k: v for k, v in details.items() if v}
+        # dimensions désactivées depuis : leurs cotations sont conservées
+        kept = {k: v for k, v in r.impact_by_dim.items() if k not in dict(risk_criteria.dimensions())}
+        if details or kept:
+            r.set_impact_details({**kept, **details})
+        else:
+            r.impact_details = None
+
+
 def _controls_from_form(r):
     """Mesures cochées parmi les normes proposées ; celles d'une norme non proposée
     (désactivée depuis) restent rattachées."""
@@ -180,6 +197,7 @@ def create():
             _controls_from_form(r)
             asset_ids = request.form.getlist("assets", type=int)
             r.assets = Asset.query.filter(Asset.id.in_(asset_ids)).all() if asset_ids else []
+            _analysis_fields(r)
             db.session.add(r)
             _smi_fields(r)
             db.session.commit()
@@ -220,6 +238,7 @@ def edit(risk_id):
         _controls_from_form(r)
         asset_ids = request.form.getlist("assets", type=int)
         r.assets = Asset.query.filter(Asset.id.in_(asset_ids)).all() if asset_ids else []
+        _analysis_fields(r)
         _smi_fields(r)
         was_flagged = bool(r.reassess_at)
         r.clear_reassess()                      # fiche revue et enregistrée : réévaluation faite
