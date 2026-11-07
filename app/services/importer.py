@@ -445,7 +445,7 @@ def _merge_2013(entries):
 
 
 def _soa_plan(rows, ctx):
-    controls = Control.query.all()
+    controls = Control.of().all()
     by_ref = {c.ref: c for c in controls}
     users = ctx["users"]
     out, entries = [], []
@@ -934,7 +934,7 @@ def _risk_plan(rows, ctx):
     by_title = {}
     for r in existing:
         by_title.setdefault(norm(r.title), r)
-    ctrl_by_ref = {c.ref: c for c in Control.query.all()}
+    ctrl_by_ref = {c.ref: c for c in Control.of().all()}
     assets = Asset.query.all()
     asset_idx = {a.ref.lower(): a for a in assets}
     for a in assets:
@@ -1497,7 +1497,7 @@ def template_xlsx(kind):
     ws.append(heads)
     if kind == "dda":
         users = {u.id: u for u in User.query.all()}
-        for c in sorted(Control.query.all(), key=lambda c: tuple(int(x) for x in c.ref.split("."))):
+        for c in sorted(Control.of().all(), key=lambda c: tuple(int(x) for x in c.ref.split("."))):
             ws.append([f"A.{c.ref}", c.title, "Oui" if c.applicable else "Non", c.justification or "",
                        c.status.label, c.implementation or "", users[c.owner_id].name if c.owner_id in users else ""])
         dv = DataValidation(type="list", formula1='"Oui,Non"', allow_blank=True)

@@ -128,7 +128,7 @@ def _seed(org, log):
     db.session.add(admin)
     db.session.flush()
     uid = lambda k: users[k].id if k else None  # noqa: E731
-    ctrl = {c.ref: c for c in Control.query.all()}
+    ctrl = {c.ref: c for c in Control.of().all()}
 
     # Déclaration d'applicabilité
     status_map = {"I": ControlStatus.IMPLEMENTE, "E": ControlStatus.EN_COURS,
@@ -302,7 +302,7 @@ def _generic(title):
 
 def _soa_rows():
     rows = [["Mesure", "Intitulé", "Applicable", "Justification", "Statut", "Mise en œuvre", "Responsable"]]
-    for c in Control.query.order_by(Control.id).all():
+    for c in Control.of().order_by(Control.id).all():
         rows.append([c.annex_ref, c.title, "Oui" if c.applicable else "Non", c.justification or "",
                      c.status.label, c.implementation or "", c.owner.name if c.owner else ""])
     return rows

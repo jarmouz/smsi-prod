@@ -34,7 +34,7 @@ def _criteria_text():
 # --- Données ------------------------------------------------------------------
 def soa_rows():
     rows = [["Mesure", "Intitulé", "Applicable", "Justification", "Statut", "Mise en œuvre", "Responsable", "Preuves"]]
-    for c in Control.query.order_by(Control.id).all():
+    for c in Control.of().order_by(Control.id).all():
         rows.append([c.annex_ref, c.title, "Oui" if c.applicable else "Non", c.justification or "",
                      c.status.label, c.implementation or "", c.owner.name if c.owner else "",
                      ", ".join(e.ref for e in c.evidences)])

@@ -111,7 +111,7 @@ def action_status(action_id):
 
 def _digest():
     """Synthèse automatique pour préparer les données d'entrée (clause 9.3.2)."""
-    controls = Control.query.all()
+    controls = Control.of().all()
     appl = [c for c in controls if c.applicable]
     impl = [c for c in appl if c.status == ControlStatus.IMPLEMENTE]
     risks = Risk.query.all()

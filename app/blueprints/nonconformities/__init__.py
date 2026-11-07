@@ -106,13 +106,13 @@ def _prefill():
         nc.source = NcSource.CONTROLE
         nc.title = f"Exercice {t.ref} {t.result.label.lower()} : {t.title}"[:300]
         nc.description, nc.detected_at = t.findings, t.test_date or date.today()
-        nc.control_id = (Control.query.filter_by(ref="5.30").first() or Control()).id
+        nc.control_id = (Control.of().filter_by(ref="5.30").first() or Control()).id
     return nc
 
 
 def _form(nc):
     users = User.query.filter_by(is_active_flag=True).order_by(User.name).all()
-    controls = Control.query.order_by(Control.id).all()
+    controls = Control.of().order_by(Control.id).all()
     draft = nc or _prefill()
     if request.method == "POST":
         title = (request.form.get("title") or "").strip()

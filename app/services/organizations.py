@@ -23,12 +23,9 @@ def unique_slug(base):
 
 
 def seed_controls():
-    """Catalogue Annexe A (93 mesures) pour l'organisation courante."""
-    from app.seed import ANNEX_A
-    for theme, items in ANNEX_A.items():
-        for ref, title in items:
-            db.session.add(Control(ref=ref, theme=theme, title=title,
-                                   applicable=True, status=ControlStatus.NON_DEMARRE))
+    """Active l'ISO 27001 (catalogue Annexe A, 93 mesures) pour l'organisation courante."""
+    from app.services import frameworks
+    frameworks.enable(frameworks.CORE)
 
 
 def create_organization(name, slug=None, docs_folder=None,
@@ -96,11 +93,12 @@ def _remap(obj, target, log):
     for col in _fk_columns(type(obj), "controls"):
         cid = getattr(obj, col)
         if cid:
-            ref = db.session.get(Control, cid).ref
-            new = Control.query.filter_by(organization_id=target.id, ref=ref).first()
+            src = db.session.get(Control, cid)
+            new = Control.query.filter_by(organization_id=target.id, framework_id=src.framework_id, ref=src.ref).first()
             setattr(obj, col, new.id if new else None)
     if hasattr(obj, "controls"):
-        obj.controls = [c2 for c2 in (Control.query.filter_by(organization_id=target.id, ref=c.ref).first()
+        obj.controls = [c2 for c2 in (Control.query.filter_by(organization_id=target.id, framework_id=c.framework_id,
+                                                              ref=c.ref).first()
                                       for c in obj.controls) if c2]
     for col in _fk_columns(type(obj), "users"):
         uid = getattr(obj, col)

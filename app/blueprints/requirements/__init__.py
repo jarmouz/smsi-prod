@@ -78,5 +78,5 @@ def _form(r):
     return render_template("requirements/form.html", r=r,
                            users=User.query.filter_by(is_active_flag=True).order_by(User.name).all(),
                            parties=InterestedParty.query.order_by(InterestedParty.ref).all(),
-                           controls=Control.query.order_by(Control.id).all(),
+                           controls=Control.of().order_by(Control.id).all(),
                            RequirementType=RequirementType, ComplianceStatus=ComplianceStatus)

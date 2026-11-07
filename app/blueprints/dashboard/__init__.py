@@ -16,7 +16,7 @@ bp = Blueprint("dashboard", __name__)
 @bp.route("/tableau-de-bord")
 @login_required
 def home():
-    controls = Control.query.all()
+    controls = Control.of().all()
     applicable = [c for c in controls if c.applicable]
     implemented = [c for c in applicable if c.status == ControlStatus.IMPLEMENTE]
     soa_rate = round(100 * len(implemented) / len(applicable)) if applicable else 0

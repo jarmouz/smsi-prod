@@ -10,6 +10,7 @@ from app.models.enums import (
 from app.models.organization import Organization, TenantMixin
 from app.models.user import User
 from app.models.setting import Setting
+from app.models.framework import Framework, FrameworkItem, ItemMapping, OrgFramework, FrameworkLink, ISO27001
 from app.models.control import Control, risk_controls, evidence_controls
 from app.models.risk import Risk
 from app.models.audit import Audit, Finding, CorrectiveAction
@@ -30,7 +31,8 @@ from app.models.operations import (
 __all__ = [
     "Role", "Theme", "ControlStatus", "Treatment", "RiskStatus",
     "AuditStatus", "FindingType", "ActionStatus", "DocStatus", "DocType", "ReviewStatus",
-    "Organization", "TenantMixin", "User", "Setting", "Control", "risk_controls", "evidence_controls",
+    "Organization", "TenantMixin", "User", "Setting",
+    "Framework", "FrameworkItem", "ItemMapping", "OrgFramework", "FrameworkLink", "ISO27001", "Control", "risk_controls", "evidence_controls",
     "Risk", "Audit", "Finding", "CorrectiveAction",
     "ManagementReview", "ReviewAction", "Document", "DocumentVersion", "Evidence", "Attachment", "Asset", "Incident", "AwarenessAction", "ActivityLog",
     "AssetCategory", "Classification", "AssetStatus", "IncidentCategory",

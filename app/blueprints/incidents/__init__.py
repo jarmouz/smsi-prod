@@ -43,7 +43,7 @@ def index():
 @bp.route("/nouveau", methods=["GET", "POST"])
 @editor_required
 def create():
-    controls = Control.query.order_by(Control.theme, Control.id).all()
+    controls = Control.of().order_by(Control.theme, Control.id).all()
     users = User.query.filter_by(is_active_flag=True).order_by(User.name).all()
     if request.method == "POST":
         title = (request.form.get("title") or "").strip()
@@ -84,7 +84,7 @@ def detail(incident_id):
 @editor_required
 def edit(incident_id):
     inc = db.session.get(Incident, incident_id) or abort(404)
-    controls = Control.query.order_by(Control.theme, Control.id).all()
+    controls = Control.of().order_by(Control.theme, Control.id).all()
     users = User.query.filter_by(is_active_flag=True).order_by(User.name).all()
     if request.method == "POST":
         inc.title = (request.form.get("title") or inc.title).strip()

@@ -173,6 +173,9 @@ def register_seed_command(app):
         with db.engine.begin() as conn:
             for ddl in UPGRADE_DDL:
                 conn.execute(text(ddl))
+        # Référentiels (3.0) : catalogues à jour, mesures existantes rattachées à l'ISO 27001
+        from app.services import frameworks
+        frameworks.migrate()
         click.echo("Schéma mis à jour (tables manquantes créées, colonnes ajoutées).")
 
 
@@ -419,6 +422,8 @@ def register_seed_command(app):
             click.secho(err, fg="yellow")
 
         db.create_all()
+        from app.services import frameworks
+        frameworks.sync_catalogues()
         for k, v in [("smtp_from_name", "SMSI"), ("smtp_port", "587"),
                      ("smtp_use_tls", "1"), ("notifications_enabled", "1")]:
             db.session.add(Setting(key=k, value=v))
@@ -445,6 +450,8 @@ def register_seed_command(app):
             click.confirm("Tapez y pour effacer définitivement la base", abort=True)
         db.drop_all()
         db.create_all()
+        from app.services import frameworks
+        frameworks.sync_catalogues()
 
         # Réglages par défaut (globaux : hérités par toutes les organisations)
         for k, v in [("smtp_from_name", "SMSI"), ("smtp_port", "587"),
@@ -488,7 +495,7 @@ def _u(email, name, role, job):
 
 def _seed_demo(rssi, contrib, auditor):
     def ctrl(ref):
-        return Control.query.filter_by(ref=ref).first()
+        return Control.of().filter_by(ref=ref).first()
 
     # Rendre applicables/implémentées quelques mesures + affecter des responsables
     applied = {
@@ -609,7 +616,7 @@ def _seed_demo(rssi, contrib, auditor):
     for ref, title, refs in evid:
         e = Evidence(ref=ref, title=title, collected_at=date.today() - timedelta(days=15),
                      owner_id=contrib.id, location="Coffre documentaire interne")
-        e.controls = [Control.query.filter_by(ref=x).first() for x in refs]
+        e.controls = [Control.of().filter_by(ref=x).first() for x in refs]
         db.session.add(e)
     db.session.commit()
 
@@ -631,7 +638,7 @@ def _seed_demo(rssi, contrib, auditor):
                    category=IncidentCategory.MALVEILLANCE, severity=IncidentSeverity.MAJEUR,
                    status=IncidentStatus.EN_COURS, detected_at=date.today() - timedelta(days=2),
                    reporter="Support informatique", assignee_id=rssi.id,
-                   control_id=Control.query.filter_by(ref="5.26").first().id,
+                   control_id=Control.of().filter_by(ref="5.26").first().id,
                    impact="Aucune donnée compromise à ce stade."))
     db.session.add(Incident(ref="INC-2026-0002", title="Indisponibilité du serveur de messagerie",
                    category=IncidentCategory.PANNE, severity=IncidentSeverity.MINEUR,

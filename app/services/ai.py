@@ -260,7 +260,7 @@ def extract_table(spec, filename, data, user=None):
 def analyze_document(filename, data, path=""):
     """Métadonnées proposées pour un document du SMSI."""
     from app.models import Control, DocType
-    controls = sorted(Control.query.all(), key=lambda c: tuple(int(x) for x in c.ref.split(".")))
+    controls = sorted(Control.of().all(), key=lambda c: tuple(int(x) for x in c.ref.split(".")))
     catalog = "\n".join(f"A.{c.ref} {c.title}" for c in controls)
     blocks, cut = _source_blocks(filename, data, text_limit=TEXT_MAX)
     system = (INTRO + "\n\nTâche : décrire un document existant du SMSI pour l'enregistrer dans la gestion "

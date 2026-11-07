@@ -61,7 +61,7 @@ def create():
 @login_required
 def detail(audit_id):
     a = db.session.get(Audit, audit_id) or abort(404)
-    controls = Control.query.order_by(Control.theme, Control.id).all()
+    controls = Control.of().order_by(Control.theme, Control.id).all()
     users = User.query.filter_by(is_active_flag=True).order_by(User.name).all()
     attachments = att_svc.get_for("audit", a.id)
     from app.models import NonConformity
@@ -171,7 +171,7 @@ def programme():
     for (yy, code), it in items.items():
         theme = THEME_OF_DOMAIN.get(code)
         if it.auditor_id and theme:
-            n = Control.query.filter(Control.theme == Theme(theme), Control.owner_id == it.auditor_id).count()
+            n = Control.of().filter(Control.theme == Theme(theme), Control.owner_id == it.auditor_id).count()
             if n:
                 conflicts[(yy, code)] = n
     return render_template("audits/programme.html", years=years, domains=AUDIT_DOMAINS, items=items,

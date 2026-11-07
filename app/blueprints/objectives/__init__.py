@@ -124,7 +124,7 @@ def _indicator_form(i):
             return redirect(url_for("objectives.indicator", ind_id=i.id))
     return render_template("objectives/indicator_form.html", i=i, users=_users(),
                            objectives=Objective.query.order_by(Objective.ref).all(),
-                           controls=Control.query.order_by(Control.id).all(),
+                           controls=Control.of().order_by(Control.id).all(),
                            Frequency=Frequency, Direction=Direction,
                            preset_objective=request.args.get("objectif", type=int))
 

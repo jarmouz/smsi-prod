@@ -16,7 +16,7 @@ def index():
     f_appl = request.args.get("applicable")
     search = (request.args.get("q") or "").strip()
 
-    q = Control.query
+    q = Control.of()
     if f_theme in [t.value for t in Theme]:
         q = q.filter(Control.theme == Theme(f_theme))
     if f_status in [s.value for s in ControlStatus]:
@@ -37,7 +37,7 @@ def index():
         grouped.setdefault(c.theme, []).append(c)
 
     # Statistiques globales (indépendantes des filtres)
-    allc = Control.query.all()
+    allc = Control.of().all()
     appl = [c for c in allc if c.applicable]
     stats = {
         "total": len(allc),
