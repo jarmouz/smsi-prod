@@ -23,6 +23,8 @@ from app.models.governance import (
     ContextIssue, InterestedParty, Objective, Indicator, Measurement, NonConformity, Supplier, Requirement,
     issue_risks, requirement_controls,
 )
+from app.models.privacy import ProcessingActivity, SubjectRequest, processing_assets, processing_suppliers
+from app.models.ai_system import AiSystem, AiImpactAssessment, ai_system_assets
 from app.models.operations import (
     AuditPlanItem, CompetenceRequirement, CompetenceRecord, BusinessProcess, ContinuityTest, ChangeRequest,
     asset_risks, process_assets, test_processes, change_assets, competence_users, AUDIT_DOMAINS,
@@ -43,6 +45,8 @@ __all__ = [
     "NcSeverity", "NcStatus", "SupplierCategory", "Criticality", "DataAccess", "AssessmentResult",
     "SupplierStatus", "RequirementType", "ComplianceStatus",
     "AuditPlanItem", "CompetenceRequirement", "CompetenceRecord", "BusinessProcess", "ContinuityTest", "ChangeRequest",
+    "ProcessingActivity", "SubjectRequest", "processing_assets", "processing_suppliers",
+    "AiSystem", "AiImpactAssessment", "ai_system_assets",
     "asset_risks", "process_assets", "test_processes", "change_assets", "competence_users", "AUDIT_DOMAINS",
     "CompetenceType", "TestType", "TestResult", "ChangeKind", "ChangeRisk", "ChangeStatus", "DigestFrequency",
 ]

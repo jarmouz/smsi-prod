@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% block title %}Traitement - {{ APP_NAME }}{% endblock %}
+{% block heading %}{{ 'Modifier ' + p.ref if p else 'Nouveau traitement' }}{% endblock %}
+{% block topactions %}<a href="{{ url_for('privacy.detail', pid=p.id) if p else url_for('privacy.index') }}" class="btn btn--ghost btn--sm">Retour</a>{% endblock %}
+{% block content %}
+{% set sel_assets = p.assets|map(attribute='id')|list if p else [] %}
+{% set sel_sups = p.suppliers|map(attribute='id')|list if p else [] %}
+<form method="post" style="max-width:860px;">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="panel"><div class="panel__head"><h2>Traitement</h2></div><div class="panel__body stack">
+    <div class="field"><label>Nom du traitement *</label><input type="text" name="name" required maxlength="300" value="{{ p.name if p else '' }}" placeholder="Ex. Gestion de la paie"></div>
+    <div class="field"><label>Finalité(s)</label><textarea name="purpose" rows="2">{{ p.purpose or '' if p else '' }}</textarea></div>
+    <div class="form-grid">
+      <div class="field"><label>Rôle de l'organisation</label><select name="role">{% for x in ProcessingRole %}<option value="{{ x.value }}" {{ 'selected' if p and p.role==x }}>{{ x.label }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Base juridique</label><select name="legal_basis">{% for x in LegalBasis %}<option value="{{ x.value }}" {{ 'selected' if p and p.legal_basis==x }}>{{ x.label }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="field"><label>Précisions sur la base juridique</label><input type="text" name="legal_basis_detail" value="{{ p.legal_basis_detail or '' if p else '' }}" placeholder="Texte de loi, contrat, intérêt poursuivi..."></div>
+    <div class="form-grid">
+      <div class="field"><label>Personnes concernées</label><textarea name="data_subjects" rows="2" placeholder="Salariés, clients, prospects...">{{ p.data_subjects or '' if p else '' }}</textarea></div>
+      <div class="field"><label>Catégories de données</label><textarea name="data_categories" rows="2" placeholder="Identité, coordonnées, données bancaires...">{{ p.data_categories or '' if p else '' }}</textarea></div>
+    </div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;"><input type="checkbox" name="sensitive_data" {{ 'checked' if p and p.sensitive_data }} style="width:auto;"> Données sensibles (santé, opinions, biométrie, infractions...)</label>
+    <div class="field"><label>Précisions sur les données sensibles</label><input type="text" name="sensitive_detail" value="{{ p.sensitive_detail or '' if p else '' }}"></div>
+    <div class="form-grid">
+      <div class="field"><label>Source des données</label><input type="text" name="source" value="{{ p.source or '' if p else '' }}" placeholder="Personne elle-même, tiers..."></div>
+      <div class="field"><label>Conservation</label><input type="text" name="retention" value="{{ p.retention or '' if p else '' }}" placeholder="Ex. 5 ans après la fin du contrat"></div>
+    </div>
+    <div class="field"><label>Destinataires</label><textarea name="recipients" rows="2" placeholder="Services internes, organismes, prestataires...">{{ p.recipients or '' if p else '' }}</textarea></div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;"><input type="checkbox" name="transfers" {{ 'checked' if p and p.transfers }} style="width:auto;"> Transferts de données hors du pays</label>
+    <div class="field"><label>Pays et garanties</label><input type="text" name="transfer_detail" value="{{ p.transfer_detail or '' if p else '' }}" placeholder="Ex. France (UE) - clauses contractuelles types"></div>
+    <div class="field"><label>Mesures de sécurité</label><textarea name="security_measures" rows="2">{{ p.security_measures or '' if p else '' }}</textarea></div>
+  </div></div>
+  <div class="panel" style="margin-top:16px;"><div class="panel__head"><h2>Actifs et sous-traitants</h2></div><div class="panel__body stack">
+    <div class="field"><label>Actifs utilisés</label><select name="asset_ids" multiple size="5">{% for a in assets %}<option value="{{ a.id }}" {{ 'selected' if a.id in sel_assets }}>{{ a.ref }} - {{ a.name }}</option>{% endfor %}</select><div class="hint">Ctrl + clic pour en sélectionner plusieurs.</div></div>
+    <div class="field"><label>Sous-traitants (fournisseurs)</label><select name="supplier_ids" multiple size="5">{% for s in suppliers %}<option value="{{ s.id }}" {{ 'selected' if s.id in sel_sups }}>{{ s.ref }} - {{ s.name }}{{ ' (sans DPA)' if not s.dpa }}</option>{% endfor %}</select></div>
+  </div></div>
+  <div class="panel" style="margin-top:16px;"><div class="panel__head"><h2>Suivi</h2></div><div class="panel__body stack">
+    <div class="form-grid">
+      <div class="field"><label>Analyse d'impact</label><select name="dpia">{% for x in DpiaStatus %}<option value="{{ x.value }}" {{ 'selected' if p and p.dpia==x }}>{{ x.label }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Date de l'analyse d'impact</label><input type="date" name="dpia_date" value="{{ p.dpia_date.isoformat() if p and p.dpia_date else '' }}"></div>
+    </div>
+    <div class="form-grid">
+      <div class="field"><label>Statut</label><select name="status">{% for x in ProcessingStatus %}<option value="{{ x.value }}" {{ 'selected' if (p and p.status==x) or (not p and x.value=='ACTIF') }}>{{ x.label }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Responsable interne</label><select name="owner_id"><option value="">-</option>{% for u in users %}<option value="{{ u.id }}" {{ 'selected' if p and p.owner_id==u.id }}>{{ u.name }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="form-grid">
+      <div class="field"><label>Dernière revue</label><input type="date" name="last_review" value="{{ p.last_review.isoformat() if p and p.last_review else '' }}"></div>
+      <div class="field"><label>Prochaine revue</label><input type="date" name="next_review" value="{{ p.next_review.isoformat() if p and p.next_review else '' }}"><div class="hint">Vide : un an après la dernière revue.</div></div>
+    </div>
+    <div class="field"><label>Notes</label><textarea name="notes" rows="2">{{ p.notes or '' if p else '' }}</textarea></div>
+    <div><button class="btn btn--primary" type="submit">Enregistrer</button></div>
+  </div></div>
+</form>
+{% endblock %}

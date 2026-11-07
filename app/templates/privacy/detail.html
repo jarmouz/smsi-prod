@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% from 'partials/macros.html' import attachments_panel, history_panel with context %}
+{% block title %}{{ p.ref }} - {{ APP_NAME }}{% endblock %}
+{% block heading %}{{ p.ref }} - {{ p.name }}{% endblock %}
+{% block topactions %}<a href="{{ url_for('privacy.index') }}" class="btn btn--ghost btn--sm">Retour</a>{% if current_user.can_edit %}<a href="{{ url_for('privacy.edit', pid=p.id) }}" class="btn btn--primary btn--sm">Modifier</a>{% endif %}{% endblock %}
+{% block content %}
+{% if p.gaps %}<div class="flash flash--warning" style="margin:0 0 14px;">Points à traiter : {{ p.gaps|join(', ') }}.</div>{% endif %}
+<div class="detail-grid">
+  <div class="stack">
+    <div class="panel"><div class="panel__head"><h2>Traitement</h2></div><div class="panel__body"><div class="meta-list">
+      <div><span>Finalité(s)</span><b style="white-space:pre-line;">{{ p.purpose or '-' }}</b></div>
+      <div><span>Rôle de l'organisation</span><b>{{ p.role.label }}</b></div>
+      <div><span>Base juridique</span><b>{{ p.legal_basis.label }}{{ ' - ' + p.legal_basis_detail if p.legal_basis_detail }}</b></div>
+      <div><span>Personnes concernées</span><b style="white-space:pre-line;">{{ p.data_subjects or '-' }}</b></div>
+      <div><span>Catégories de données</span><b style="white-space:pre-line;">{{ p.data_categories or '-' }}</b></div>
+      <div><span>Données sensibles</span><b>{{ 'Oui' if p.sensitive_data else 'Non' }}{{ ' - ' + p.sensitive_detail if p.sensitive_data and p.sensitive_detail }}</b></div>
+      <div><span>Source des données</span><b>{{ p.source or '-' }}</b></div>
+      <div><span>Destinataires</span><b style="white-space:pre-line;">{{ p.recipients or '-' }}</b></div>
+      <div><span>Transferts hors du pays</span><b style="white-space:pre-line;">{{ 'Oui' if p.transfers else 'Non' }}{{ ' - ' + p.transfer_detail if p.transfers and p.transfer_detail }}</b></div>
+      <div><span>Conservation</span><b>{{ p.retention or '-' }}</b></div>
+      <div><span>Mesures de sécurité</span><b style="white-space:pre-line;">{{ p.security_measures or '-' }}</b></div>
+      {% if p.notes %}<div><span>Notes</span><b style="white-space:pre-line;">{{ p.notes }}</b></div>{% endif %}
+    </div></div></div>
+    {{ attachments_panel('processing', p.id, attachments, current_user.can_edit) }}
+  </div>
+  <div class="stack">
+    <div class="panel"><div class="panel__head"><h2>Suivi</h2></div><div class="panel__body"><div class="meta-list">
+      <div><span>Statut</span><b>{{ p.status.label }}</b></div>
+      <div><span>Analyse d'impact</span><b>{{ p.dpia.label }}{{ ' le ' ~ (p.dpia_date|d) if p.dpia_date }}</b></div>
+      <div><span>Responsable interne</span><b>{{ p.owner.name if p.owner else '-' }}</b></div>
+      <div><span>Dernière revue</span><b>{{ p.last_review|d }}</b></div>
+      <div><span>Prochaine revue</span><b class="{{ 'due-cell' if p.review_overdue }}">{{ p.next_review|d }}</b></div>
+    </div></div></div>
+    <div class="panel"><div class="panel__head"><h2>Actifs et sous-traitants</h2></div><div class="panel__body"><div class="meta-list">
+      <div><span>Actifs (applications, bases...)</span><b>{% for a in p.assets %}<a href="{{ url_for('assets.detail', asset_id=a.id) }}">{{ a.name }}</a>{{ ', ' if not loop.last }}{% else %}-{% endfor %}</b></div>
+      <div><span>Sous-traitants</span><b>{% for s in p.suppliers %}<a href="{{ url_for('suppliers.detail', sup_id=s.id) }}">{{ s.name }}</a>{{ ' (sans DPA)' if not s.dpa }}{{ ', ' if not loop.last }}{% else %}-{% endfor %}</b></div>
+    </div></div></div>
+    <div class="panel"><div class="panel__head"><h2>Demandes des personnes</h2><span class="rail__badge">{{ requests_|length }}</span></div>
+      <div class="panel__body--flush">{% if requests_ %}<div class="table-wrap"><table class="grid"><tbody>
+        {% for r in requests_ %}<tr class="row-link" onclick="window.location='{{ url_for('privacy.request_edit', rid=r.id) }}'"><td class="ref">{{ r.ref }}</td><td class="subj">{{ r.request_type.label }}</td><td class="muted">{{ r.status.label }}</td></tr>{% endfor %}
+      </tbody></table></div>{% else %}<div class="empty" style="padding:18px;"><p>Aucune demande liée à ce traitement.</p></div>{% endif %}</div>
+    </div>
+    {{ history_panel(p) }}
+  </div>
+</div>
+{% endblock %}

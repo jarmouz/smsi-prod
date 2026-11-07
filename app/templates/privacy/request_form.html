@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% from 'partials/macros.html' import history_panel with context %}
+{% block title %}Demande - {{ APP_NAME }}{% endblock %}
+{% block heading %}{{ r.ref + ' - ' + r.request_type.label if r else 'Nouvelle demande' }}{% endblock %}
+{% block topactions %}<a href="{{ url_for('privacy.requests_index') }}" class="btn btn--ghost btn--sm">Retour</a>{% endblock %}
+{% block content %}
+<div class="detail-grid">
+<form method="post" class="stack">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="panel"><div class="panel__head"><h2>Demande</h2></div><div class="panel__body stack">
+    <div class="form-grid">
+      <div class="field"><label>Type de demande</label><select name="request_type">{% for x in RequestType %}<option value="{{ x.value }}" {{ 'selected' if r and r.request_type==x }}>{{ x.label }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Demandeur *</label><input type="text" name="requester" required maxlength="200" value="{{ r.requester if r else '' }}" placeholder="Nom ou référence interne"></div>
+    </div>
+    <div class="form-grid">
+      <div class="field"><label>Canal</label><input type="text" name="channel" maxlength="120" value="{{ r.channel or '' if r else '' }}" placeholder="Courriel, courrier, formulaire..."></div>
+      <div class="field"><label>Traitement concerné</label><select name="processing_id"><option value="">-</option>{% for p in processings %}<option value="{{ p.id }}" {{ 'selected' if r and r.processing_id==p.id }}>{{ p.ref }} - {{ p.name }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="form-grid">
+      <div class="field"><label>Reçue le</label><input type="date" name="received_on" value="{{ r.received_on.isoformat() if r and r.received_on else '' }}"></div>
+      <div class="field"><label>Échéance de réponse</label><input type="date" name="due_on" value="{{ r.due_on.isoformat() if r and r.due_on else '' }}"><div class="hint">Vide : {{ days }} jours après la réception.</div></div>
+    </div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;"><input type="checkbox" name="identity_verified" {{ 'checked' if r and r.identity_verified }} style="width:auto;"> Identité du demandeur vérifiée</label>
+  </div></div>
+  <div class="panel"><div class="panel__head"><h2>Traitement de la demande</h2></div><div class="panel__body stack">
+    <div class="form-grid">
+      <div class="field"><label>Statut</label><select name="status">{% for x in RequestStatus %}<option value="{{ x.value }}" {{ 'selected' if r and r.status==x }}>{{ x.label }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Traitée par</label><select name="handled_by_id"><option value="">-</option>{% for u in users %}<option value="{{ u.id }}" {{ 'selected' if r and r.handled_by_id==u.id }}>{{ u.name }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="field"><label>Réponse apportée ou motif du rejet</label><textarea name="response" rows="3">{{ r.response or '' if r else '' }}</textarea></div>
+    <div class="form-grid">
+      <div class="field"><label>Clôturée le</label><input type="date" name="closed_on" value="{{ r.closed_on.isoformat() if r and r.closed_on else '' }}"><div class="hint">Renseignée automatiquement à la clôture.</div></div>
+      <div class="field"><label>Notes</label><input type="text" name="notes" value="{{ r.notes or '' if r else '' }}"></div>
+    </div>
+    <div class="muted" style="font-size:11.5px;">N'enregistrez pas ici les données de la personne au-delà de ce qui est nécessaire au suivi de sa demande.</div>
+    <div><button class="btn btn--primary" type="submit">Enregistrer</button></div>
+  </div></div>
+</form>
+{% if r %}<div class="stack">{{ history_panel(r) }}</div>{% endif %}
+</div>
+{% endblock %}

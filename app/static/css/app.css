@@ -724,3 +724,5 @@ table.grid tbody tr.imp-row--error td { background: #fdf6f4; }
 .fw-tabs .fw-tab { padding: 8px 14px; font-size: 13px; font-weight: 600; color: var(--ink-700); text-decoration: none; border-bottom: 3px solid transparent; margin-bottom: -2px; }
 .fw-tabs .fw-tab:hover { color: var(--teal-600); }
 .fw-tabs .fw-tab.is-active { color: var(--teal-600); border-bottom-color: var(--teal-600); }
+.rail__group[data-group="vieprivee"] { --g: #6A4C93; --g-dark: #533A75; --g-soft: #EFEAF6; }
+.rail__group[data-group="ia"]        { --g: #8E3B5A; --g-dark: #722F48; --g-soft: #F6E9EE; }

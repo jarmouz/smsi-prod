@@ -20,6 +20,8 @@ def _back(entity_type, entity_id):
         "competence": lambda: url_for("competences.edit_record", rec_id=entity_id),
         "continuity": lambda: url_for("continuity.test_detail", test_id=entity_id),
         "change": lambda: url_for("changes.detail", change_id=entity_id),
+        "processing": lambda: url_for("privacy.detail", pid=entity_id),
+        "aisystem": lambda: url_for("aisystems.detail", sid=entity_id),
     }.get(entity_type, lambda: url_for("dashboard.home"))()
 
 

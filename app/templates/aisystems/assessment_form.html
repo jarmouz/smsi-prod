@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% from 'partials/macros.html' import history_panel with context %}
+{% block title %}Étude d'impact - {{ APP_NAME }}{% endblock %}
+{% block heading %}{{ (a.ref + ' - ') if a }}Étude d'impact : {{ s.name }}{% endblock %}
+{% block topactions %}<a href="{{ url_for('aisystems.detail', sid=s.id) }}" class="btn btn--ghost btn--sm">Retour</a>{% endblock %}
+{% block content %}
+<div class="detail-grid">
+<form method="post" class="stack">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="panel"><div class="panel__head"><h2>Impacts (A.5)</h2></div><div class="panel__body stack">
+    <div class="form-grid">
+      <div class="field"><label>Date de l'étude</label><input type="date" name="assessed_on" value="{{ a.assessed_on.isoformat() if a and a.assessed_on else '' }}"></div>
+      <div class="field"><label>Réalisée par</label><select name="assessor_id"><option value="">-</option>{% for u in users %}<option value="{{ u.id }}" {{ 'selected' if a and a.assessor_id==u.id }}>{{ u.name }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="field"><label>Impacts sur les personnes ou groupes de personnes</label><textarea name="impacts_individuals" rows="3" placeholder="Droits, discrimination, sécurité, vie privée, emploi...">{{ a.impacts_individuals or '' if a else '' }}</textarea></div>
+    <div class="field"><label>Impacts sur la société</label><textarea name="impacts_society" rows="2" placeholder="Environnement, information, confiance...">{{ a.impacts_society or '' if a else '' }}</textarea></div>
+    <div class="field"><label>Niveau d'impact</label><select name="impact_level">{% for x in ImpactLevel %}<option value="{{ x.value }}" {{ 'selected' if (a and a.impact_level==x) or (not a and x.value=='MOYEN') }}>{{ x.label }}</option>{% endfor %}</select></div>
+    <div class="field"><label>Mesures de réduction</label><textarea name="measures" rows="3">{{ a.measures or '' if a else '' }}</textarea></div>
+    <div class="field"><label>Impact résiduel accepté</label><textarea name="residual" rows="2">{{ a.residual or '' if a else '' }}</textarea></div>
+  </div></div>
+  <div class="panel"><div class="panel__head"><h2>Décision</h2></div><div class="panel__body stack">
+    <div class="form-grid">
+      <div class="field"><label>Décision</label><select name="decision">{% for x in ImpactDecision %}<option value="{{ x.value }}" {{ 'selected' if a and a.decision==x }}>{{ x.label }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Prochaine revue</label><input type="date" name="next_review" value="{{ a.next_review.isoformat() if a and a.next_review else '' }}"><div class="hint">Vide : un an après l'étude.</div></div>
+    </div>
+    <div class="field"><label>Notes</label><textarea name="notes" rows="2">{{ a.notes or '' if a else '' }}</textarea></div>
+    <div><button class="btn btn--primary" type="submit">Enregistrer</button></div>
+  </div></div>
+</form>
+{% if a %}<div class="stack">{{ history_panel(a) }}</div>{% endif %}
+</div>
+{% endblock %}

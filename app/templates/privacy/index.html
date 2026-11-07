@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}Registre des traitements - {{ APP_NAME }}{% endblock %}
+{% block heading %}Registre des traitements{% endblock %}
+{% block topactions %}<a href="{{ url_for('privacy.export') }}" class="btn btn--subtle btn--sm">Exporter (Excel)</a>{% if current_user.can_edit %} <a href="{{ url_for('privacy.create') }}" class="btn btn--primary btn--sm">+ Traitement</a>{% endif %}{% endblock %}
+{% block content %}
+<div class="kpis" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px;">
+  <div class="kpi kpi--total"><div class="kpi__label">Traitements en cours</div><div class="kpi__value">{{ stats.live }}</div><div class="kpi__sub">ou en projet</div></div>
+  <div class="kpi kpi--retard"><div class="kpi__label">Données sensibles</div><div class="kpi__value">{{ stats.sensitive }}</div></div>
+  <div class="kpi kpi--bientot"><div class="kpi__label">Analyses d'impact</div><div class="kpi__value">{{ stats.dpia }}</div><div class="kpi__sub">à évaluer ou à réaliser</div></div>
+  <div class="kpi kpi--retard"><div class="kpi__label">Avec points à traiter</div><div class="kpi__value">{{ stats.gaps }}</div></div>
+</div>
+<form class="toolbar" method="get">
+  <select name="statut" onchange="this.form.submit()"><option value="">Tous statuts</option>{% for x in ProcessingStatus %}<option value="{{ x.value }}" {{ 'selected' if f_status==x.value }}>{{ x.label }}</option>{% endfor %}</select>
+  <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;"><input type="checkbox" name="ecarts" value="1" {{ 'checked' if f_gap }} onchange="this.form.submit()" style="width:auto;"> Uniquement avec points à traiter</label>
+  {% if f_status or f_gap %}<a href="{{ url_for('privacy.index') }}" class="btn btn--ghost btn--sm">Réinitialiser</a>{% endif %}
+</form>
+<div class="panel" style="margin-top:16px;"><div class="panel__body--flush"><div class="table-wrap">
+  <table class="grid">
+    <thead><tr><th style="width:80px;">Réf.</th><th>Traitement</th><th style="width:170px;">Base juridique</th><th style="width:150px;">Analyse d'impact</th><th style="width:260px;">Points à traiter</th></tr></thead>
+    <tbody>
+    {% for p in items %}
+      <tr class="row-link" onclick="window.location='{{ url_for('privacy.detail', pid=p.id) }}'" style="{{ 'opacity:.5' if p.status.value == 'ARRETE' }}">
+        <td class="ref">{{ p.ref }}</td>
+        <td class="subj">{{ p.name }}<div class="muted" style="font-size:11px;">{{ p.role.label }}{{ ' - ' + p.status.label if p.status.value != 'ACTIF' }}{{ ' - données sensibles' if p.sensitive_data }}{{ ' - transferts hors du pays' if p.transfers }}</div></td>
+        <td class="muted">{{ p.legal_basis.label }}</td>
+        <td class="muted">{{ p.dpia.label }}</td>
+        <td style="font-size:11.5px;">{% for g in p.gaps %}<div class="due-cell">• {{ g }}</div>{% else %}<span class="muted">-</span>{% endfor %}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="5"><div class="empty" style="padding:30px;"><h3>Aucun traitement</h3><p>Recensez les traitements de données personnelles : finalité, base juridique, données, destinataires, conservation (ISO/IEC 27701 A.7.2.8).</p></div></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div></div></div>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% from 'partials/macros.html' import attachments_panel, history_panel with context %}
+{% block title %}{{ s.ref }} - {{ APP_NAME }}{% endblock %}
+{% block heading %}{{ s.ref }} - {{ s.name }}{% endblock %}
+{% block topactions %}<a href="{{ url_for('aisystems.index') }}" class="btn btn--ghost btn--sm">Retour</a>{% if current_user.can_edit %}<a href="{{ url_for('aisystems.edit', sid=s.id) }}" class="btn btn--primary btn--sm">Modifier</a>{% endif %}{% endblock %}
+{% block content %}
+{% if s.gaps %}<div class="flash flash--warning" style="margin:0 0 14px;">Points à traiter : {{ s.gaps|join(', ') }}.</div>{% endif %}
+<div class="detail-grid">
+  <div class="stack">
+    <div class="panel"><div class="panel__head"><h2>Système</h2></div><div class="panel__body"><div class="meta-list">
+      <div><span>Description</span><b style="white-space:pre-line;">{{ s.description or '-' }}</b></div>
+      <div><span>Utilisation prévue</span><b style="white-space:pre-line;">{{ s.intended_use or '-' }}</b></div>
+      <div><span>Type</span><b>{{ s.ai_type.label }}</b></div>
+      <div><span>Rôle de l'organisation</span><b>{{ s.role.label }}</b></div>
+      <div><span>Modèle / éditeur</span><b>{{ s.provider or '-' }}{% if s.supplier %} - <a href="{{ url_for('suppliers.detail', sup_id=s.supplier.id) }}">{{ s.supplier.name }}</a>{% endif %}</b></div>
+      <div><span>Données utilisées</span><b style="white-space:pre-line;">{{ s.data_used or '-' }}</b></div>
+      <div><span>Données personnelles</span><b>{{ 'Oui' if s.personal_data else 'Non' }}{% if s.processing %} - {% if privacy_on %}<a href="{{ url_for('privacy.detail', pid=s.processing.id) }}">{{ s.processing.ref }} {{ s.processing.name }}</a>{% else %}{{ s.processing.ref }} {{ s.processing.name }}{% endif %}{% endif %}</b></div>
+      <div><span>Personnes et groupes concernés</span><b style="white-space:pre-line;">{{ s.affected_parties or '-' }}</b></div>
+      <div><span>Décisions automatisées</span><b>{{ 'Oui' if s.automated_decisions else 'Non' }}</b></div>
+      <div><span>Supervision humaine</span><b style="white-space:pre-line;">{{ s.human_oversight or '-' }}</b></div>
+      <div><span>Actifs</span><b>{% for a in s.assets %}<a href="{{ url_for('assets.detail', asset_id=a.id) }}">{{ a.name }}</a>{{ ', ' if not loop.last }}{% else %}-{% endfor %}</b></div>
+      {% if s.notes %}<div><span>Notes</span><b style="white-space:pre-line;">{{ s.notes }}</b></div>{% endif %}
+    </div></div></div>
+    {{ attachments_panel('aisystem', s.id, attachments, current_user.can_edit) }}
+  </div>
+  <div class="stack">
+    <div class="panel"><div class="panel__head"><h2>Suivi</h2></div><div class="panel__body"><div class="meta-list">
+      <div><span>Niveau de risque</span><b>{{ s.risk_level.label }}</b></div>
+      <div><span>Cycle de vie</span><b>{{ s.lifecycle.label }}</b></div>
+      <div><span>Responsable</span><b>{{ s.owner.name if s.owner else '-' }}</b></div>
+    </div></div></div>
+    <div class="panel"><div class="panel__head"><h2>Études d'impact</h2><span class="rail__badge">{{ s.assessments|length }}</span><div class="spacer"></div>{% if current_user.can_edit %}<a class="btn btn--subtle btn--sm" href="{{ url_for('aisystems.assessment_create', sid=s.id) }}">+ Étude d'impact</a>{% endif %}</div>
+      <div class="panel__body--flush">{% if s.assessments %}<div class="table-wrap"><table class="grid"><tbody>
+        {% for a in s.assessments %}<tr {% if current_user.can_edit %}class="row-link" onclick="window.location='{{ url_for('aisystems.assessment_edit', aid=a.id) }}'"{% endif %}><td class="ref">{{ a.ref }}</td><td class="subj">{{ a.decision.label }}<div class="muted" style="font-size:11px;">impact {{ a.impact_level.label|lower }} - {{ a.assessed_on|d }}</div></td><td class="{{ 'due-cell' if a.review_overdue else 'muted' }}" style="font-size:12px;">revue {{ a.next_review|d }}</td></tr>{% endfor %}
+      </tbody></table></div>{% else %}<div class="empty" style="padding:18px;"><p>Aucune étude d'impact : évaluez les effets du système sur les personnes, les groupes et la société avant sa mise en service (A.5).</p></div>{% endif %}</div>
+    </div>
+    {{ history_panel(s) }}
+  </div>
+</div>
+{% endblock %}
