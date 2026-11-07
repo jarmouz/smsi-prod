@@ -82,6 +82,12 @@ section « Sauvegardes » ci-dessous.
   ```
   0 6 * * * cd /opt/smsi && docker compose exec -T web flask send-reminders >> backups/reminders.log 2>&1
   ```
+- **Autres normes** : le RSSI peut activer l'**ISO/IEC 27701** (vie privée :
+  registre des traitements, demandes des personnes, annexes A et B) et
+  l'**ISO/IEC 42001** (intelligence artificielle : inventaire des systèmes d'IA,
+  études d'impact, annexe A) dans Administration › Référentiels. Chaque norme
+  ajoute sa déclaration d'applicabilité et ses écrans ; rien ne change tant
+  qu'elle n'est pas activée.
 - **Assistant IA** : facultatif, il n'est utilisable que si la VM peut joindre
   `api.anthropic.com` ; il reste désactivé tant que la clé d'API n'est pas
   renseignée (Plateforme) puis activée par le RSSI.

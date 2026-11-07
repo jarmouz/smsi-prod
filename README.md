@@ -31,6 +31,11 @@ organisation active les siennes (Administration › Référentiels) et les élé
 communs (audits, revues, documents, objectifs, non-conformités) peuvent être
 rattachés à une ou plusieurs normes. Les écrans historiques restent limités à
 l'ISO 27001 (`Control.of()`).
+
+Normes disponibles (3.1) : ISO/IEC 27001:2022 (socle), ISO/IEC 27701:2019
+(module « Vie privée » : registre des traitements, demandes des personnes) et
+ISO/IEC 42001:2023 (module « Intelligence artificielle » : systèmes d'IA,
+études d'impact). Catalogues et correspondances : `app/services/catalogue_data.py`.
 Une base neuve s'initialise avec `flask init-platform` (organisation + RSSI) ;
 `flask init-db` est réservé au développement (il efface tout).
 
