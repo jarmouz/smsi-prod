@@ -169,6 +169,9 @@ UPGRADE_DDL = [
     "ALTER TABLE controls ADD COLUMN IF NOT EXISTS kind VARCHAR(16) NOT NULL DEFAULT 'control'",
     # Registre des risques SMI (3.6) : options de traitement des opportunités (NE_PAS_SAISIR...)
     "ALTER TABLE risks ALTER COLUMN treatment TYPE VARCHAR(16)",
+    # Maillage SMI (3.8) : réévaluation demandée par un incident, une NC ou un changement lié
+    "ALTER TABLE risks ADD COLUMN IF NOT EXISTS reassess_at TIMESTAMP NULL",
+    "ALTER TABLE risks ADD COLUMN IF NOT EXISTS reassess_reason VARCHAR(300) NULL",
 ]
 
 # Tables rattachées à une organisation (voir TenantMixin)

@@ -124,6 +124,8 @@ def index():
     q = Risk.query
     if f_status in [s.value for s in RiskStatus]:
         q = q.filter(Risk.status == RiskStatus(f_status))
+    elif f_status == "a_reevaluer":
+        q = q.filter(Risk.reassess_at.isnot(None))
     if f_domain == SECURITE:
         q = q.filter(Risk.risk_domain.is_(None))
     elif f_domain in DOMAINS:
@@ -192,8 +194,10 @@ def detail(risk_id):
     from app.models import RiskActionStatus
     r = db.session.get(Risk, risk_id) or abort(404)
     users = User.query.filter_by(is_active_flag=True).order_by(User.name).all()
+    from app.services import risk_links
     return render_template("risks/detail.html", r=r, can_accept=_can_accept(r), users=users,
-                           RiskActionStatus=RiskActionStatus)
+                           RiskActionStatus=RiskActionStatus, linked=risk_links.links_for_risk(r),
+                           link_candidates=risk_links.candidates() if current_user.can_edit else [])
 
 
 @bp.route("/<int:risk_id>/modifier", methods=["GET", "POST"])
@@ -217,8 +221,10 @@ def edit(risk_id):
         asset_ids = request.form.getlist("assets", type=int)
         r.assets = Asset.query.filter(Asset.id.in_(asset_ids)).all() if asset_ids else []
         _smi_fields(r)
+        was_flagged = bool(r.reassess_at)
+        r.clear_reassess()                      # fiche revue et enregistrée : réévaluation faite
         db.session.commit()
-        flash(f"Risque {r.ref} mis à jour.", "success")
+        flash(f"Risque {r.ref} mis à jour." + (" Demande de réévaluation levée." if was_flagged else ""), "success")
         return redirect(url_for("risks.detail", risk_id=r.id))
     return render_template("risks/form.html", **_form_ctx(r))
 
@@ -393,3 +399,79 @@ def plan():
     users = User.query.filter_by(is_active_flag=True).order_by(User.name).all()
     return render_template("risks/plan.html", acts=acts, stats=stats, f_state=f_state, f_owner=f_owner,
                            f_norm=f_norm, fw_list=active, users=users, RiskActionStatus=RiskActionStatus)
+
+
+# --- Maillage SMI (3.8) : liens avec les autres modules, réévaluation (8.2) ---------------
+def _parse_target(val):
+    try:
+        etype, eid = (val or "").split(":", 1)
+        return etype, int(eid)
+    except ValueError:
+        return None, None
+
+
+@bp.route("/<int:risk_id>/liens", methods=["POST"])
+@editor_required
+def add_link(risk_id):
+    from app.services import risk_links
+    r = db.session.get(Risk, risk_id) or abort(404)
+    etype, eid = _parse_target(request.form.get("target"))
+    if etype not in risk_links.available_types():
+        flash("Choisissez un élément à lier.", "danger")
+    else:
+        link, err = risk_links.add(r, etype, eid)
+        if err:
+            flash(err, "danger")
+        else:
+            db.session.commit()
+            flash("Lien ajouté." + (" Le risque est à réévaluer." if r.reassess_at else ""), "success")
+    return redirect(url_for("risks.detail", risk_id=r.id) + "#liens")
+
+
+@bp.route("/liens/ajouter", methods=["POST"])
+@editor_required
+def link_from_entity():
+    """Depuis la fiche d'un incident, d'une NC, d'un fournisseur... : lie un risque à l'élément."""
+    from app.services import risk_links
+    r = db.session.get(Risk, request.form.get("risk_id", type=int) or 0)
+    etype, eid = request.form.get("entity_type"), request.form.get("entity_id", type=int)
+    back = _next(url_for("risks.index"))
+    if r is None or etype not in risk_links.types():
+        flash("Choisissez un risque.", "danger")
+        return redirect(back)
+    link, err = risk_links.add(r, etype, eid)
+    if err:
+        flash(err, "danger")
+    else:
+        db.session.commit()
+        flash(f"Risque {r.ref} lié." + (" Sa réévaluation est demandée à son propriétaire." if r.reassess_at else ""),
+              "success")
+    return redirect(back)
+
+
+@bp.route("/liens/<int:link_id>/supprimer", methods=["POST"])
+@editor_required
+def delete_link(link_id):
+    from app.models import RiskLink
+    link = db.session.get(RiskLink, link_id) or abort(404)
+    rid = link.risk_id
+    db.session.delete(link)
+    db.session.commit()
+    flash("Lien supprimé.", "success")
+    return redirect(_next(url_for("risks.detail", risk_id=rid) + "#liens"))
+
+
+@bp.route("/<int:risk_id>/reevalue", methods=["POST"])
+@editor_required
+def confirm_reassess(risk_id):
+    """Réévaluation faite sans changement de cotation : on lève la demande, avec une trace."""
+    from app.services.audit_trail import log_event
+    r = db.session.get(Risk, risk_id) or abort(404)
+    if r.reassess_at:
+        reason = r.reassess_reason
+        note = (request.form.get("note") or "").strip()
+        r.clear_reassess()
+        db.session.commit()
+        log_event("update", f"Risque réévalué, cotation inchangée ({reason})" + (f" : {note}" if note else ""), entity=r)
+        flash(f"Réévaluation de {r.ref} enregistrée.", "success")
+    return redirect(url_for("risks.detail", risk_id=r.id))

@@ -109,6 +109,10 @@ def _dt(j):
 def _seed(org, log):
     y = date.today().year
     seed_controls()
+    # normes restées actives : leur catalogue a été effacé avec les mesures, on le recopie
+    from app.services import frameworks
+    for f in frameworks.active():
+        frameworks.enable(f.code)
     db.session.flush()
 
     users = {}
@@ -229,6 +233,7 @@ def _seed(org, log):
     _p1_demo(users, documents, ctrl)
     _p2_demo(users, ctrl)
     _p3_demo(users)
+    _links_demo()
     settings_svc.set_many({"org_name": C.ORG_NAME})  # commit
     log(f"Données chargées : {len(C.RISKS)} risques, {len(C.ASSETS)} actifs, {len(C.INCIDENTS)} incidents, "
         f"{len(C.AUDITS)} audits, {len(C.REVIEWS)} revues, {len(C.DOCUMENTS)} documents, {len(C.EVIDENCE)} preuves.")
@@ -584,6 +589,32 @@ def _p2_demo(users, ctrl):
 # --------------------------------------------------------------------------
 # P3 : programme d'audit, compétences, continuité, changements, actifs <-> risques
 # --------------------------------------------------------------------------
+def _links_demo():
+    """Maillage SMI : risques liés aux incidents, fournisseurs, activités de la BIA, changements."""
+    from app.models import RiskLink, Incident, Supplier, BusinessProcess, ChangeRequest
+    from app.services import risk_links
+    y = date.today().year
+    refs = {"Incident": lambda n: (Incident, f"INC-{y}-{n:04d}"), "Supplier": lambda n: (Supplier, f"FRN-{n:03d}"),
+            "BusinessProcess": lambda n: (BusinessProcess, f"PROC-{n:03d}"),
+            "ChangeRequest": lambda n: (ChangeRequest, f"CHG-{y}-{n:03d}")}
+    db.session.flush()
+    risks = {int(r.ref[-4:]): r for r in Risk.query.all()}
+
+    def obj(etype, n):
+        model, ref = refs[etype](n)
+        return model.query.filter_by(ref=ref).first()
+    for n, items in C.RISK_LINKS.items():
+        for etype, k in items:
+            o = obj(etype, k)
+            if o is not None and n in risks:
+                risks[n].links.append(RiskLink(entity_type=etype, entity_id=o.id))
+    n, (etype, k) = C.RISK_REASSESS
+    o = obj(etype, k)
+    if o is not None and n in risks:
+        risk_links.add(risks[n], etype, o.id)
+    db.session.flush()
+
+
 def _p3_demo(users):
     y = date.today().year
     assets = {int(a.ref[-4:]): a for a in Asset.query.all()}

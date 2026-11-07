@@ -79,6 +79,11 @@ class Risk(TenantMixin, db.Model):
     acceptance_note = db.Column(db.Text, nullable=True)
     acceptance_until = db.Column(db.Date, nullable=True)
 
+    # Réévaluation demandée (8.2 : incident, non-conformité ou changement lié) ; effacée
+    # quand le risque est réévalué (enregistrement de sa fiche ou confirmation explicite)
+    reassess_at = db.Column(db.DateTime, nullable=True)
+    reassess_reason = db.Column(db.String(300), nullable=True)
+
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -86,6 +91,7 @@ class Risk(TenantMixin, db.Model):
     accepted_by = db.relationship("User", foreign_keys=[accepted_by_id])
     controls = db.relationship("Control", secondary=risk_controls, back_populates="risks")
     assets = db.relationship("Asset", secondary="asset_risks", back_populates="risks", order_by="Asset.ref")
+    links = db.relationship("RiskLink", back_populates="risk", cascade="all, delete-orphan")
     actions = db.relationship("RiskAction", back_populates="risk", cascade="all, delete-orphan",
                               order_by=lambda: [RiskAction.due_date.asc().nulls_last(), RiskAction.id])
 
@@ -113,6 +119,16 @@ class Risk(TenantMixin, db.Model):
 
     def concerns(self, code):
         return code in self.framework_codes
+
+    def flag_reassess(self, reason):
+        """Demande une réévaluation (cumule les motifs tant qu'elle n'est pas faite)."""
+        self.reassess_reason = (f"{self.reassess_reason} ; {reason}" if self.reassess_at and self.reassess_reason
+                                else reason)[:300]
+        self.reassess_at = datetime.utcnow()
+
+    def clear_reassess(self):
+        self.reassess_at = None
+        self.reassess_reason = None
 
     # --- plan de traitement ------------------------------------------------------
     @property
@@ -272,3 +288,24 @@ class RiskAction(TenantMixin, db.Model):
 
     def __repr__(self):
         return f"<RiskAction {self.id} {self.status.value}>"
+
+
+# --- Maillage SMI (3.8) : risque <-> éléments des autres modules ----------------------
+class RiskLink(TenantMixin, db.Model):
+    """Lien entre un risque et un élément d'un autre module (système d'IA, traitement de
+    données, activité de la BIA, plan de continuité, service IT, fournisseur, incident,
+    changement, non-conformité). Types et pages : app/services/risk_links.py."""
+
+    __tablename__ = "risk_links"
+    __table_args__ = (db.UniqueConstraint("risk_id", "entity_type", "entity_id", name="uq_risk_links"),)
+
+    id = db.Column(db.Integer, primary_key=True)
+    risk_id = db.Column(db.Integer, db.ForeignKey("risks.id", ondelete="CASCADE"), nullable=False, index=True)
+    entity_type = db.Column(db.String(40), nullable=False)
+    entity_id = db.Column(db.Integer, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    risk = db.relationship("Risk", back_populates="links")
+
+
+db.Index("ix_risk_links_entity", RiskLink.entity_type, RiskLink.entity_id)

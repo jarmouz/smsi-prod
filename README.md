@@ -57,7 +57,7 @@ communs (audits, revues, documents, objectifs, non-conformités) peuvent être
 rattachés à une ou plusieurs normes. Les écrans historiques restent limités à
 l'ISO 27001 (`Control.of()`).
 
-Normes disponibles (3.7) :
+Normes disponibles (3.8) :
 
 | Norme | Type | Module propre |
 |---|---|---|
@@ -185,6 +185,32 @@ opportunité : plan d'action pour la saisir).
   risques à traiter sans action.
 - Démo : 9 actions sur les risques de Fictivia.
 - Migration : table créée par `flask upgrade-db` (`db.create_all()`).
+
+### Maillage SMI des risques (3.8)
+
+Un risque se lie aux éléments des autres modules (`RiskLink`, table `risk_links`,
+registre des types dans `app/services/risk_links.py`) : incidents,
+non-conformités, changements, fournisseurs, activités de la BIA, et selon les
+normes actives plans de continuité (22301), services IT (20000-1), traitements
+de données (27701), systèmes d'IA et études d'impact (42001).
+
+- Fiche du risque : panneau **Liens avec les autres modules** (liste par type,
+  ajout, retrait).
+- Fiches des 9 modules : panneau **Risques liés** (`partials/linked_risks.html`),
+  avec ajout depuis l'élément.
+- **Réévaluation (8.2)** : lier un incident, une non-conformité ou un
+  changement à un risque ouvert demande sa réévaluation (`reassess_at`,
+  `reassess_reason`, motifs cumulés). Bannière sur la fiche ; la demande est
+  levée en enregistrant la fiche ou par « Cotation inchangée » (tracé dans la
+  piste d'audit). Filtre « À réévaluer » du registre, relance du propriétaire,
+  revue de direction, preuve de l'exigence 8.2 (27001, 42001).
+- Export du registre : colonnes « Éléments liés » et « Réévaluation demandée »
+  (en fin de tableau : colonnes du PDF inchangées).
+- Suppression d'un élément lié : ses liens sont supprimés (`after_delete`).
+- Démo : 18 liens, un risque à réévaluer (incident lié).
+- Correctif démo : la réinitialisation recopie le catalogue des normes restées
+  actives (auparavant seule la 27001 était rechargée).
+- Migration : table créée par `flask upgrade-db`, colonnes `reassess_*` ajoutées.
 
 ## Modules
 

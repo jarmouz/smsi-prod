@@ -55,6 +55,12 @@ def _norms(r):
     return ", ".join(names[c] for c in r.framework_codes if c in names)
 
 
+def _links(r):
+    from app.services import risk_links
+    return "; ".join(f"{label} : " + ", ".join(getattr(o, "ref", "") for _, o, _u in rows)
+                     for label, rows in risk_links.links_for_risk(r))
+
+
 def _measure_ref(c):
     return c.annex_ref if c.framework.code == "ISO27001" else f"{c.framework.short_name} {c.annex_ref}"
 
@@ -67,14 +73,15 @@ def risk_rows():
     rows = [["Réf.", "Risque", "Nature", "Domaine", "Normes", "Actif / périmètre", "Menace ou cause",
              "Vulnérabilité ou facteur aggravant", "V", "I", "Score inhérent",
              "Niveau inhérent", "Traitement", "V rés.", "I rés.", "Score résiduel", "Niveau résiduel",
-             "Acceptation", "Statut", "Propriétaire", "Prochaine revue"]]
+             "Acceptation", "Statut", "Propriétaire", "Prochaine revue", "Éléments liés", "Réévaluation demandée"]]
     for r in _risks():
         rows.append([r.ref, r.title, "Opportunité" if r.is_opportunity else "Risque", r.domain_label, _norms(r),
                      r.asset or "", r.threat or "", r.vulnerability or "", r.likelihood, r.impact,
                      r.inherent_score, risk_criteria.label_of(r.display_inherent_level), r.treatment.label,
                      r.residual_likelihood or "", r.residual_impact or "", r.residual_score or "",
                      risk_criteria.label_of(r.display_level), _acceptance(r), r.status.label,
-                     r.owner.name if r.owner else "", r.review_date.strftime("%d/%m/%Y") if r.review_date else ""])
+                     r.owner.name if r.owner else "", r.review_date.strftime("%d/%m/%Y") if r.review_date else "",
+                     _links(r), r.reassess_reason or ""])
     return rows
 
 

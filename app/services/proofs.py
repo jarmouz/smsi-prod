@@ -12,11 +12,11 @@ from app.models import Control, Risk
 # (code de la norme, réf. de l'exigence) -> modules de preuve
 _MAP = {
     ("ISO27001", "6.1.2"): ("criteres", "registre"),
-    ("ISO27001", "8.2"): ("registre", "export_registre"),
+    ("ISO27001", "8.2"): ("registre", "reevaluation", "export_registre"),
     ("ISO27001", "6.1.3"): ("plan", "actions", "dda", "acceptation"),
     ("ISO27001", "8.3"): ("plan", "actions", "traitement", "acceptation"),
     ("ISO42001", "6.1.2"): ("criteres", "registre", "systemes_ia"),
-    ("ISO42001", "8.2"): ("registre", "systemes_ia"),
+    ("ISO42001", "8.2"): ("registre", "reevaluation", "systemes_ia"),
     ("ISO42001", "6.1.3"): ("plan", "actions", "dda", "acceptation"),
     ("ISO42001", "8.3"): ("plan", "actions", "traitement", "acceptation"),
     ("ISO42001", "6.1.4"): ("etudes_impact",),
@@ -61,6 +61,14 @@ def _item(key, code):
         return {"label": "Plan de traitement des risques (export Excel)",
                 "url": url_for("soa.export", kind="plan-traitement", fmt="xlsx"),
                 "info": "options de traitement, mesures retenues, propriétaires, risques résiduels"}
+    if key == "reevaluation":
+        rs = [r for r in _risks(code) if r.status.is_open]
+        todo = [r for r in rs if r.reassess_at]
+        linked = sum(1 for r in rs if r.links)
+        return {"label": "Réévaluation après incident, non-conformité ou changement",
+                "url": url_for("risks.index", statut="a_reevaluer", norme=code),
+                "info": (f"{len(todo)} risque(s) à réévaluer" if todo else "aucune réévaluation en attente")
+                        + f" ; {linked} risque(s) reliés aux autres modules", "warn": bool(todo)}
     if key == "actions":
         rs = _risks(code)
         acts = [a for r in rs for a in r.actions]

@@ -70,6 +70,8 @@ def collect(user, today=None):
         if r.acceptance_state in ("required", "expired", "outdated"):
             add("Risques résiduels à accepter", f"{r.ref} : {r.title} (score {r.effective_score})",
                 url_for("risks.detail", risk_id=r.id))
+        elif r.status.is_open and r.reassess_at:
+            add("Risques à réévaluer", f"{r.ref} : {r.title} ({r.reassess_reason})", url_for("risks.detail", risk_id=r.id))
         elif r.status.is_open and r.review_date and r.review_date <= soon7:
             add("Risques à réévaluer", f"{r.ref} : {r.title}", url_for("risks.detail", risk_id=r.id),
                 _due(r.review_date, t), r.review_date < t)

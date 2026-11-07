@@ -8,6 +8,18 @@
 {% endblock %}
 
 {% block content %}
+{% if r.reassess_at %}
+<div class="flash flash--warning" style="margin-bottom:14px;flex-wrap:wrap;">
+  <span style="flex:1 1 300px;"><b>Réévaluation demandée</b> depuis le {{ r.reassess_at|d }} : {{ r.reassess_reason }}. Revoyez la cotation (clause 8.2) : enregistrer la fiche lève la demande.</span>
+  {% if current_user.can_edit %}
+  <a href="{{ url_for('risks.edit', risk_id=r.id) }}" class="btn btn--primary btn--sm">Réévaluer</a>
+  <form method="post" action="{{ url_for('risks.confirm_reassess', risk_id=r.id) }}" style="display:flex;gap:6px;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="text" name="note" placeholder="Motif (facultatif)" style="font-size:12px;width:180px;">
+    <button class="btn btn--subtle btn--sm" type="submit">Cotation inchangée</button>
+  </form>{% endif %}
+</div>
+{% endif %}
 <div class="detail-grid">
   <div class="stack">
     <div class="panel">
@@ -31,6 +43,31 @@
         {% if r.controls %}
           {% for c in r.controls|sort(attribute='framework_id') %}{% if c.framework.code != 'ISO27001' %}<span class="muted" style="font-size:11px;">{{ c.framework.short_name }}</span> {% endif %}{{ control_chip(c) }} <span class="muted" style="font-size:12px;">{{ c.title }}</span><br>{% endfor %}
         {% else %}<p class="muted">Aucune mesure d'annexe rattachée. {% if current_user.can_edit %}<a href="{{ url_for('risks.edit', risk_id=r.id) }}">En ajouter</a>{% endif %}</p>{% endif %}
+      </div>
+    </div>
+
+    <div class="panel" id="liens">
+      <div class="panel__head"><h2>Liens avec les autres modules</h2><span class="rail__badge">{{ r.links|length }}</span></div>
+      <div class="panel__body">
+        {% for label, rows in linked %}
+        <div class="section-title" style="margin:4px 0 2px;">{{ label }}</div>
+        {% for link, obj, url in rows %}
+        <div style="display:flex;align-items:center;gap:8px;padding:3px 0;font-size:12.5px;">
+          <a href="{{ url }}" class="ref">{{ obj.ref }}</a><span style="flex:1;">{{ obj.name or obj.title }}</span>
+          {% if obj.status is defined and obj.status and obj.status.label is defined %}<span class="muted" style="font-size:11px;">{{ obj.status.label }}</span>{% endif %}
+          {% if current_user.can_edit %}<form method="post" action="{{ url_for('risks.delete_link', link_id=link.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn--ghost btn--sm" type="submit" title="Retirer le lien" style="padding:0 6px;">×</button></form>{% endif %}
+        </div>
+        {% endfor %}
+        {% else %}<p class="muted" style="font-size:12.5px;margin:0 0 8px;">Aucun lien : rattachez les incidents survenus, les fournisseurs, les activités de la BIA, les systèmes d'IA, les traitements de données... concernés par ce risque.</p>{% endfor %}
+        {% if current_user.can_edit and link_candidates %}
+        <form method="post" action="{{ url_for('risks.add_link', risk_id=r.id) }}" style="display:flex;gap:6px;margin-top:10px;border-top:1px solid var(--line);padding-top:10px;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <select name="target" required style="flex:1;font-size:12.5px;"><option value="">Lier un élément…</option>
+            {% for label, opts in link_candidates %}<optgroup label="{{ label }}">{% for v, l in opts %}<option value="{{ v }}">{{ l }}</option>{% endfor %}</optgroup>{% endfor %}
+          </select>
+          <button class="btn btn--subtle btn--sm" type="submit">+ Lier</button>
+        </form>
+        <p class="muted" style="font-size:11px;margin:6px 0 0;">Lier un incident, une non-conformité ou un changement demande la réévaluation du risque (8.2).</p>{% endif %}
       </div>
     </div>
 

@@ -27,4 +27,5 @@
   </div>
 </div>
 <div style="margin-top:16px;">{{ history_panel(inc) }}</div>
+<div style="margin-top:16px;">{% with lr_entity=inc %}{% include "partials/linked_risks.html" %}{% endwith %}</div>
 {% endblock %}

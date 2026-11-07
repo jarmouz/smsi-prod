@@ -836,3 +836,18 @@ CHANGES = [
 # Actifs touchés par les risques : n° de risque -> n° d'actifs (ordre de ASSETS)
 RISK_ASSETS = {1: [1, 2, 3], 2: [1, 2], 3: [5, 6], 4: [1, 2], 5: [10, 2], 6: [4], 8: [12], 9: [1, 14],
                10: [15], 11: [2], 13: [17], 14: [12], 15: [2]}
+
+
+# Maillage SMI (3.8) : n° du risque -> éléments liés (type, n° de l'élément dans sa liste)
+RISK_LINKS = {
+    1: [("Incident", 2), ("Supplier", 7), ("BusinessProcess", 2)],
+    2: [("Incident", 4), ("BusinessProcess", 1)],
+    3: [("Incident", 1), ("Incident", 7), ("ChangeRequest", 2)],
+    4: [("Incident", 5), ("Supplier", 1), ("ChangeRequest", 3), ("BusinessProcess", 2)],
+    7: [("Supplier", 4), ("Supplier", 5), ("ChangeRequest", 5)],
+    8: [("Incident", 3)],
+    9: [("ChangeRequest", 6)],
+}
+# risque dont la réévaluation est demandée (incident lié récemment)
+RISK_REASSESS = (6, ("Incident", 6))
+
