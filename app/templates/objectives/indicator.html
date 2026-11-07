@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% from 'partials/macros.html' import kpi_state, kpi_trend, kpi_svg, history_panel with context %}
+{% block title %}{{ i.ref }} - {{ APP_NAME }}{% endblock %}
+{% block heading %}{{ i.ref }} - {{ i.name }}{% endblock %}
+{% block topactions %}<a href="{{ url_for('objectives.index') }}" class="btn btn--ghost btn--sm">Retour</a>{% if current_user.can_edit %}<a href="{{ url_for('objectives.edit_indicator', ind_id=i.id) }}" class="btn btn--primary btn--sm">Modifier</a>{% endif %}{% endblock %}
+{% block content %}
+<div class="detail-grid">
+  <div class="stack">
+    <div class="panel">
+      <div class="panel__head"><h2>Évolution</h2>{{ kpi_state(i.state) }}<span style="font-size:11.5px;">{{ kpi_trend(i.trend) }}</span></div>
+      <div class="panel__body">
+        {% if i.measurements %}{{ kpi_svg(i, 640, 230) }}
+        <p class="muted" style="font-size:11.5px;margin:8px 0 0;">Cible {{ '≥' if i.direction.value == 'HAUSSE' else '≤' }} {{ i.fmt(i.target) }}{% if i.alert is not none %}, alerte {{ i.fmt(i.alert) }}{% endif %}. Survolez un point pour voir sa valeur ; le détail figure dans le tableau ci-dessous.</p>
+        {% else %}<div class="empty" style="padding:24px;"><p>Aucune mesure enregistrée.</p></div>{% endif %}
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel__head"><h2>Historique des mesures</h2><span class="rail__badge">{{ i.measurements|length }}</span></div>
+      {% if current_user.can_edit %}
+      <div class="panel__body" style="border-bottom:1px solid var(--line);">
+        <form method="post" action="{{ url_for('objectives.add_measurement', ind_id=i.id) }}" class="meta-inline" style="flex-wrap:wrap;gap:8px;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="date" name="period" required style="width:auto;" value="{{ today.isoformat() }}" title="Période mesurée">
+          <input type="text" name="value" required inputmode="decimal" placeholder="Valeur{{ ' (' + i.unit + ')' if i.unit }}" style="width:130px;">
+          <input type="text" name="comment" placeholder="Analyse / explication de l'écart" style="flex:1;min-width:200px;">
+          <button class="btn btn--primary btn--sm" type="submit">Enregistrer la mesure</button>
+        </form>
+      </div>{% endif %}
+      <div class="panel__body--flush"><div class="table-wrap"><table class="grid">
+        <thead><tr><th style="width:100px;">Période</th><th style="width:100px;text-align:right;">Valeur</th><th style="width:120px;">État</th><th>Analyse</th><th style="width:130px;">Saisie</th>{% if current_user.can_edit %}<th style="width:40px;"></th>{% endif %}</tr></thead>
+        <tbody>
+        {% for m in i.measurements %}
+          <tr><td class="mono">{{ m.period|d }}</td><td class="mono" style="text-align:right;">{{ i.fmt(m.value) }}</td><td>{{ kpi_state(i.evaluate(m.value)) }}</td>
+            <td style="font-size:12px;">{{ m.comment or '' }}</td><td class="muted" style="font-size:11.5px;">{{ m.recorded_by.name if m.recorded_by else '-' }}</td>
+            {% if current_user.can_edit %}<td><form method="post" action="{{ url_for('objectives.delete_measurement', m_id=m.id) }}" onsubmit="return confirm('Supprimer cette mesure ?');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn--ghost btn--sm" type="submit" title="Supprimer">×</button></form></td>{% endif %}</tr>
+        {% else %}<tr><td colspan="6" class="muted" style="padding:14px;">Aucune mesure.</td></tr>{% endfor %}
+        </tbody>
+      </table></div></div>
+    </div>
+  </div>
+  <div class="stack">
+    <div class="panel"><div class="panel__head"><h2>Définition (9.1)</h2></div><div class="panel__body"><div class="meta-list">
+      <div><span>Objectif</span><b>{% if i.objective %}{{ i.objective.ref }} - {{ i.objective.title }}{% else %}Surveillance seule{% endif %}</b></div>
+      {% if i.control %}<div><span>Mesure</span><b><a href="{{ url_for('soa.detail', control_id=i.control.id) }}">{{ i.control.annex_ref }}</a> {{ i.control.title }}</b></div>{% endif %}
+      <div><span>Cible</span><b>{{ '≥' if i.direction.value == 'HAUSSE' else '≤' }} {{ i.fmt(i.target) }}</b></div>
+      <div><span>Seuil d'alerte</span><b>{{ i.fmt(i.alert) if i.alert is not none else '-' }}</b></div>
+      <div><span>Fréquence</span><b>{{ i.frequency.label }}{% if i.measurement_due %} <span class="due-cell">- mesure attendue</span>{% endif %}</b></div>
+      <div><span>Méthode</span><b>{{ i.method or '-' }}</b></div>
+      <div><span>Mesuré par</span><b>{{ i.owner.name if i.owner else '-' }}</b></div>
+      <div><span>Analysé par</span><b>{{ i.analyst or '-' }}</b></div>
+    </div></div></div>
+    {% if i.state == 'hors_cible' and current_user.can_edit %}
+    <div class="panel"><div class="panel__body"><p style="font-size:12.5px;margin:0 0 8px;">La dernière mesure est hors cible.</p>
+      <a class="btn btn--subtle btn--sm" href="{{ url_for('nonconformities.create', indicateur=i.id) }}">Ouvrir une non-conformité</a></div></div>
+    {% endif %}
+    {{ history_panel(i) }}
+  </div>
+</div>
+{% endblock %}

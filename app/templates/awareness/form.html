@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% from 'partials/macros.html' import attachments_panel %}
+{% block title %}{{ 'Modifier' if a else 'Nouvelle' }} action - {{ APP_NAME }}{% endblock %}
+{% block heading %}{{ 'Modifier ' + a.ref if a else 'Nouvelle action de sensibilisation' }}{% endblock %}
+{% block topactions %}<a href="{{ url_for('awareness.index') }}" class="btn btn--ghost btn--sm">Retour</a>{% endblock %}
+{% block content %}
+<form method="post" {% if not a %}enctype="multipart/form-data"{% endif %} style="max-width:680px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="panel"><div class="panel__head"><h2>Action</h2></div><div class="panel__body stack">
+    <div class="field"><label>Titre *</label><input type="text" name="title" required value="{{ a.title if a else '' }}"></div>
+    <div class="form-grid">
+      <div class="field"><label>Type</label><select name="atype">{% for x in AwarenessType %}<option value="{{ x.value }}" {{ 'selected' if a and a.atype==x }}>{{ x.label }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Statut</label><select name="status">{% for x in AwarenessStatus %}<option value="{{ x.value }}" {{ 'selected' if a and a.status==x }}>{{ x.label }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="form-grid">
+      <div class="field"><label>Date</label><input type="date" name="action_date" value="{{ a.action_date.isoformat() if a and a.action_date else '' }}"></div>
+      <div class="field"><label>Public visé</label><input type="text" name="audience" value="{{ a.audience if a else '' }}"></div>
+    </div>
+    <div class="form-grid">
+      <div class="field"><label>Participants</label><input type="number" name="participants" value="{{ a.participants if a and a.participants is not none else '' }}"></div>
+      <div class="field"><label>Taux de réalisation / réussite (%)</label><input type="number" name="completion_rate" min="0" max="100" value="{{ a.completion_rate if a and a.completion_rate is not none else '' }}"></div>
+    </div>
+    <div class="field"><label>Notes</label><textarea name="notes" rows="2">{{ a.notes if a else '' }}</textarea></div>
+    {% if not a %}<div class="field"><label>Pièces jointes (supports, attestations…)</label><input type="file" name="attachments" multiple></div>{% endif %}
+    <div><button class="btn btn--primary" type="submit">{{ 'Enregistrer' if a else 'Créer l\'action' }}</button></div>
+  </div></div>
+</form>
+{% if a %}<div style="max-width:680px;margin-top:16px;">{{ attachments_panel('awareness', a.id, attachments, current_user.can_edit) }}</div>{% endif %}
+{% endblock %}

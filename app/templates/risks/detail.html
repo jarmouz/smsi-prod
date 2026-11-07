@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% from 'partials/macros.html' import risk_chip, score_badge, control_chip, history_panel, acceptance_chip with context %}
+{% block title %}{{ r.ref }} - {{ APP_NAME }}{% endblock %}
+{% block heading %}{{ r.ref }} - {{ r.title }}{% endblock %}
+{% block topactions %}
+  <a href="{{ url_for('risks.index') }}" class="btn btn--ghost btn--sm">Retour</a>
+  {% if current_user.can_edit %}<a href="{{ url_for('risks.edit', risk_id=r.id) }}" class="btn btn--primary btn--sm">Modifier</a>{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="detail-grid">
+  <div class="stack">
+    <div class="panel">
+      <div class="panel__head"><h2>Analyse</h2></div>
+      <div class="panel__body">
+        <div class="meta-list">
+          <div><span>Description</span><b>{{ r.description or '-' }}</b></div>
+          <div><span>Actif / périmètre</span><b>{{ r.asset or '-' }}{% for a in r.assets %} <a class="chip" href="{{ url_for('assets.detail', asset_id=a.id) }}">{{ a.ref }}</a>{% endfor %}</b></div>
+          <div><span>Menace</span><b>{{ r.threat or '-' }}</b></div>
+          <div><span>Vulnérabilité</span><b>{{ r.vulnerability or '-' }}</b></div>
+          <div><span>Traitement</span><b>{{ r.treatment.label }}</b></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel__head"><h2>Mesures de traitement</h2><span class="rail__badge">{{ r.controls|length }}</span></div>
+      <div class="panel__body">
+        {% if r.controls %}
+          {% for c in r.controls %}{{ control_chip(c) }} <span class="muted" style="font-size:12px;">{{ c.title }}</span><br>{% endfor %}
+        {% else %}<p class="muted">Aucune mesure de l'Annexe A rattachée. {% if current_user.can_edit %}<a href="{{ url_for('risks.edit', risk_id=r.id) }}">En ajouter</a>{% endif %}</p>{% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="stack">
+    <div class="panel">
+      <div class="panel__head"><h2>Cotation</h2></div>
+      <div class="panel__body">
+        <div class="meta-inline" style="justify-content:space-between;margin-bottom:12px;">
+          <div style="text-align:center;"><div class="muted" style="font-size:11px;">Inhérent</div>{{ score_badge(r.inherent_score, r.inherent_level) }}<div class="muted" style="font-size:11px;margin-top:3px;">V{{ r.likelihood }}×I{{ r.impact }}</div></div>
+          <div style="text-align:center;align-self:center;font-size:20px;color:var(--text-dim);"></div>
+          <div style="text-align:center;"><div class="muted" style="font-size:11px;">Résiduel</div>{{ score_badge(r.residual_score, r.residual_level) }}<div class="muted" style="font-size:11px;margin-top:3px;">{% if r.residual_score %}V{{ r.residual_likelihood }}×I{{ r.residual_impact }}{% else %}non coté{% endif %}</div></div>
+        </div>
+        <div style="text-align:center;">{{ risk_chip(r.residual_level) }}</div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel__head"><h2>Acceptation du risque résiduel</h2>{{ acceptance_chip(r) }}</div>
+      <div class="panel__body stack">
+        <p class="muted" style="font-size:12px;margin:0;">Seuil d'acceptation de l'organisation : score résiduel ≤ {{ risk_criteria()['acceptance'] }}.
+          Score résiduel actuel : <b>{{ r.effective_score }}</b>{{ ' (dans les critères)' if r.within_acceptance else ' (au-dessus du seuil : acceptation formelle du propriétaire requise)' }}.</p>
+        {% if r.accepted_at %}
+        <div class="meta-list" style="font-size:12.5px;">
+          <div><span>Accepté par</span><b>{{ r.accepted_by.name if r.accepted_by else '-' }}</b></div>
+          <div><span>Le</span><b>{{ r.accepted_at|dt }} (score {{ r.accepted_score }})</b></div>
+          <div><span>Valable jusqu'au</span><b>{{ r.acceptance_until|d }}</b></div>
+          <div><span>Justification</span><b>{{ r.acceptance_note }}</b></div>
+        </div>
+        {% if r.acceptance_state == 'outdated' %}<div class="flash flash--warning" style="margin:0;">La cotation a changé depuis l'acceptation : une nouvelle acceptation est nécessaire.</div>{% endif %}
+        {% if r.acceptance_state == 'expired' %}<div class="flash flash--warning" style="margin:0;">L'acceptation a expiré : à renouveler.</div>{% endif %}
+        {% endif %}
+        {% if can_accept and r.acceptance_state != 'valid' %}
+        <form method="post" action="{{ url_for('risks.accept', risk_id=r.id) }}" class="stack">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="field"><label>Justification de l'acceptation *</label><textarea name="acceptance_note" rows="2" required placeholder="Ex. coût de traitement disproportionné, mesures compensatoires en place..."></textarea></div>
+          <div class="field"><label>Valable jusqu'au</label><input type="date" name="acceptance_until"></div>
+          {% if current_user.id != r.owner_id %}<p class="muted" style="font-size:11.5px;margin:0;">Vous n'êtes pas le propriétaire du risque : l'acceptation sera enregistrée en votre nom pour le compte de {{ r.owner.name if r.owner else 'son propriétaire' }}.</p>{% endif %}
+          <div><button class="btn btn--primary btn--sm" type="submit">Accepter le risque résiduel</button></div>
+        </form>
+        {% elif can_accept %}
+        <form method="post" action="{{ url_for('risks.revoke_acceptance', risk_id=r.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn--ghost btn--sm" type="submit">Retirer l'acceptation</button></form>
+        {% endif %}
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel__head"><h2>Suivi</h2></div>
+      <div class="panel__body"><div class="meta-list">
+        <div><span>Statut</span><b>{{ r.status.label }}</b></div>
+        <div><span>Propriétaire</span><b>{{ r.owner.name if r.owner else '-' }}</b></div>
+        <div><span>Prochaine revue</span><b>{{ r.review_date|d }}</b></div>
+        <div><span>Créé le</span><b>{{ r.created_at|d }}</b></div>
+      </div></div>
+    </div>
+  </div>
+</div>
+<div style="margin-top:16px;">{{ history_panel(r) }}</div>
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% from 'partials/macros.html' import history_panel with context %}
+{% block title %}{{ nc.ref }} - {{ APP_NAME }}{% endblock %}
+{% block heading %}{{ nc.ref }} - {{ nc.title }}{% endblock %}
+{% block topactions %}<a href="{{ url_for('nonconformities.index') }}" class="btn btn--ghost btn--sm">Retour</a>{% if current_user.can_edit and nc.status.value != 'CLOTUREE' %}<a href="{{ url_for('nonconformities.edit', nc_id=nc.id) }}" class="btn btn--primary btn--sm">Modifier</a>{% endif %}{% endblock %}
+{% block content %}
+{% set steps = [('OUVERTE', 'Ouverte'), ('EN_TRAITEMENT', 'Analyse et actions'), ('A_VERIFIER', 'Efficacité à vérifier'), ('CLOTUREE', 'Clôturée')] %}
+<div class="meta-inline" style="font-size:11.5px;gap:6px;margin-bottom:14px;">
+  {% for st, lbl in steps %}<span class="appl {{ 'appl--in' if nc.status.value == st else '' }}" style="{{ '' if nc.status.value == st else 'opacity:.5;' }}">{{ loop.index }}. {{ lbl }}</span>{% if not loop.last %}<span class="muted">→</span>{% endif %}{% endfor %}
+</div>
+<div class="detail-grid">
+  <div class="stack">
+    <div class="panel"><div class="panel__head"><h2>Constat</h2>{% if nc.severity.value == 'MAJEURE' %}<span class="appl appl--out">Majeure</span>{% else %}<span class="muted" style="font-size:12px;">Mineure</span>{% endif %}</div><div class="panel__body"><div class="meta-list">
+      <div><span>Description</span><b style="white-space:pre-wrap;">{{ nc.description or '-' }}</b></div>
+      <div><span>Origine</span><b>{{ nc.source.label }}{% if nc.finding %} - <a href="{{ url_for('audits.detail', audit_id=nc.finding.audit_id) }}">{{ nc.finding.audit.ref }} / {{ nc.finding.ref }}</a>{% endif %}{% if nc.incident %} - <a href="{{ url_for('incidents.detail', incident_id=nc.incident.id) }}">{{ nc.incident.ref }}</a>{% endif %}</b></div>
+      <div><span>Détectée</span><b>{{ nc.detected_at|d }}{{ ' par ' + nc.detected_by if nc.detected_by }}</b></div>
+      <div><span>Référence</span><b>{% if nc.clause %}Clause {{ nc.clause }} {% endif %}{% if nc.control %}<a href="{{ url_for('soa.detail', control_id=nc.control.id) }}">{{ nc.control.annex_ref }}</a> {{ nc.control.title }}{% endif %}{% if not nc.clause and not nc.control %}-{% endif %}</b></div>
+      <div><span>Pilote</span><b>{{ nc.owner.name if nc.owner else '-' }}</b></div>
+    </div></div></div>
+
+    <div class="panel"><div class="panel__head"><h2>Analyse (10.2 a, b, e)</h2></div><div class="panel__body"><div class="meta-list">
+      <div><span>a) Correction</span><b style="white-space:pre-wrap;">{{ nc.correction or '-' }}</b></div>
+      <div><span>b) Cause(s) racine(s)</span><b style="white-space:pre-wrap;">{% if nc.root_cause %}{{ nc.root_cause }}{% if nc.cause_method %} <span class="muted">({{ nc.cause_method }})</span>{% endif %}{% else %}<span class="due-cell">À analyser</span>{% endif %}</b></div>
+      <div><span>b) NC similaires</span><b style="white-space:pre-wrap;">{{ nc.extent or '-' }}</b></div>
+      <div><span>e) Modifications du SMSI</span><b style="white-space:pre-wrap;">{{ nc.isms_changes or '-' }}</b></div>
+    </div></div></div>
+
+    <div class="panel"><div class="panel__head"><h2>c) Actions correctives</h2><span class="rail__badge">{{ nc.actions|length }}</span></div><div class="panel__body">
+      {% for ac in nc.actions %}
+      <div style="display:flex;align-items:center;gap:10px;padding:7px 10px;margin-bottom:6px;background:var(--paper);">
+        <span style="flex:1;font-size:12.5px;">{{ ac.description }}{% if ac.owner %}<span class="muted"> - {{ ac.owner.name }}</span>{% endif %}{% if ac.due_date %}<span class="{{ 'due-cell' if ac.is_overdue }}"> - {{ ac.due_date|d }}</span>{% endif %}</span>
+        {% if current_user.can_edit and nc.status.value != 'CLOTUREE' %}
+        <form method="post" action="{{ url_for('nonconformities.action_status', action_id=ac.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <select name="status" onchange="this.form.submit()" style="font-size:11.5px;padding:2px 6px;width:auto;">{% for s in ActionStatus if s.value != 'VERIFIEE' or ac.status == s %}<option value="{{ s.value }}" {{ 'selected' if ac.status==s }}>{{ s.label }}</option>{% endfor %}</select></form>
+        {% else %}<span class="muted" style="font-size:11.5px;">{{ ac.status.label }}</span>{% endif %}
+      </div>
+      {% else %}<p class="muted" style="font-size:12.5px;margin:0 0 8px;">Aucune action corrective.</p>{% endfor %}
+      {% if current_user.can_edit and nc.status.value != 'CLOTUREE' %}
+      <form method="post" action="{{ url_for('nonconformities.add_action', nc_id=nc.id) }}" style="display:flex;gap:6px;margin-top:8px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="text" name="description" required placeholder="Action pour éliminer la cause…" style="flex:1;font-size:12.5px;">
+        <select name="owner_id" style="width:auto;font-size:12px;"><option value="">Resp.</option>{% for u in users %}<option value="{{ u.id }}">{{ u.name }}</option>{% endfor %}</select>
+        <input type="date" name="due_date" style="width:auto;font-size:12px;">
+        <button class="btn btn--subtle btn--sm" type="submit">+</button>
+      </form>{% endif %}
+    </div></div>
+  </div>
+
+  <div class="stack">
+    <div class="panel"><div class="panel__head"><h2>d) Efficacité</h2></div><div class="panel__body stack">
+      {% if nc.status.value == 'CLOTUREE' %}
+        <p style="font-size:12.5px;margin:0;">Actions jugées <b>efficaces</b> par {{ nc.effectiveness_by.name if nc.effectiveness_by else '-' }} le {{ nc.effectiveness_at|dt }}.</p>
+        <p class="muted" style="font-size:12.5px;margin:0;white-space:pre-wrap;">{{ nc.effectiveness_note }}</p>
+      {% elif nc.status.value == 'A_VERIFIER' %}
+        {% if can_verify %}
+        <form method="post" action="{{ url_for('nonconformities.verify', nc_id=nc.id) }}" class="stack">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="field"><label>Éléments de vérification *</label><textarea name="effectiveness_note" rows="3" required placeholder="Ex. revue des accès du trimestre suivant réalisée dans les délais, aucun compte orphelin"></textarea></div>
+          <div class="meta-inline"><button class="btn btn--primary btn--sm" type="submit" name="effective" value="oui">Efficace : clôturer</button>
+            <button class="btn btn--ghost btn--sm" type="submit" name="effective" value="non">Non efficace</button></div>
+        </form>
+        {% else %}<p class="muted" style="font-size:12.5px;margin:0;">Actions réalisées : vérification par le RSSI ou un auditeur{{ ' prévue le ' ~ (nc.effectiveness_due|d) if nc.effectiveness_due }}.</p>{% endif %}
+      {% else %}
+        <p class="muted" style="font-size:12.5px;margin:0;">La vérification d'efficacité devient possible une fois la cause racine analysée et toutes les actions réalisées{{ ' ; prévue le ' ~ (nc.effectiveness_due|d) if nc.effectiveness_due }}.</p>
+      {% endif %}
+    </div></div>
+    {{ history_panel(nc) }}
+  </div>
+</div>
+{% endblock %}

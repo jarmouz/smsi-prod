@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% from 'partials/macros.html' import severity, incident_status, attachments_panel, history_panel with context %}
+{% block title %}{{ inc.ref }} - {{ APP_NAME }}{% endblock %}
+{% block heading %}{{ inc.ref }} - {{ inc.title }}{% endblock %}
+{% block topactions %}<a href="{{ url_for('incidents.index') }}" class="btn btn--ghost btn--sm">Retour</a>{% if current_user.can_edit %}<a href="{{ url_for('nonconformities.create', incident=inc.id) }}" class="btn btn--subtle btn--sm">Ouvrir une non-conformité</a><a href="{{ url_for('incidents.edit', incident_id=inc.id) }}" class="btn btn--primary btn--sm">Modifier</a>{% endif %}{% endblock %}
+{% block content %}
+<div class="detail-grid">
+  <div class="stack">
+    <div class="panel"><div class="panel__head"><h2>Détail</h2></div><div class="panel__body"><div class="meta-list">
+      <div><span>Description</span><b>{{ inc.description or '-' }}</b></div>
+      <div><span>Impact</span><b>{{ inc.impact or '-' }}</b></div>
+      <div><span>Traitement / leçons</span><b>{{ inc.resolution or '-' }}</b></div>
+      {% if inc.control %}<div><span>Mesure concernée</span><b><a href="{{ url_for('soa.detail', control_id=inc.control.id) }}">{{ inc.control.annex_ref }}</a> - {{ inc.control.title }}</b></div>{% endif %}
+    </div></div></div>
+    {{ attachments_panel('incident', inc.id, attachments, current_user.can_edit) }}
+  </div>
+  <div class="stack">
+    <div class="panel"><div class="panel__head"><h2>Qualification</h2></div><div class="panel__body"><div class="meta-list">
+      <div><span>Gravité</span>{{ severity(inc.severity) }}</div>
+      <div><span>Statut</span>{{ incident_status(inc.status) }}</div>
+      <div><span>Catégorie</span><b>{{ inc.category.label }}</b></div>
+      <div><span>Détecté le</span><b>{{ inc.detected_at|d }}</b></div>
+      <div><span>Déclarant</span><b>{{ inc.reporter or '-' }}</b></div>
+      <div><span>Responsable</span><b>{{ inc.assignee.name if inc.assignee else '-' }}</b></div>
+      {% if inc.closed_at %}<div><span>Clôturé le</span><b>{{ inc.closed_at|d }}</b></div>{% endif %}
+    </div></div></div>
+  </div>
+</div>
+<div style="margin-top:16px;">{{ history_panel(inc) }}</div>
+{% endblock %}

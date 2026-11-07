@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}Fournisseur - {{ APP_NAME }}{% endblock %}
+{% block heading %}{{ 'Modifier ' + s.ref if s else 'Nouveau fournisseur' }}{% endblock %}
+{% block topactions %}<a href="{{ url_for('suppliers.detail', sup_id=s.id) if s else url_for('suppliers.index') }}" class="btn btn--ghost btn--sm">Retour</a>{% endblock %}
+{% block content %}
+<form method="post" style="max-width:820px;">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="panel"><div class="panel__head"><h2>Fournisseur</h2></div><div class="panel__body stack">
+    <div class="field"><label>Nom *</label><input type="text" name="name" required value="{{ s.name if s else '' }}"></div>
+    <div class="field"><label>Service fourni</label><textarea name="service" rows="2">{{ s.service or '' if s else '' }}</textarea></div>
+    <div class="form-grid">
+      <div class="field"><label>Catégorie</label><select name="category">{% for x in SupplierCategory %}<option value="{{ x.value }}" {{ 'selected' if s and s.category==x }}>{{ x.label }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Criticité</label><select name="criticality">{% for x in Criticality %}<option value="{{ x.value }}" {{ 'selected' if (s and s.criticality==x) or (not s and x.value=='STANDARD') }}>{{ x.label }} (évaluation tous les {{ months[x.value] }} mois)</option>{% endfor %}</select></div>
+    </div>
+    <div class="form-grid">
+      <div class="field"><label>Accès aux données</label><select name="data_access">{% for x in DataAccess %}<option value="{{ x.value }}" {{ 'selected' if s and s.data_access==x }}>{{ x.label }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Statut</label><select name="status">{% for x in SupplierStatus %}<option value="{{ x.value }}" {{ 'selected' if (s and s.status==x) or (not s and x.value=='ACTIF') }}>{{ x.label }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="form-grid">
+      <div class="field"><label>Contact</label><input type="text" name="contact" value="{{ s.contact or '' if s else '' }}"></div>
+      <div class="field"><label>Responsable interne</label><select name="owner_id"><option value="">-</option>{% for u in users %}<option value="{{ u.id }}" {{ 'selected' if s and s.owner_id==u.id }}>{{ u.name }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="form-grid">
+      <div class="field"><label>Référence du contrat</label><input type="text" name="contract_ref" value="{{ s.contract_ref or '' if s else '' }}"></div>
+      <div class="field"><label>Échéance du contrat</label><input type="date" name="contract_end" value="{{ s.contract_end.isoformat() if s and s.contract_end else '' }}"></div>
+    </div>
+  </div></div>
+  <div class="panel" style="margin-top:16px;"><div class="panel__head"><h2>Sécurité</h2></div><div class="panel__body stack">
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;"><input type="checkbox" name="security_clauses" {{ 'checked' if s and s.security_clauses }} style="width:auto;"> Clauses de sécurité dans le contrat (A.5.20)</label>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;"><input type="checkbox" name="dpa" {{ 'checked' if s and s.dpa }} style="width:auto;"> Accord de traitement des données personnelles (DPA)</label>
+    <div class="field"><label>Certifications et attestations</label><input type="text" name="certifications" value="{{ s.certifications or '' if s else '' }}" placeholder="Ex. ISO/IEC 27001 valide jusqu'au 03/2027, SOC 2 Type II"></div>
+    <div class="form-grid">
+      <div class="field"><label>Dernière évaluation</label><input type="date" name="last_assessment" value="{{ s.last_assessment.isoformat() if s and s.last_assessment else '' }}"></div>
+      <div class="field"><label>Résultat</label><select name="assessment_result">{% for x in AssessmentResult %}<option value="{{ x.value }}" {{ 'selected' if s and s.assessment_result==x }}>{{ x.label }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="field"><label>Prochaine évaluation</label><input type="date" name="next_assessment" value="{{ s.next_assessment.isoformat() if s and s.next_assessment else '' }}"><div class="muted" style="font-size:11px;margin-top:3px;">Vide : calculée selon la criticité à partir de la dernière évaluation.</div></div>
+    <div class="field"><label>Notes</label><textarea name="notes" rows="2">{{ s.notes or '' if s else '' }}</textarea></div>
+    <div><button class="btn btn--primary" type="submit">Enregistrer</button></div>
+  </div></div>
+</form>
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% from 'partials/macros.html' import change_list with context %}
+{% block title %}Journal d'activité - {{ APP_NAME }}{% endblock %}
+{% block heading %}Journal d'activité{% endblock %}
+{% block topactions %}<a href="{{ url_for('admin.journal_export', **request.args) }}" class="btn btn--subtle btn--sm">Exporter (CSV)</a>{% endblock %}
+{% block content %}
+<p class="muted" style="font-size:12.5px;margin:0 0 12px;">Piste d'audit non modifiable de toutes les opérations : créations, modifications (valeurs avant / après), suppressions, connexions, approbations et exports.</p>
+<form class="toolbar" method="get">
+  <select name="type"><option value="">Tous les objets</option>{% for t in types %}<option value="{{ t }}" {{ 'selected' if f.type==t }}>{{ ENTITY_LABELS.get(t, t) }}</option>{% endfor %}</select>
+  <select name="action"><option value="">Toutes les actions</option>{% for k, v in actions.items() %}<option value="{{ k }}" {{ 'selected' if f.action==k }}>{{ v }}</option>{% endfor %}</select>
+  <select name="user"><option value="">Tous les utilisateurs</option>{% for u in users %}<option value="{{ u }}" {{ 'selected' if f.user==u }}>{{ u }}</option>{% endfor %}</select>
+  <input type="date" name="du" value="{{ f.du }}" title="Du" style="width:auto;">
+  <input type="date" name="au" value="{{ f.au }}" title="Au" style="width:auto;">
+  <input type="search" name="q" value="{{ f.q }}" placeholder="Référence, objet..." style="width:180px;">
+  <button class="btn btn--subtle btn--sm" type="submit">Filtrer</button>
+  {% if f.values()|select|list %}<a href="{{ url_for('admin.journal') }}" class="btn btn--ghost btn--sm">Réinitialiser</a>{% endif %}
+</form>
+<div class="panel" style="margin-top:16px;">
+  <div class="panel__head"><h2>Événements</h2><span class="rail__badge">{{ total }}</span></div>
+  <div class="panel__body--flush"><div class="table-wrap">
+    <table class="grid">
+      <thead><tr><th style="width:130px;">Date</th><th style="width:150px;">Utilisateur</th><th style="width:120px;">Action</th><th>Objet et détail</th></tr></thead>
+      <tbody>
+      {% for l in logs %}
+        <tr>
+          <td class="mono" style="font-size:11.5px;">{{ l.created_at|dt }}</td>
+          <td>{{ l.user_name or '-' }}{% if l.ip %}<div class="muted" style="font-size:10.5px;">{{ l.ip }}</div>{% endif %}</td>
+          <td class="muted">{{ l.action_label }}</td>
+          <td class="subj">{% if l.entity_type %}<span class="muted" style="font-size:11px;">{{ ENTITY_LABELS.get(l.entity_type, l.entity_type) }}</span> {{ l.entity_ref or '' }}{% endif %}
+            {% if l.summary %}<div style="font-size:12px;">{{ l.summary }}</div>{% endif %}
+            {{ change_list(l.changes) }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="4"><div class="empty" style="padding:30px;"><h3>Aucun événement</h3></div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div></div>
+</div>
+{% if pages > 1 %}
+<div class="meta-inline" style="margin-top:12px;justify-content:center;">
+  {% if page > 1 %}<a class="btn btn--ghost btn--sm" href="{{ url_for('admin.journal', **dict(request.args, page=page-1)) }}">Précédent</a>{% endif %}
+  <span class="muted">Page {{ page }} / {{ pages }}</span>
+  {% if page < pages %}<a class="btn btn--ghost btn--sm" href="{{ url_for('admin.journal', **dict(request.args, page=page+1)) }}">Suivant</a>{% endif %}
+</div>
+{% endif %}
+{% endblock %}

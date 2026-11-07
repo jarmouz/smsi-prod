@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Modifier' if inc else 'Déclarer' }} incident - {{ APP_NAME }}{% endblock %}
+{% block heading %}{{ 'Modifier ' + inc.ref if inc else 'Déclarer un incident' }}{% endblock %}
+{% block topactions %}<a href="{{ url_for('incidents.index') }}" class="btn btn--ghost btn--sm">Retour</a>{% endblock %}
+{% block content %}
+<form method="post" {% if not inc %}enctype="multipart/form-data"{% endif %} class="detail-grid">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="stack">
+    <div class="panel"><div class="panel__head"><h2>Incident</h2></div><div class="panel__body stack">
+      <div class="field"><label>Titre *</label><input type="text" name="title" required value="{{ inc.title if inc else '' }}"></div>
+      <div class="field"><label>Description</label><textarea name="description" rows="3">{{ inc.description if inc else '' }}</textarea></div>
+      <div class="field"><label>Impact</label><textarea name="impact" rows="2">{{ inc.impact if inc else '' }}</textarea></div>
+      {% if inc %}<div class="field"><label>Traitement / leçons apprises</label><textarea name="resolution" rows="3">{{ inc.resolution or '' }}</textarea></div>{% endif %}
+      {% if not inc %}<div class="field"><label>Pièces jointes (optionnel)</label><input type="file" name="attachments" multiple></div>{% endif %}
+    </div></div>
+  </div>
+  <div class="stack">
+    <div class="panel"><div class="panel__head"><h2>Qualification</h2></div><div class="panel__body stack">
+      <div class="field"><label>Catégorie</label><select name="category">{% for x in IncidentCategory %}<option value="{{ x.value }}" {{ 'selected' if inc and inc.category==x }}>{{ x.label }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Gravité</label><select name="severity">{% for x in IncidentSeverity %}<option value="{{ x.value }}" {{ 'selected' if inc and inc.severity==x }}>{{ x.label }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Statut</label><select name="status">{% for x in IncidentStatus %}<option value="{{ x.value }}" {{ 'selected' if inc and inc.status==x }}>{{ x.label }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Date de détection</label><input type="date" name="detected_at" value="{{ inc.detected_at.isoformat() if inc and inc.detected_at else '' }}"></div>
+      <div class="field"><label>Déclarant</label><input type="text" name="reporter" value="{{ inc.reporter if inc else '' }}"></div>
+      <div class="field"><label>Responsable du traitement</label><select name="assignee_id"><option value="">-</option>{% for u in users %}<option value="{{ u.id }}" {{ 'selected' if inc and inc.assignee_id==u.id }}>{{ u.name }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Mesure concernée (Annexe A)</label><select name="control_id"><option value="">-</option>{% for c in controls %}<option value="{{ c.id }}" {{ 'selected' if inc and inc.control_id==c.id }}>{{ c.annex_ref }} - {{ c.title }}</option>{% endfor %}</select></div>
+      <div><button class="btn btn--primary" type="submit">{{ 'Enregistrer' if inc else 'Déclarer' }}</button></div>
+    </div></div>
+  </div>
+</form>
+{% endblock %}

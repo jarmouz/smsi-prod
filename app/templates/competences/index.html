@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% from 'partials/macros.html' import export_menu with context %}
+{% block title %}Compétences - {{ APP_NAME }}{% endblock %}
+{% block heading %}Compétences et sensibilisation des personnes (7.2){% endblock %}
+{% block topactions %}{{ export_menu([('competences', 'Registre des compétences')]) }} {% if current_user.can_edit %}<a href="{{ url_for('competences.create_record') }}" class="btn btn--subtle btn--sm">+ Preuve</a> <a href="{{ url_for('competences.create_requirement') }}" class="btn btn--primary btn--sm">+ Compétence requise</a>{% endif %}{% endblock %}
+{% block content %}
+<div class="kpis" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px;">
+  <div class="kpi kpi--total"><div class="kpi__label">Compétences requises</div><div class="kpi__value">{{ stats.reqs }}</div></div>
+  <div class="kpi kpi--retard"><div class="kpi__label">Écarts</div><div class="kpi__value">{{ stats.gaps }}</div><div class="kpi__sub">personne × compétence sans preuve valide</div></div>
+  <div class="kpi kpi--retard"><div class="kpi__label">Preuves expirées</div><div class="kpi__value">{{ stats.expired }}</div></div>
+  <div class="kpi kpi--sla"><div class="kpi__label">Expirent sous 60 jours</div><div class="kpi__value">{{ stats.soon }}</div></div>
+</div>
+<div class="panel"><div class="panel__head"><h2>Compétences requises et couverture</h2></div><div class="panel__body--flush"><div class="table-wrap">
+  <table class="grid">
+    <thead><tr><th style="width:280px;">Compétence</th><th>Personnes concernées</th>{% if current_user.can_edit %}<th style="width:80px;"></th>{% endif %}</tr></thead>
+    <tbody>
+    {% for r in reqs %}
+      <tr><td class="subj">{{ r.title }}<div class="muted" style="font-size:11px;">{{ r.description or '' }}{{ ' - renouvellement : %d mois'|format(r.validity_months) if r.validity_months }}</div></td>
+        <td style="font-size:12px;">{% for u in r.users %}{% set rec = r.valid_record(u.id) %}
+          <span style="display:inline-block;margin:2px 10px 2px 0;">{% if rec %}<span style="color:var(--sig-green);">✓</span> {{ u.name }}<span class="muted">{{ ' (jusqu\'au ' ~ (rec.expires_at|d) ~ ')' if rec.expires_at }}</span>
+          {% else %}<span class="due-cell">✗ {{ u.name }}</span>{% if current_user.can_edit %} <a class="muted" href="{{ url_for('competences.create_record', user=u.id, exigence=r.id) }}">+ preuve</a>{% endif %}{% endif %}</span>
+        {% else %}<span class="muted">Aucune personne désignée</span>{% endfor %}</td>
+        {% if current_user.can_edit %}<td><a class="btn btn--ghost btn--sm" href="{{ url_for('competences.edit_requirement', req_id=r.id) }}">Modifier</a></td>{% endif %}</tr>
+    {% else %}<tr><td colspan="3"><div class="empty" style="padding:24px;"><h3>Aucune compétence requise</h3><p>Déterminez les compétences nécessaires aux personnes dont le travail a une incidence sur la sécurité.</p></div></td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div></div></div>
+<div class="panel" style="margin-top:16px;"><div class="panel__head"><h2>Preuves de compétence</h2><span class="rail__badge">{{ records|length }}</span></div><div class="panel__body--flush"><div class="table-wrap">
+  <table class="grid">
+    <thead><tr><th style="width:170px;">Personne</th><th>Preuve</th><th style="width:120px;">Type</th><th style="width:110px;">Obtenue</th><th style="width:130px;">Validité</th>{% if current_user.can_edit %}<th style="width:80px;"></th>{% endif %}</tr></thead>
+    <tbody>
+    {% for rec in records %}
+      <tr><td>{{ rec.user.name }}</td><td class="subj">{{ rec.title }}<div class="muted" style="font-size:11px;">{{ rec.provider or '' }}{{ ' - ' + rec.requirement.title if rec.requirement }}</div></td>
+        <td class="muted">{{ rec.ctype.label }}</td><td class="muted">{{ rec.obtained_at|d }}</td>
+        <td>{% if rec.expired %}<span class="appl appl--out">Expirée {{ rec.expires_at|d }}</span>{% elif rec.expires_soon %}<span class="due-cell">{{ rec.expires_at|d }}</span>{% else %}<span class="muted">{{ rec.expires_at|d if rec.expires_at else 'Permanente' }}</span>{% endif %}</td>
+        {% if current_user.can_edit %}<td><a class="btn btn--ghost btn--sm" href="{{ url_for('competences.edit_record', rec_id=rec.id) }}">Modifier</a></td>{% endif %}</tr>
+    {% else %}<tr><td colspan="6" class="muted" style="padding:14px;">Aucune preuve enregistrée.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div></div></div>
+{% endblock %}

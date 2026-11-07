@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+{% from 'partials/macros.html' import finding_type, attachments_panel %}
+{% block title %}{{ a.ref }} - {{ APP_NAME }}{% endblock %}
+{% block heading %}{{ a.ref }} - {{ a.title }}{% endblock %}
+{% block topactions %}<a href="{{ url_for('audits.index') }}" class="btn btn--ghost btn--sm">Retour</a>{% endblock %}
+
+{% block content %}
+{% set can_audit = current_user.role.value in ['RSSI','AUDITEUR'] %}
+<div class="detail-grid">
+  <div class="stack">
+    <div class="panel">
+      <div class="panel__head"><h2>Constats</h2><span class="rail__badge">{{ a.findings|length }}</span></div>
+      <div class="panel__body--flush">
+        {% for f in a.findings %}
+        <div style="padding:14px 16px;border-bottom:1px solid var(--line);">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span class="ref">{{ f.ref }}</span>{{ finding_type(f.type) }}
+            <b style="font-family:var(--font-display);{{ 'text-decoration:line-through;opacity:.55' if f.closed }}">{{ f.title }}</b>
+            <div class="spacer"></div>
+            {% if f.control %}<span class="chip"><a href="{{ url_for('soa.detail', control_id=f.control.id) }}">{{ f.control.annex_ref }}</a></span>{% endif %}
+            {% if f.clause %}<span class="muted" style="font-size:11.5px;">clause {{ f.clause }}</span>{% endif %}
+          </div>
+          {% if f.description %}<p class="muted" style="font-size:12.5px;margin:6px 0 0;">{{ f.description }}</p>{% endif %}
+          {% if f.is_nonconformity %}<div style="margin-top:6px;font-size:12px;">
+            {% if ncs.get(f.id) %}Suivi 10.2 : <a href="{{ url_for('nonconformities.detail', nc_id=ncs[f.id].id) }}">{{ ncs[f.id].ref }}</a> <span class="muted">({{ ncs[f.id].status.label }})</span>
+            {% elif current_user.can_edit %}<a class="btn btn--ghost btn--sm" href="{{ url_for('nonconformities.create', finding=f.id) }}">Ouvrir une non-conformité (analyse des causes, efficacité)</a>{% endif %}
+          </div>{% endif %}
+
+          {% for ac in f.actions %}
+          <div style="display:flex;align-items:center;gap:10px;margin-top:8px;padding:7px 10px;background:var(--paper);border-radius:7px;">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-dim);flex:none;"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            <span style="flex:1;font-size:12.5px;">{{ ac.description }}
+              {% if ac.owner %}<span class="muted"> - {{ ac.owner.name }}</span>{% endif %}
+              {% if ac.due_date %}<span class="{{ 'due-cell' if ac.is_overdue }}"> - {{ ac.due_date|d }}</span>{% endif %}
+            </span>
+            {% if current_user.can_edit %}
+            <form method="post" action="{{ url_for('audits.action_status', action_id=ac.id) }}" style="display:inline;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <select name="status" onchange="this.form.submit()" style="font-size:11.5px;padding:2px 6px;width:auto;">
+                {% for s in ActionStatus %}<option value="{{ s.value }}" {{ 'selected' if ac.status==s }}>{{ s.label }}</option>{% endfor %}
+              </select>
+            </form>
+            {% else %}<span class="muted" style="font-size:11.5px;">{{ ac.status.label }}</span>{% endif %}
+          </div>
+          {% endfor %}
+
+          {% if current_user.can_edit and not f.closed %}
+          <form method="post" action="{{ url_for('audits.add_action', finding_id=f.id) }}" style="display:flex;gap:6px;margin-top:8px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="text" name="description" placeholder="Ajouter une action corrective…" style="flex:1;font-size:12.5px;">
+            <select name="owner_id" style="width:auto;font-size:12px;"><option value="">Resp.</option>{% for u in users %}<option value="{{ u.id }}">{{ u.name }}</option>{% endfor %}</select>
+            <input type="date" name="due_date" style="width:auto;font-size:12px;">
+            <button class="btn btn--subtle btn--sm" type="submit">+</button>
+          </form>
+          {% endif %}
+          {% if can_audit %}
+          <form method="post" action="{{ url_for('audits.close_finding', finding_id=f.id) }}" style="display:inline;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn--ghost btn--sm" type="submit" style="margin-top:6px;">{{ 'Rouvrir' if f.closed else 'Clôturer le constat' }}</button>
+          </form>
+          {% endif %}
+        </div>
+        {% else %}
+        <div class="empty" style="padding:26px;"><p>Aucun constat enregistré.</p></div>
+        {% endfor %}
+      </div>
+    </div>
+
+    {% if can_audit %}
+    <div class="panel">
+      <div class="panel__head"><h2>Ajouter un constat</h2></div>
+      <div class="panel__body">
+        <form method="post" action="{{ url_for('audits.add_finding', audit_id=a.id) }}" class="stack">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="form-grid">
+            <div class="field"><label>Type</label><select name="type">{% for t in FindingType %}<option value="{{ t.value }}">{{ t.label }}</option>{% endfor %}</select></div>
+            <div class="field"><label>Clause (option.)</label><input type="text" name="clause" placeholder="Ex. A.5.18"></div>
+          </div>
+          <div class="field"><label>Libellé *</label><input type="text" name="title" required></div>
+          <div class="field"><label>Description</label><textarea name="description" rows="2"></textarea></div>
+          <div class="field"><label>Mesure concernée (Annexe A)</label>
+            <select name="control_id"><option value="">-</option>{% for c in controls %}<option value="{{ c.id }}">{{ c.annex_ref }} - {{ c.title }}</option>{% endfor %}</select></div>
+          <div><button class="btn btn--primary" type="submit">Ajouter le constat</button></div>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="stack">
+    <div class="panel">
+      <div class="panel__head"><h2>Audit</h2></div>
+      <div class="panel__body"><div class="meta-list">
+        <div><span>Périmètre</span><b>{{ a.scope or '-' }}</b></div>
+        <div><span>Date planifiée</span><b>{{ a.planned_date|d }}</b></div>
+        <div><span>Auditeur</span><b>{{ a.lead_auditor.name if a.lead_auditor else '-' }}</b></div>
+        <div><span>Non-conformités</span><b>{{ a.nc_count }}</b></div>
+      </div></div>
+    </div>
+    {% if can_audit %}
+    <div class="panel">
+      <div class="panel__head"><h2>Statut & synthèse</h2></div>
+      <div class="panel__body">
+        <form method="post" action="{{ url_for('audits.set_status', audit_id=a.id) }}" class="stack">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="field"><label>Statut</label><select name="status">{% for s in AuditStatus %}<option value="{{ s.value }}" {{ 'selected' if a.status==s }}>{{ s.label }}</option>{% endfor %}</select></div>
+          <div class="field"><label>Synthèse / conclusions</label><textarea name="summary" rows="4">{{ a.summary or '' }}</textarea></div>
+          <div><button class="btn btn--primary" type="submit">Enregistrer</button></div>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+    {{ attachments_panel('audit', a.id, attachments, current_user.can_edit) }}
+  </div>
+</div>
+{% endblock %}

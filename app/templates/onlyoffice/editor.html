@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title }} - édition</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  <style>
+    :root{--ink:#1F2937;--teal:#1E5BB8;--line:#D5DCE5;}
+    *{box-sizing:border-box} html,body{height:100%;margin:0;font-family:Montserrat,Arial,sans-serif}
+    body{display:flex;flex-direction:column;background:#F6F8FB}
+    .oo-bar{height:48px;flex:none;display:flex;align-items:center;gap:14px;padding:0 16px;
+      background:#fff;color:var(--ink);border-bottom:1px solid #E3E8EF}
+    .oo-bar a{color:var(--teal);text-decoration:none;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px}
+    .oo-bar a:hover{color:#174A96;text-decoration:underline}
+    .oo-bar img{height:26px;width:auto;display:block}
+    .oo-bar .t{font-weight:700;font-size:14px}
+    .oo-bar .mark{background:var(--teal);color:#fff;font-weight:700;font-size:12px;padding:4px 8px}
+    #ph{flex:1;min-height:0}
+    .oo-err{padding:40px;text-align:center;color:#5B6676;font-size:14px}
+  </style>
+</head>
+<body>
+  <div class="oo-bar">
+    <img src="{{ url_for('static', filename='img/logo-kaizen-horizontal.svg') }}" alt="Kaizen Intelligence">
+    <a href="{{ back }}">Retour</a>
+    <span class="mark">SMSI</span>
+    <span class="t">{{ title }}</span>
+  </div>
+  <div id="ph"><div class="oo-err">Chargement de l'éditeur…</div></div>
+
+  <script src="{{ api_js }}"></script>
+  <script>
+    (function () {
+      if (typeof DocsAPI === "undefined") {
+        document.getElementById("ph").innerHTML =
+          '<div class="oo-err">Impossible de contacter le serveur OnlyOffice.<br>Vérifiez la configuration (ONLYOFFICE_URL) et que le service est accessible.</div>';
+        return;
+      }
+      var config = {{ config|tojson }};
+      new DocsAPI.DocEditor("ph", config);
+    })();
+  </script>
+</body>
+</html>

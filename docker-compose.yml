@@ -1,0 +1,38 @@
+# Production smsi.kaizen-intelligence.tn (nginx -> 127.0.0.1:5001).
+# Code reconstitué le 2026-11-07 : sauvegarde 20261025-153748-pre-ai + IA + menus v2/v3.
+# Ne démarrer que le service web : docker compose up -d --no-deps web
+name: smsi
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: smsi
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+      POSTGRES_DB: smsi
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U smsi -d smsi"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  web:
+    build: .
+    image: smsi-web:prod-20261107
+    env_file: .env
+    environment:
+      UPLOAD_DIR: /data/uploads
+    volumes:
+      - uploads:/data
+    ports:
+      - "127.0.0.1:5001:5000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  uploads:

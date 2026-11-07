@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}Extraction en cours - {{ APP_NAME }}{% endblock %}
+{% block heading %}Importer : {{ spec.title }}{% endblock %}
+{% block content %}
+<meta http-equiv="refresh" content="3">
+{% set step = 1 %}{% include 'imports/_steps.html' %}
+<div class="panel" style="max-width:720px;">
+  <div class="panel__body stack" style="gap:12px;">
+    <b>L'IA lit « {{ st.filename }} »…</b>
+    <div class="dz-bar ai-wait"><i></i></div>
+    <p class="muted" style="margin:0;font-size:13px;">Elle relève chaque entrée du registre telle qu'elle est écrite dans le document. Selon la longueur, cela prend de quelques secondes à quelques minutes ({{ elapsed }} s écoulées). La page se met à jour toute seule ; vous vérifierez ensuite la correspondance et l'aperçu comme pour un tableur.</p>
+  </div>
+</div>
+<style>.ai-wait i { width: 35%; animation: aiwait 1.4s ease-in-out infinite alternate; } @keyframes aiwait { from { margin-left: 0; } to { margin-left: 65%; } } @media (prefers-reduced-motion: reduce) { .ai-wait i { animation: none; width: 100%; opacity: .4; } }</style>
+{% endblock %}

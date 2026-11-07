@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Modifier' if a else 'Nouvel' }} actif - {{ APP_NAME }}{% endblock %}
+{% block heading %}{{ 'Modifier ' + a.ref if a else 'Nouvel actif' }}{% endblock %}
+{% block topactions %}<a href="{{ url_for('assets.index') }}" class="btn btn--ghost btn--sm">Retour</a>{% endblock %}
+{% block content %}
+<form method="post" style="max-width:680px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="panel"><div class="panel__head"><h2>Actif</h2></div><div class="panel__body stack">
+    <div class="field"><label>Nom *</label><input type="text" name="name" required value="{{ a.name if a else '' }}"></div>
+    <div class="form-grid">
+      <div class="field"><label>Catégorie</label><select name="category">{% for x in AssetCategory %}<option value="{{ x.value }}" {{ 'selected' if a and a.category==x }}>{{ x.label }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Classification</label><select name="classification">{% for x in Classification %}<option value="{{ x.value }}" {{ 'selected' if a and a.classification==x else ('selected' if not a and x.value=='INTERNE') }}>{{ x.label }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="field"><label>Description</label><textarea name="description" rows="2">{{ a.description if a else '' }}</textarea></div>
+    <div class="form-grid">
+      <div class="field"><label>Propriétaire</label><select name="owner_id"><option value="">-</option>{% for u in users %}<option value="{{ u.id }}" {{ 'selected' if a and a.owner_id==u.id }}>{{ u.name }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Dépositaire / gestionnaire</label><input type="text" name="custodian" value="{{ a.custodian if a else '' }}"></div>
+    </div>
+    <div class="form-grid">
+      <div class="field"><label>Emplacement</label><input type="text" name="location" value="{{ a.location if a else '' }}"></div>
+      <div class="field"><label>Statut</label><select name="status">{% for x in AssetStatus %}<option value="{{ x.value }}" {{ 'selected' if a and a.status==x }}>{{ x.label }}</option>{% endfor %}</select></div>
+    </div>
+    <div><button class="btn btn--primary" type="submit">{{ 'Enregistrer' if a else 'Créer l\'actif' }}</button></div>
+  </div></div>
+</form>
+{% endblock %}

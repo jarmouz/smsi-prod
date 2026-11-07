@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}Rappels par e-mail - {{ APP_NAME }}{% endblock %}
+{% block heading %}Rappels par e-mail{% endblock %}
+{% block topactions %}<form method="post" action="{{ url_for('admin.reminders_test') }}" style="display:inline;"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn--subtle btn--sm" type="submit">M'envoyer mon récapitulatif</button></form>{% endblock %}
+{% block content %}
+{% if not enabled %}<div class="flash flash--warning" style="margin-bottom:12px;">{% if not smtp %}Aucun serveur SMTP n'est configuré{% else %}Les notifications sont désactivées{% endif %} : aucun récapitulatif ne sera envoyé (Paramètres).</div>{% endif %}
+<p class="muted" style="font-size:12.5px;margin:0 0 12px;max-width:860px;">Aperçu de ce que chaque utilisateur recevrait aujourd'hui. L'envoi est automatique chaque matin selon la fréquence choisie par chacun dans « Mon compte » (hebdomadaire le lundi par défaut), uniquement s'il y a des échéances.</p>
+{% for u, sections, n in people %}
+<div class="panel" style="margin-bottom:10px;">
+  <div class="panel__head"><h2>{{ u.name }}</h2><span class="muted" style="font-size:11.5px;">{{ u.email }} - {{ {'QUOTIDIEN': 'quotidien', 'HEBDO': 'hebdomadaire', 'JAMAIS': 'désabonné'}.get(u.digest_frequency, '') }}{{ ' - dernier envoi ' ~ (u.last_digest_at|dt) if u.last_digest_at }}</span><div class="spacer"></div><span class="rail__badge">{{ n }}</span></div>
+  {% if sections %}<div class="panel__body" style="font-size:12.5px;">
+    {% for title, items in sections %}<div style="margin-bottom:6px;"><b>{{ title }}</b>
+      {% for label, url, when, late in items %}<div style="padding-left:10px;"><a href="{{ url }}">{{ label }}</a> <span class="{{ 'due-cell' if late else 'muted' }}">{{ when }}</span></div>{% endfor %}</div>{% endfor %}
+  </div>{% endif %}
+</div>
+{% endfor %}
+{% endblock %}

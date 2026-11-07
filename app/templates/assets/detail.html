@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% from 'partials/macros.html' import classification, risk_chip, score_badge, history_panel with context %}
+{% block title %}{{ a.ref }} - {{ APP_NAME }}{% endblock %}
+{% block heading %}{{ a.ref }} - {{ a.name }}{% endblock %}
+{% block topactions %}<a href="{{ url_for('assets.index') }}" class="btn btn--ghost btn--sm">Retour</a>{% if current_user.can_edit %}<a href="{{ url_for('assets.edit', asset_id=a.id) }}" class="btn btn--primary btn--sm">Modifier</a>{% endif %}{% endblock %}
+{% block content %}
+<div class="detail-grid">
+  <div class="stack">
+    <div class="panel"><div class="panel__head"><h2>Risques portant sur cet actif</h2><span class="rail__badge">{{ a.risks|length }}</span></div><div class="panel__body--flush"><div class="table-wrap"><table class="grid">
+      <tbody>{% for r in a.risks %}<tr class="row-link" onclick="window.location='{{ url_for('risks.detail', risk_id=r.id) }}'"><td class="ref">{{ r.ref }}</td><td class="subj">{{ r.title }}</td><td style="text-align:center;">{{ score_badge(r.residual_score or r.inherent_score, r.residual_level) }}</td><td>{{ risk_chip(r.residual_level) }}</td><td class="muted">{{ r.status.label }}</td></tr>
+      {% else %}<tr><td class="muted" style="padding:14px;">Aucun risque rattaché (le lien se fait depuis la fiche du risque).</td></tr>{% endfor %}</tbody>
+    </table></div></div></div>
+    <div class="panel"><div class="panel__head"><h2>Activités dépendantes (BIA)</h2><span class="rail__badge">{{ a.processes|length }}</span></div><div class="panel__body--flush"><div class="table-wrap"><table class="grid">
+      <tbody>{% for p in a.processes %}<tr><td class="ref">{{ p.ref }}</td><td class="subj">{{ p.name }}</td><td class="muted">{{ p.criticality_label }}</td><td class="mono">RTO {{ (('%g h'|format(p.rto_hours))|replace('.', ',')) if p.rto_hours is not none else '-' }}</td></tr>
+      {% else %}<tr><td class="muted" style="padding:14px;">Aucune activité ne déclare dépendre de cet actif.</td></tr>{% endfor %}</tbody>
+    </table></div></div></div>
+    <div class="panel"><div class="panel__head"><h2>Changements</h2><span class="rail__badge">{{ changes|length }}</span></div><div class="panel__body--flush"><div class="table-wrap"><table class="grid">
+      <tbody>{% for c in changes %}<tr class="row-link" onclick="window.location='{{ url_for('changes.detail', change_id=c.id) }}'"><td class="ref">{{ c.ref }}</td><td class="subj">{{ c.title }}</td><td class="muted">{{ c.status.label }}</td></tr>
+      {% else %}<tr><td class="muted" style="padding:14px;">Aucun changement.</td></tr>{% endfor %}</tbody>
+    </table></div></div></div>
+  </div>
+  <div class="stack">
+    <div class="panel"><div class="panel__head"><h2>Actif</h2></div><div class="panel__body"><div class="meta-list">
+      <div><span>Catégorie</span><b>{{ a.category.label }}</b></div>
+      <div><span>Classification</span><b>{{ classification(a.classification) }}</b></div>
+      <div><span>Propriétaire</span><b>{{ a.owner.name if a.owner else '-' }}</b></div>
+      <div><span>Dépositaire</span><b>{{ a.custodian or '-' }}</b></div>
+      <div><span>Emplacement</span><b>{{ a.location or '-' }}</b></div>
+      <div><span>Statut</span><b>{{ a.status.label }}</b></div>
+      {% if a.description %}<div><span>Description</span><b>{{ a.description }}</b></div>{% endif %}
+    </div></div></div>
+    {{ history_panel(a) }}
+  </div>
+</div>
+{% endblock %}

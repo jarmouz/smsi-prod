@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block title %}Périmètre du SMSI - {{ APP_NAME }}{% endblock %}
+{% block heading %}Périmètre du SMSI{% endblock %}
+{% block topactions %}<a href="{{ url_for('context.index') }}" class="btn btn--ghost btn--sm">Retour</a>{% endblock %}
+{% block content %}
+<form method="post" style="max-width:820px;">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="panel"><div class="panel__head"><h2>Domaine d'application (4.3)</h2></div><div class="panel__body stack">
+    <p class="muted" style="font-size:12px;margin:0;">Le périmètre tient compte des enjeux (4.1), des exigences des parties intéressées (4.2) et des interfaces et dépendances avec d'autres organismes. Il doit être disponible en tant qu'information documentée.</p>
+    {% for k, label in fields %}
+    <div class="field"><label>{{ label }}{{ ' *' if loop.first }}</label><textarea name="{{ k }}" rows="{{ 3 if loop.first else 4 }}" {{ 'required' if loop.first }}>{{ scope[k] }}</textarea></div>
+    {% endfor %}
+    <div><button class="btn btn--primary" type="submit">Enregistrer</button></div>
+  </div></div>
+</form>
+{% endblock %}

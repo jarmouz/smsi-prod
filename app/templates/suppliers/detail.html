@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% from 'partials/macros.html' import attachments_panel, history_panel with context %}
+{% block title %}{{ s.ref }} - {{ APP_NAME }}{% endblock %}
+{% block heading %}{{ s.ref }} - {{ s.name }}{% endblock %}
+{% block topactions %}<a href="{{ url_for('suppliers.index') }}" class="btn btn--ghost btn--sm">Retour</a>{% if current_user.can_edit %}<a href="{{ url_for('suppliers.edit', sup_id=s.id) }}" class="btn btn--primary btn--sm">Modifier</a>{% endif %}{% endblock %}
+{% block content %}
+<div class="detail-grid">
+  <div class="stack">
+    <div class="panel"><div class="panel__head"><h2>Prestation</h2></div><div class="panel__body"><div class="meta-list">
+      <div><span>Service fourni</span><b>{{ s.service or '-' }}</b></div>
+      <div><span>Catégorie</span><b>{{ s.category.label }}</b></div>
+      <div><span>Criticité</span><b>{{ s.criticality.label }}</b></div>
+      <div><span>Accès aux données</span><b>{{ s.data_access.label }}</b></div>
+      <div><span>Statut</span><b>{{ s.status.label }}</b></div>
+      <div><span>Contact</span><b>{{ s.contact or '-' }}</b></div>
+      <div><span>Contrat</span><b>{{ s.contract_ref or '-' }}{{ ' - échéance ' ~ (s.contract_end|d) if s.contract_end }}</b></div>
+      <div><span>Responsable interne</span><b>{{ s.owner.name if s.owner else '-' }}</b></div>
+      {% if s.notes %}<div><span>Notes</span><b>{{ s.notes }}</b></div>{% endif %}
+    </div></div></div>
+    {{ attachments_panel('supplier', s.id, attachments, current_user.can_edit) }}
+  </div>
+  <div class="stack">
+    <div class="panel"><div class="panel__head"><h2>Sécurité (A.5.20 - A.5.22)</h2></div><div class="panel__body"><div class="meta-list">
+      <div><span>Clauses de sécurité</span><b>{{ 'Oui' if s.security_clauses else 'Non' }}</b></div>
+      <div><span>Accord de traitement (DPA)</span><b>{{ 'Oui' if s.dpa else 'Non' }}</b></div>
+      <div><span>Certifications</span><b>{{ s.certifications or '-' }}</b></div>
+      <div><span>Dernière évaluation</span><b>{{ s.last_assessment|d }} - {{ s.assessment_result.label }}</b></div>
+      <div><span>Prochaine évaluation</span><b class="{{ 'due-cell' if s.assessment_overdue }}">{{ s.next_assessment|d }}</b></div>
+    </div>
+    {% if s.gaps %}<div class="flash flash--warning" style="margin:12px 0 0;">Écarts : {{ s.gaps|join(', ') }}.</div>{% endif %}
+    </div></div>
+    {{ history_panel(s) }}
+  </div>
+</div>
+{% endblock %}

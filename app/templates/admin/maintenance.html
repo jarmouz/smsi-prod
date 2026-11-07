@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}Maintenance - {{ APP_NAME }}{% endblock %}
+{% block heading %}Maintenance{% endblock %}
+{% block content %}
+<div class="detail-grid">
+  <div class="panel">
+    <div class="panel__head"><h2>Données opérationnelles</h2></div>
+    <div class="panel__body">
+      <div class="meta-list">
+        <div><span>Risques</span><b>{{ counts.risks }}</b></div>
+        <div><span>Audits</span><b>{{ counts.audits }}</b></div>
+        <div><span>Revues de direction</span><b>{{ counts.reviews }}</b></div>
+        <div><span>Documents</span><b>{{ counts.documents }}</b></div>
+        <div><span>Preuves</span><b>{{ counts.evidence }}</b></div>
+      </div>
+    </div>
+  </div>
+  <div class="panel" style="border-color:var(--red-100);">
+    <div class="panel__head"><h2 style="color:var(--red-600);">Réinitialiser</h2></div>
+    <div class="panel__body">
+      <p class="muted" style="font-size:13px;margin-bottom:12px;">Supprime <b>toutes</b> les données opérationnelles ({{ total }} enregistrement(s)) : risques, audits, constats, actions, revues, documents et preuves. Le <b>catalogue Annexe A</b>, les <b>utilisateurs</b> et les <b>paramètres</b> sont conservés. Utile pour repartir propre après la démonstration.</p>
+      <form method="post" action="{{ url_for('admin.reset_operational') }}" class="stack" onsubmit="return confirm('Confirmer la réinitialisation des données opérationnelles ?');">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="field"><label>Tapez REINITIALISER pour confirmer</label><input type="text" name="confirm" placeholder="REINITIALISER"></div>
+        <div><button class="btn btn--danger" type="submit">Réinitialiser les données</button></div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

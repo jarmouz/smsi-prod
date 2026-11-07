@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% from 'partials/macros.html' import export_menu with context %}
+{% block title %}Contexte du SMSI - {{ APP_NAME }}{% endblock %}
+{% block heading %}Contexte et périmètre du SMSI{% endblock %}
+{% block topactions %}{{ export_menu([('contexte', 'Contexte, parties intéressées et périmètre')]) }}{% endblock %}
+{% block content %}
+<div class="panel">
+  <div class="panel__head"><h2>Périmètre du SMSI (4.3)</h2>{% if scope_date %}<span class="muted" style="font-size:11.5px;">mis à jour le {{ scope_date }}</span>{% endif %}<div class="spacer"></div>
+    {% if current_user.role.value == 'RSSI' and not current_user.is_readonly %}<a class="btn btn--subtle btn--sm" href="{{ url_for('context.edit_scope') }}">Modifier</a>{% endif %}</div>
+  <div class="panel__body">
+    {% if scope.scope_statement %}
+    <div class="meta-list">
+      {% for k, label in fields %}<div><span>{{ label }}</span><b style="white-space:pre-wrap;">{{ scope[k] or '-' }}</b></div>{% endfor %}
+    </div>
+    {% else %}<div class="empty" style="padding:18px;"><h3>Périmètre non défini</h3><p>Le périmètre du SMSI doit être documenté (exigence 4.3).</p></div>{% endif %}
+  </div>
+</div>
+
+<div class="panel" id="enjeux" style="margin-top:16px;">
+  <div class="panel__head"><h2>Enjeux internes et externes (4.1)</h2><span class="rail__badge">{{ issues|length }}</span><div class="spacer"></div>
+    {% if current_user.can_edit %}<a class="btn btn--primary btn--sm" href="{{ url_for('context.create_issue') }}">+ Enjeu</a>{% endif %}</div>
+  <div class="panel__body--flush"><div class="table-wrap">
+    <table class="grid">
+      <thead><tr><th style="width:80px;">Réf.</th><th style="width:110px;">Type</th><th>Enjeu</th><th>Effet sur le SMSI et prise en compte</th><th style="width:140px;">Risques liés</th>{% if current_user.can_edit %}<th style="width:80px;"></th>{% endif %}</tr></thead>
+      <tbody>
+      {% for i in issues %}
+        <tr style="{{ 'opacity:.5' if not i.active }}">
+          <td class="ref">{{ i.ref }}</td>
+          <td class="muted">{{ i.kind.label }}<div style="font-size:11px;">{{ i.category.label }}</div></td>
+          <td class="subj">{{ i.title }}{% if i.description %}<div class="muted" style="font-size:11.5px;">{{ i.description|truncate(140) }}</div>{% endif %}</td>
+          <td style="font-size:12px;">{{ i.effect or '' }}{% if i.response %}<div class="muted">→ {{ i.response }}</div>{% endif %}</td>
+          <td>{% for r in i.risks %}<a class="chip" href="{{ url_for('risks.detail', risk_id=r.id) }}">{{ r.ref }}</a> {% else %}<span class="muted">-</span>{% endfor %}</td>
+          {% if current_user.can_edit %}<td><a class="btn btn--ghost btn--sm" href="{{ url_for('context.edit_issue', issue_id=i.id) }}">Modifier</a></td>{% endif %}
+        </tr>
+      {% else %}
+        <tr><td colspan="6"><div class="empty" style="padding:24px;"><h3>Aucun enjeu</h3><p>Identifiez les enjeux internes et externes qui influencent la sécurité de l'information.</p></div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div></div>
+</div>
+
+<div class="panel" id="parties" style="margin-top:16px;">
+  <div class="panel__head"><h2>Parties intéressées et exigences (4.2)</h2><span class="rail__badge">{{ parties|length }}</span><div class="spacer"></div>
+    {% if current_user.can_edit %}<a class="btn btn--primary btn--sm" href="{{ url_for('context.create_party') }}">+ Partie intéressée</a>{% endif %}</div>
+  <div class="panel__body--flush"><div class="table-wrap">
+    <table class="grid">
+      <thead><tr><th style="width:80px;">Réf.</th><th style="width:220px;">Partie intéressée</th><th>Besoins et attentes</th><th>Réponse du SMSI</th><th style="width:110px;">Exigences</th>{% if current_user.can_edit %}<th style="width:80px;"></th>{% endif %}</tr></thead>
+      <tbody>
+      {% for p in parties %}
+        <tr>
+          <td class="ref">{{ p.ref }}</td>
+          <td class="subj">{{ p.name }}<div class="muted" style="font-size:11px;">{{ p.category.label }} - influence {{ ['', 'faible', 'moyenne', 'forte'][p.influence] }}</div></td>
+          <td style="font-size:12px;">{{ p.expectations or '-' }}</td>
+          <td style="font-size:12px;">{% if p.retained %}{{ p.response or '-' }}{% else %}<span class="muted">Non retenues dans le SMSI</span>{% endif %}</td>
+          <td>{% for r in p.requirements %}<a class="chip" href="{{ url_for('requirements.index') }}#r{{ r.id }}">{{ r.ref }}</a> {% else %}<span class="muted">-</span>{% endfor %}</td>
+          {% if current_user.can_edit %}<td><a class="btn btn--ghost btn--sm" href="{{ url_for('context.edit_party', party_id=p.id) }}">Modifier</a></td>{% endif %}
+        </tr>
+      {% else %}
+        <tr><td colspan="6"><div class="empty" style="padding:24px;"><h3>Aucune partie intéressée</h3><p>Recensez les parties intéressées pertinentes et leurs exigences.</p></div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div></div>
+</div>
+{% endblock %}

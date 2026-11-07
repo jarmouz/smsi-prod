@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}Objectif - {{ APP_NAME }}{% endblock %}
+{% block heading %}{{ 'Modifier ' + o.ref if o else 'Nouvel objectif de sécurité' }}{% endblock %}
+{% block topactions %}<a href="{{ url_for('objectives.index') }}" class="btn btn--ghost btn--sm">Retour</a>{% endblock %}
+{% block content %}
+<form method="post" style="max-width:760px;">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="panel"><div class="panel__head"><h2>Objectif (6.2)</h2></div><div class="panel__body stack">
+    <div class="field"><label>Intitulé *</label><input type="text" name="title" required value="{{ o.title if o else '' }}" placeholder="Ex. Réduire le taux de clic aux campagnes de phishing sous 5 %"></div>
+    <div class="field"><label>Description et lien avec la politique de sécurité</label><textarea name="description" rows="2">{{ o.description if o else '' }}</textarea></div>
+    <div class="field"><label>Ce qui sera fait (6.2 f)</label><textarea name="actions" rows="2">{{ o.actions if o else '' }}</textarea></div>
+    <div class="field"><label>Ressources requises (6.2 g)</label><textarea name="resources" rows="2">{{ o.resources if o else '' }}</textarea></div>
+    <div class="form-grid">
+      <div class="field"><label>Responsable (6.2 h)</label><select name="owner_id"><option value="">-</option>{% for u in users %}<option value="{{ u.id }}" {{ 'selected' if o and o.owner_id==u.id }}>{{ u.name }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Échéance (6.2 i)</label><input type="date" name="due_date" value="{{ o.due_date.isoformat() if o and o.due_date else '' }}"></div>
+    </div>
+    <div class="field"><label>Évaluation des résultats (6.2 j)</label><textarea name="evaluation" rows="2" placeholder="Ex. indicateur KPI-003 mesuré chaque trimestre, analysé en comité sécurité">{{ o.evaluation if o else '' }}</textarea></div>
+    <div class="field"><label>Statut</label><select name="status">{% for x in ObjectiveStatus %}<option value="{{ x.value }}" {{ 'selected' if (o and o.status==x) or (not o and x.value=='EN_COURS') }}>{{ x.label }}</option>{% endfor %}</select></div>
+    <div><button class="btn btn--primary" type="submit">Enregistrer</button></div>
+  </div></div>
+</form>
+{% endblock %}

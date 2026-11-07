@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}Compétence requise - {{ APP_NAME }}{% endblock %}
+{% block heading %}{{ 'Modifier la compétence requise' if r else 'Nouvelle compétence requise' }}{% endblock %}
+{% block topactions %}<a href="{{ url_for('competences.index') }}" class="btn btn--ghost btn--sm">Retour</a>{% endblock %}
+{% block content %}
+<form method="post" style="max-width:720px;">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="panel"><div class="panel__head"><h2>Compétence requise (7.2 a)</h2></div><div class="panel__body stack">
+    <div class="field"><label>Intitulé *</label><input type="text" name="title" required value="{{ r.title if r else '' }}" placeholder="Ex. Formation au développement sécurisé (OWASP)"></div>
+    <div class="field"><label>Description / niveau attendu</label><textarea name="description" rows="2">{{ r.description or '' if r else '' }}</textarea></div>
+    <div class="field"><label>Renouvellement (mois, vide = permanent)</label><input type="number" name="validity_months" min="1" max="120" value="{{ r.validity_months or '' if r else '' }}"></div>
+    <div class="field"><label>Personnes concernées</label><select name="users" multiple size="8">{% for u in users %}<option value="{{ u.id }}" {{ 'selected' if r and u in r.users }}>{{ u.name }}{{ ' - ' + u.job_title if u.job_title }}</option>{% endfor %}</select>
+      <div class="muted" style="font-size:11px;margin-top:3px;">Ctrl / Cmd + clic pour une sélection multiple.</div></div>
+    <div><button class="btn btn--primary" type="submit">Enregistrer</button></div>
+  </div></div>
+</form>
+{% endblock %}

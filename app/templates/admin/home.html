@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block title %}Administration - {{ APP_NAME }}{% endblock %}
+{% block heading %}Administration{% endblock %}
+{% block content %}
+<div class="kpis" style="grid-template-columns:repeat(3,1fr);">
+  <a class="kpi kpi--total" href="{{ url_for('admin.users') }}" style="text-decoration:none;">
+    <div class="kpi__label">Utilisateurs</div><div class="kpi__value">{{ nb_users }}</div><div class="kpi__sub">Gérer les comptes</div></a>
+  <a class="kpi kpi--sla" href="{{ url_for('admin.settings_page') }}" style="text-decoration:none;">
+    <div class="kpi__label">Messagerie SMTP</div><div class="kpi__value" style="font-size:22px;">{{ 'Configurée' if smtp_ok else 'À configurer' }}</div><div class="kpi__sub">Paramètres</div></a>
+  <a class="kpi kpi--bientot" href="{{ url_for('admin.maintenance') }}" style="text-decoration:none;">
+    <div class="kpi__label">Organisation</div><div class="kpi__value" style="font-size:20px;">{{ org_name }}</div><div class="kpi__sub">Maintenance</div></a>
+</div>
+{% endblock %}

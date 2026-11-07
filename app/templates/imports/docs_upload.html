@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% block title %}Déposer des documents - {{ APP_NAME }}{% endblock %}
+{% block heading %}Déposer des documents existants{% endblock %}
+{% block topactions %}<form method="post" action="{{ url_for('imports.docs_cancel', token=token) }}" style="display:inline;"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn--ghost btn--sm">Annuler</button></form>{% endblock %}
+{% block content %}
+<ol class="imp-steps">
+  <li class="is-current"><span>1</span>Fichiers</li>
+  <li><span>2</span>Vérification des métadonnées</li>
+  <li><span>3</span>Création des documents</li>
+</ol>
+
+<div class="detail-grid">
+  <div class="stack">
+    <form method="post" enctype="multipart/form-data" action="{{ url_for('imports.docs_add', token=token) }}" id="dz-form" class="dz" tabindex="0">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="file" name="files" id="dz-input" multiple accept="{% for e in exts %}.{{ e }},{% endfor %}.zip">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <b>Glissez vos documents ici</b>
+      <span>ou <label for="dz-input" class="dz-pick">choisissez des fichiers</label> · un dossier entier compressé en .zip est accepté (arborescence conservée)</span>
+      <noscript><button class="btn btn--primary btn--sm" type="submit" style="margin-top:10px;">Envoyer</button></noscript>
+    </form>
+    <div id="dz-progress" class="dz-progress" hidden><div class="dz-bar"><i></i></div><span></span></div>
+    <div id="dz-errors" class="stack" style="gap:4px;"></div>
+
+    <div class="panel">
+      <div class="panel__head"><h2>Fichiers déposés</h2><span class="rail__badge" id="dz-count">{{ items|length }}</span></div>
+      <div class="panel__body--flush"><div class="table-wrap">
+        <table class="grid imp-prev" id="dz-list">
+          <tbody>
+          {% for it in items %}
+            <tr>
+              <td class="subj">{{ it.meta.title }}<div class="muted" style="font-size:11.5px;font-weight:500;">{{ it.path }} · {{ (it.size / 1024)|round(0)|int }} Ko</div></td>
+              <td style="width:60px;text-align:right;">
+                <form method="post" action="{{ url_for('imports.docs_remove', token=token, item_id=it.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn--subtle btn--sm" title="Retirer">✕</button></form>
+              </td>
+            </tr>
+          {% else %}
+            <tr class="dz-empty"><td colspan="2"><div class="empty" style="padding:24px;"><p>Aucun fichier pour l'instant.</p></div></td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel__head"><h2>Ce que fait le dépôt</h2></div>
+    <div class="panel__body stack" style="gap:10px;font-size:13px;">
+      <p style="margin:0;">Chaque fichier devient un document de la gestion documentaire, avec le fichier en pièce jointe.</p>
+      <p style="margin:0;">Le titre, la référence, la version, la date d'approbation et le propriétaire sont lus dans les propriétés du fichier et sur la page de garde. Vous les vérifiez à l'étape suivante.</p>
+      <p style="margin:0;">Les documents déjà en vigueur peuvent être repris directement comme <b>approuvés</b> (RSSI), avec leur date d'approbation d'origine. Les autres sont créés en brouillon.</p>
+      <p class="muted" style="margin:0;font-size:12px;">Formats : {{ exts|join(', ') }}, zip. Les fichiers en double sont écartés automatiquement. {{ max_mb }} Mo maximum par fichier envoyé.</p>
+    </div>
+  </div>
+</div>
+
+<div class="imp-confirm">
+  <div class="spacer"></div>
+  <a href="{{ url_for('imports.docs_preview', token=token) }}" class="btn btn--primary" id="dz-next" {{ 'hidden' if not items }}>Vérifier les métadonnées</a>
+</div>
+
+<script>
+(function () {
+  var form = document.getElementById('dz-form'), input = document.getElementById('dz-input');
+  var prog = document.getElementById('dz-progress'), bar = prog.querySelector('i'), label = prog.querySelector('span');
+  var errs = document.getElementById('dz-errors'), csrf = form.querySelector('[name=csrf_token]').value;
+  var maxBytes = {{ max_mb }} * 1024 * 1024;
+  function err(msg) { var d = document.createElement('div'); d.className = 'flash flash--warning'; d.textContent = msg; errs.appendChild(d); }
+  async function send(files) {
+    errs.innerHTML = ''; prog.hidden = false;
+    var added = 0;
+    for (var i = 0; i < files.length; i++) {
+      var f = files[i];
+      label.textContent = 'Envoi ' + (i + 1) + ' / ' + files.length + ' : ' + f.name;
+      bar.style.width = Math.round(i / files.length * 100) + '%';
+      if (maxBytes && f.size > maxBytes) { err(f.name + ' : dépasse ' + {{ max_mb }} + ' Mo, non envoyé.'); continue; }
+      var fd = new FormData(); fd.append('csrf_token', csrf); fd.append('files', f, f.name);
+      try {
+        var r = await fetch(form.action, { method: 'POST', body: fd, headers: { 'Accept': 'application/json' }, credentials: 'same-origin' });
+        if (r.status === 413) { err(f.name + ' : fichier trop volumineux.'); continue; }
+        var j = await r.json();
+        added += j.added || 0;
+        (j.errors || []).forEach(err);
+      } catch (e) { err(f.name + ' : envoi impossible (' + e.message + ').'); }
+    }
+    bar.style.width = '100%';
+    label.textContent = added + ' fichier(s) ajouté(s). Actualisation…';
+    if (added) location.reload(); else prog.hidden = true;
+  }
+  form.addEventListener('click', function (e) { if (!e.target.closest('label, button, input')) input.click(); });
+  input.addEventListener('change', function () { if (input.files.length) send(Array.from(input.files)); });
+  ['dragenter', 'dragover'].forEach(function (ev) { form.addEventListener(ev, function (e) { e.preventDefault(); form.classList.add('is-over'); }); });
+  ['dragleave', 'drop'].forEach(function (ev) { form.addEventListener(ev, function (e) { e.preventDefault(); form.classList.remove('is-over'); }); });
+  form.addEventListener('drop', function (e) { if (e.dataTransfer.files.length) send(Array.from(e.dataTransfer.files)); });
+  form.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); } });
+})();
+</script>
+{% endblock %}

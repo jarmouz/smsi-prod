@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% from 'partials/macros.html' import export_menu with context %}
+{% block title %}Changements - {{ APP_NAME }}{% endblock %}
+{% block heading %}Gestion des changements{% endblock %}
+{% block topactions %}{{ export_menu([('changements', 'Registre des changements')]) }} {% if current_user.can_edit %}<a href="{{ url_for('changes.create') }}" class="btn btn--primary btn--sm">+ Demande de changement</a>{% endif %}{% endblock %}
+{% block content %}
+<div class="kpis" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px;">
+  <div class="kpi kpi--sla"><div class="kpi__label">En attente d'approbation</div><div class="kpi__value">{{ stats.DEMANDE }}</div></div>
+  <div class="kpi kpi--total"><div class="kpi__label">Approuvés à réaliser</div><div class="kpi__value">{{ stats.APPROUVE }}</div></div>
+  <div class="kpi kpi--retard"><div class="kpi__label">Revues post-changement à faire</div><div class="kpi__value">{{ stats.REALISE }}</div></div>
+  <div class="kpi kpi--retard"><div class="kpi__label">Changements urgents ouverts</div><div class="kpi__value">{{ stats.emergency }}</div></div>
+</div>
+<form class="toolbar" method="get">
+  <select name="statut" onchange="this.form.submit()"><option value="">Tous statuts</option><option value="en_cours" {{ 'selected' if f_status=='en_cours' }}>En cours</option>{% for s in ChangeStatus %}<option value="{{ s.value }}" {{ 'selected' if f_status==s.value }}>{{ s.label }}</option>{% endfor %}</select>
+  {% if f_status %}<a href="{{ url_for('changes.index') }}" class="btn btn--ghost btn--sm">Réinitialiser</a>{% endif %}
+</form>
+<div class="panel" style="margin-top:16px;"><div class="panel__body--flush"><div class="table-wrap">
+  <table class="grid">
+    <thead><tr><th style="width:120px;">Réf.</th><th>Changement</th><th style="width:170px;">Type</th><th style="width:80px;">Risque</th><th style="width:100px;">Prévu</th><th style="width:140px;">Statut</th></tr></thead>
+    <tbody>
+    {% for c in changes %}
+      <tr class="row-link" onclick="window.location='{{ url_for('changes.detail', change_id=c.id) }}'"><td class="ref">{{ c.ref }}</td>
+        <td class="subj">{{ c.title }}{% if c.emergency %} <span class="appl appl--out">Urgent</span>{% endif %}<div class="muted" style="font-size:11px;">{{ c.requested_by.name if c.requested_by else '' }}{% if c.assets %} - {{ c.assets|map(attribute='ref')|join(', ') }}{% endif %}</div></td>
+        <td class="muted">{{ c.kind.label }}</td>
+        <td>{% if c.risk_level.value == 'ELEVE' %}<span class="appl appl--out">Élevé</span>{% else %}<span class="muted">{{ c.risk_level.label }}</span>{% endif %}</td>
+        <td class="muted">{{ c.planned_date|d }}</td>
+        <td>{% if c.status.value == 'CLOTURE' %}<span class="appl appl--in">Clôturé</span>{% else %}<span class="muted">{{ c.status.label }}</span>{% endif %}</td></tr>
+    {% else %}<tr><td colspan="6"><div class="empty" style="padding:30px;"><h3>Aucun changement</h3><p>Les changements techniques (A.8.32) et les modifications planifiées du SMSI (6.3) passent par ce circuit.</p></div></td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div></div></div>
+{% endblock %}

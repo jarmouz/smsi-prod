@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% from 'partials/macros.html' import attachments_panel %}
+{% block title %}{{ 'Modifier' if ev else 'Nouvelle' }} preuve - {{ APP_NAME }}{% endblock %}
+{% block heading %}{{ 'Modifier ' + ev.ref if ev else 'Nouvelle preuve' }}{% endblock %}
+{% block topactions %}<a href="{{ url_for('evidence.index') }}" class="btn btn--ghost btn--sm">Retour</a>{% endblock %}
+{% block content %}
+{% set sel = ev.controls|map(attribute='id')|list if ev else [] %}
+<form method="post" enctype="multipart/form-data" class="detail-grid">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="stack">
+    <div class="panel">
+      <div class="panel__head"><h2>Preuve</h2></div>
+      <div class="panel__body stack">
+        <div class="field"><label>Titre *</label><input type="text" name="title" required value="{{ ev.title if ev else '' }}" placeholder="Ex. Export de la configuration MFA"></div>
+        <div class="field"><label>Description</label><textarea name="description" rows="3">{{ ev.description if ev else '' }}</textarea></div>
+        <div class="form-grid">
+          <div class="field"><label>Date de recueil</label><input type="date" name="collected_at" value="{{ ev.collected_at.isoformat() if ev and ev.collected_at else '' }}"></div>
+          <div class="field"><label>Propriétaire</label><select name="owner_id"><option value="">-</option>{% for u in users %}<option value="{{ u.id }}" {{ 'selected' if ev and ev.owner_id==u.id }}>{{ u.name }}</option>{% endfor %}</select></div>
+        </div>
+        <div class="field"><label>Emplacement / lien</label><input type="text" name="location" value="{{ ev.location if ev else '' }}" placeholder="URL ou chemin"></div>
+        {% if not ev %}<div class="field"><label>Pièces jointes (optionnel)</label><input type="file" name="attachments" multiple><div class="muted" style="font-size:11.5px;margin-top:4px;">Capture, export, attestation… D'autres pourront être ajoutés ensuite.</div></div>{% endif %}
+        <div><button class="btn btn--primary" type="submit">{{ 'Enregistrer' if ev else 'Enregistrer la preuve' }}</button></div>
+      </div>
+    </div>
+  </div>
+  <div class="stack">
+    <div class="panel">
+      <div class="panel__head"><h2>Mesures prouvées</h2></div>
+      <div class="panel__body">
+        <p class="muted" style="font-size:12px;margin-bottom:8px;">Rattachez cette preuve aux mesures qu'elle atteste.</p>
+        <div class="ctrl-picker">
+          {% for t in Theme %}
+          <div class="section-title" style="margin:6px 0 2px;">{{ t.annex }} - {{ t.label }}</div>
+          {% for c in controls if c.theme == t %}
+          <label><input type="checkbox" name="controls" value="{{ c.id }}" {{ 'checked' if c.id in sel }}><span class="ref">{{ c.annex_ref }}</span><span>{{ c.title }}</span></label>
+          {% endfor %}
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+{% if ev %}<div class="detail-grid" style="margin-top:16px;"><div>{{ attachments_panel('evidence', ev.id, attachments, current_user.can_edit) }}</div><div></div></div>{% endif %}
+{% endblock %}

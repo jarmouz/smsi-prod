@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% block title %}Aperçu - {{ spec.title }} - {{ APP_NAME }}{% endblock %}
+{% block heading %}Importer : {{ spec.title }}{% endblock %}
+{% block topactions %}<a href="{{ url_for('imports.mapping', kind=kind, token=token) }}" class="btn btn--ghost btn--sm">Modifier la correspondance</a>{% endblock %}
+{% block content %}
+{% set step = 3 %}{% include 'imports/_steps.html' %}
+{% set todo = counts['create'] + counts['update'] %}
+<div class="kpis" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px;">
+  <div class="kpi kpi--sla"><div class="kpi__label">À créer</div><div class="kpi__value">{{ counts['create'] }}</div></div>
+  <div class="kpi kpi--total"><div class="kpi__label">À mettre à jour</div><div class="kpi__value">{{ counts['update'] }}</div></div>
+  <div class="kpi"><div class="kpi__label">Inchangées</div><div class="kpi__value">{{ counts['same'] }}</div></div>
+  <div class="kpi kpi--ouvert"><div class="kpi__label">En erreur</div><div class="kpi__value">{{ counts['error'] }}</div><div class="kpi__sub">{{ 'ignorées à l\'import' if counts['error'] else 'aucune' }}</div></div>
+</div>
+
+{% if notice and notice.kind == 'scale' %}
+<form method="post" class="panel imp-notice">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="options">
+  <div class="panel__body imp-source" style="padding:12px 18px;">
+    <b>Échelles de cotation du fichier</b>
+    <label><span class="muted">Vraisemblance de 1 à</span><input type="number" name="scale_likelihood" min="2" max="10" value="{{ notice.likelihood[0] }}" style="width:64px;"></label>
+    <label><span class="muted">Impact de 1 à</span><input type="number" name="scale_impact" min="2" max="10" value="{{ notice.impact[0] }}" style="width:64px;"></label>
+    <button class="btn btn--subtle btn--sm" type="submit">Recalculer</button>
+    <span class="muted" style="font-size:12.5px;">Votre organisation : {{ notice.likelihood[1] }} × {{ notice.impact[1] }}.{% if notice.likelihood[0] != notice.likelihood[1] or notice.impact[0] != notice.impact[1] %} Les cotations sont converties proportionnellement (1 reste 1, le maximum reste le maximum).{% else %} Cotations reprises telles quelles.{% endif %}</span>
+  </div>
+</form>
+{% elif notice %}
+<div class="panel imp-notice">
+  <div class="panel__body">
+    <b>DdA au format ISO/IEC 27001:2013 détectée : conversion vers l'Annexe A:2022.</b>
+    <p>{{ notice.rows }} ligne(s) 2013 alimentent {{ notice.controls }} mesure(s) 2022, selon la table de correspondance de l'ISO/IEC 27002:2022 (annexe B). Quand plusieurs mesures 2013 ont été regroupées, la mesure 2022 est applicable si l'une d'elles l'était, « Implémenté » seulement si toutes l'étaient, et les textes sont conservés avec leur référence d'origine.</p>
+    <p><b>{{ notice.new|length }} mesures nouvelles en 2022</b>, sans équivalent 2013, restent à évaluer après l'import :
+      {% for c in notice.new %}<a href="{{ url_for('soa.detail', control_id=c.id) }}" class="imp-newc">A.{{ c.ref }} {{ c.title }}</a>{{ ', ' if not loop.last else '.' }}{% endfor %}</p>
+    <p class="muted" style="margin-bottom:0;">Les intitulés et objectifs ont évolué entre les deux versions : relisez les justifications et descriptions de mise en œuvre reprises.</p>
+  </div>
+</div>
+{% endif %}
+
+<div class="imp-filter" role="tablist">
+  <button type="button" class="is-on" data-f="all">Toutes ({{ plan|length }})</button>
+  {% if counts['error'] %}<button type="button" data-f="error">Erreurs ({{ counts['error'] }})</button>{% endif %}
+  {% if counts['warnings'] %}<button type="button" data-f="warn">Avertissements ({{ counts['warnings'] }})</button>{% endif %}
+  {% if todo %}<button type="button" data-f="todo">Modifications ({{ todo }})</button>{% endif %}
+  <span class="muted" style="margin-left:auto;font-size:12px;">{{ st.filename }} · feuille {{ st.sheet }} · {{ used|map('first')|join(', ') }}</span>
+</div>
+
+<div class="panel"><div class="panel__body--flush"><div class="table-wrap">
+  <table class="grid imp-prev">
+    <thead><tr><th style="width:76px;">Ligne</th><th style="width:120px;">Action</th><th style="width:34%;">{{ spec.item }}</th><th>Détail</th></tr></thead>
+    <tbody>
+    {% for r in plan %}
+    <tr data-a="{{ r.action }}" data-w="{{ 1 if r.warnings else 0 }}" class="{{ 'imp-row--error' if r.action == 'error' }}">
+      <td class="ref">{{ r.line }}</td>
+      <td><span class="imp-act imp-act--{{ r.action }}">{{ {'create':'Création','update':'Mise à jour','same':'Inchangée','error':'Erreur'}[r.action] }}</span></td>
+      <td class="subj">{{ r.label }}{% if r.source %}<div class="muted" style="font-size:11.5px;font-weight:500;">{{ r.source }}</div>{% endif %}</td>
+      <td>
+        {% for e in r.errors %}<div class="imp-msg imp-msg--error">{{ e }}</div>{% endfor %}
+        {% if r.action == 'update' %}
+          {% for lbl, old, new in r.changes %}<div class="imp-chg"><span>{{ lbl }}</span> <s>{{ old }}</s> → <b>{{ new }}</b></div>{% endfor %}
+        {% elif r.action == 'create' %}
+          <div class="imp-chg">{% for lbl, old, new in r.changes %}<span>{{ lbl }}</span> {{ new }}{{ ' · ' if not loop.last }}{% endfor %}</div>
+        {% endif %}
+        {% for w in r.warnings %}<div class="imp-msg imp-msg--warn">{{ w }}</div>{% endfor %}
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="4"><div class="empty" style="padding:30px;"><h3>Aucune ligne de données</h3><p>Vérifiez la feuille et la ligne d'en-têtes.</p></div></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div></div></div>
+
+<div class="imp-confirm">
+  <form method="post" action="{{ url_for('imports.cancel', kind=kind, token=token) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn--ghost">Annuler</button></form>
+  <div class="spacer"></div>
+  {% if todo %}
+  <span class="muted" style="font-size:12.5px;">Chaque modification est tracée dans le journal d'activité.</span>
+  <form method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="btn btn--primary">Importer {{ todo }} ligne(s){{ ' (sans les ' ~ counts['error'] ~ ' en erreur)' if counts['error'] }}</button></form>
+  {% else %}
+  <span class="muted">Rien à importer : toutes les lignes sont inchangées ou en erreur.</span>
+  {% endif %}
+</div>
+<script>
+(function () {
+  var rows = document.querySelectorAll('.imp-prev tbody tr[data-a]');
+  document.querySelectorAll('.imp-filter button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('.imp-filter button').forEach(function (x) { x.classList.toggle('is-on', x === b); });
+      var f = b.dataset.f;
+      rows.forEach(function (r) {
+        var a = r.dataset.a, show = f === 'all' || (f === 'error' && a === 'error') ||
+          (f === 'warn' && r.dataset.w === '1') || (f === 'todo' && (a === 'create' || a === 'update'));
+        r.style.display = show ? '' : 'none';
+      });
+    });
+  });
+})();
+</script>
+{% endblock %}

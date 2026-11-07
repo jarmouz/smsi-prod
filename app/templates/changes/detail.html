@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% from 'partials/macros.html' import attachments_panel, history_panel with context %}
+{% block title %}{{ c.ref }} - {{ APP_NAME }}{% endblock %}
+{% block heading %}{{ c.ref }} - {{ c.title }}{% endblock %}
+{% block topactions %}<a href="{{ url_for('changes.index') }}" class="btn btn--ghost btn--sm">Retour</a>{% if current_user.can_edit and c.status.value == 'DEMANDE' %}<a href="{{ url_for('changes.edit', change_id=c.id) }}" class="btn btn--primary btn--sm">Modifier</a>{% endif %}{% endblock %}
+{% block content %}
+{% set steps = [('DEMANDE', 'Demandé'), ('APPROUVE', 'Approuvé'), ('REALISE', 'Réalisé'), ('CLOTURE', 'Revu et clôturé')] %}
+<div class="meta-inline" style="font-size:11.5px;gap:6px;margin-bottom:14px;">
+  {% for st, lbl in steps %}<span class="appl {{ 'appl--in' if c.status.value == st else '' }}" style="{{ '' if c.status.value == st else 'opacity:.5;' }}">{{ loop.index }}. {{ lbl }}</span>{% if not loop.last %}<span class="muted">→</span>{% endif %}{% endfor %}
+  {% if c.status.value in ['REFUSE', 'ANNULE'] %}<span class="appl appl--out">{{ c.status.label }}</span>{% endif %}
+  {% if c.emergency %}<span class="appl appl--out">Urgent</span>{% endif %}
+</div>
+<div class="detail-grid">
+  <div class="stack">
+    <div class="panel"><div class="panel__head"><h2>Demande</h2></div><div class="panel__body"><div class="meta-list">
+      <div><span>Type</span><b>{{ c.kind.label }}</b></div>
+      <div><span>Demandeur</span><b>{{ c.requested_by.name if c.requested_by else '-' }} le {{ c.created_at|d }}</b></div>
+      <div><span>Date prévue</span><b>{{ c.planned_date|d }}</b></div>
+      <div><span>Description</span><b style="white-space:pre-wrap;">{{ c.description or '-' }}</b></div>
+      <div><span>Justification</span><b style="white-space:pre-wrap;">{{ c.reason or '-' }}</b></div>
+      <div><span>Impact sécurité</span><b style="white-space:pre-wrap;">{{ c.security_impact }}</b></div>
+      <div><span>Risque</span><b>{{ c.risk_level.label }}</b></div>
+      <div><span>Retour arrière</span><b style="white-space:pre-wrap;">{{ c.rollback or '-' }}</b></div>
+      <div><span>Actifs</span><b>{% for a in c.assets %}<a class="chip" href="{{ url_for('assets.detail', asset_id=a.id) }}">{{ a.ref }}</a> {% else %}-{% endfor %}</b></div>
+    </div></div></div>
+    {{ attachments_panel('change', c.id, attachments, current_user.can_edit) }}
+  </div>
+  <div class="stack">
+    <div class="panel"><div class="panel__head"><h2>Décision et suivi</h2></div><div class="panel__body stack">
+      {% if c.approved_at %}<p style="font-size:12.5px;margin:0;">{{ 'Approuvé' if c.status.value != 'REFUSE' else 'Refusé' }} par {{ c.approved_by.name if c.approved_by else '-' }} le {{ c.approved_at|dt }}{{ ' : ' + c.decision_note if c.decision_note }}</p>{% endif %}
+      {% if c.done_at %}<p style="font-size:12.5px;margin:0;">Réalisé le {{ c.done_at|dt }}.</p>{% endif %}
+      {% if c.reviewed_at %}<p style="font-size:12.5px;margin:0;">Revue post-changement le {{ c.reviewed_at|dt }} : {{ c.review_note }}</p>{% endif %}
+      {% if c.status.value == 'DEMANDE' %}
+        {% if can_approve %}
+        <form method="post" action="{{ url_for('changes.decide', change_id=c.id) }}" class="stack">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="field"><label>Commentaire (obligatoire en cas de refus)</label><input type="text" name="decision_note"></div>
+          <div class="meta-inline"><button class="btn btn--primary btn--sm" name="decision" value="approuver">Approuver</button><button class="btn btn--ghost btn--sm" name="decision" value="refuser">Refuser</button></div>
+        </form>
+        {% elif current_user.role.value == 'RSSI' and c.requested_by_id == current_user.id %}<p class="muted" style="font-size:12px;margin:0;">Vous êtes le demandeur d'un changement à risque {{ c.risk_level.label|lower }} : un autre RSSI doit l'approuver (séparation des tâches).</p>
+        {% else %}<p class="muted" style="font-size:12px;margin:0;">En attente d'approbation par le RSSI.</p>{% endif %}
+      {% elif c.status.value == 'APPROUVE' and current_user.can_edit %}
+        <form method="post" action="{{ url_for('changes.done', change_id=c.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn--primary btn--sm">Déclarer réalisé</button></form>
+      {% elif c.status.value == 'REALISE' %}
+        {% if can_review %}
+        <form method="post" action="{{ url_for('changes.review', change_id=c.id) }}" class="stack">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="field"><label>Revue post-changement *</label><textarea name="review_note" rows="2" required placeholder="Objectif atteint ? Incident ? Documentation et inventaire mis à jour ?"></textarea></div>
+          <div><button class="btn btn--primary btn--sm">Clôturer</button></div>
+        </form>
+        {% else %}<p class="muted" style="font-size:12px;margin:0;">Revue post-changement à réaliser par le RSSI ou un auditeur.</p>{% endif %}
+      {% endif %}
+      {% if c.status.value in ['DEMANDE', 'APPROUVE'] and current_user.can_edit and (current_user.id == c.requested_by_id or current_user.role.value == 'RSSI') %}
+        <form method="post" action="{{ url_for('changes.cancel', change_id=c.id) }}" onsubmit="return confirm('Annuler ce changement ?');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn--ghost btn--sm">Annuler la demande</button></form>
+      {% endif %}
+    </div></div>
+    {{ history_panel(c) }}
+  </div>
+</div>
+{% endblock %}

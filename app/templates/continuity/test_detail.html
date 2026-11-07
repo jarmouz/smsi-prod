@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% from 'partials/macros.html' import attachments_panel, history_panel with context %}
+{% block title %}{{ t.ref }} - {{ APP_NAME }}{% endblock %}
+{% block heading %}{{ t.ref }} - {{ t.title }}{% endblock %}
+{% block topactions %}<a href="{{ url_for('continuity.index') }}" class="btn btn--ghost btn--sm">Retour</a>{% if current_user.can_edit %}{% if t.result.value in ['ECHEC', 'PARTIEL'] %}<a href="{{ url_for('nonconformities.create', exercice=t.id) }}" class="btn btn--subtle btn--sm">Ouvrir une non-conformité</a>{% endif %}<a href="{{ url_for('continuity.edit_test', test_id=t.id) }}" class="btn btn--primary btn--sm">Modifier</a>{% endif %}{% endblock %}
+{% block content %}
+<div class="detail-grid">
+  <div class="stack">
+    <div class="panel"><div class="panel__head"><h2>Exercice</h2>
+      {% if t.result.value == 'REUSSI' %}<span class="appl appl--in">✓ Réussi</span>{% elif t.result.value == 'ECHEC' %}<span class="appl appl--out">✗ Échec</span>{% elif t.result.value == 'PARTIEL' %}<span class="appl" style="background:#FDF3E1;color:#7A5300;">! Partiel</span>{% else %}<span class="muted">Planifié</span>{% endif %}</div>
+      <div class="panel__body"><div class="meta-list">
+      <div><span>Type</span><b>{{ t.ttype.label }}</b></div>
+      <div><span>Date</span><b>{{ t.test_date|d }}</b></div>
+      <div><span>Pilote</span><b>{{ t.owner.name if t.owner else '-' }}</b></div>
+      <div><span>Objectifs et scénario</span><b style="white-space:pre-wrap;">{{ t.objectives or '-' }}</b></div>
+      <div><span>RTO atteint</span><b>{{ (('%g h'|format(t.achieved_rto_hours))|replace('.', ',')) if t.achieved_rto_hours is not none else '-' }}</b></div>
+      <div><span>Constats et enseignements</span><b style="white-space:pre-wrap;">{{ t.findings or '-' }}</b></div>
+    </div></div></div>
+    <div class="panel"><div class="panel__head"><h2>Activités couvertes</h2></div><div class="panel__body--flush"><div class="table-wrap"><table class="grid"><tbody>
+      {% for p in t.processes %}<tr><td class="ref">{{ p.ref }}</td><td class="subj">{{ p.name }}</td><td class="mono">RTO {{ (('%g h'|format(p.rto_hours))|replace('.', ',')) if p.rto_hours is not none else '-' }}</td>
+        <td>{% if t.achieved_rto_hours is not none and p.rto_hours is not none %}{% if t.achieved_rto_hours <= p.rto_hours %}<span style="color:var(--sig-green);">✓ respecté</span>{% else %}<span class="due-cell">✗ dépassé</span>{% endif %}{% endif %}</td></tr>
+      {% else %}<tr><td class="muted" style="padding:12px;">Aucune activité rattachée.</td></tr>{% endfor %}
+    </tbody></table></div></div></div>
+    {{ attachments_panel('continuity', t.id, attachments, current_user.can_edit) }}
+  </div>
+  <div class="stack">{{ history_panel(t) }}</div>
+</div>
+{% endblock %}

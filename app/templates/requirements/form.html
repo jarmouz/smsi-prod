@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}Exigence - {{ APP_NAME }}{% endblock %}
+{% block heading %}{{ 'Modifier ' + r.ref if r else 'Nouvelle exigence' }}{% endblock %}
+{% block topactions %}<a href="{{ url_for('requirements.index') }}" class="btn btn--ghost btn--sm">Retour</a>{% endblock %}
+{% block content %}
+<form method="post" style="max-width:820px;">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="panel"><div class="panel__head"><h2>Exigence (A.5.31)</h2></div><div class="panel__body stack">
+    <div class="field"><label>Intitulé *</label><input type="text" name="title" required value="{{ r.title if r else '' }}" placeholder="Ex. Notification des violations de données personnelles"></div>
+    <div class="form-grid">
+      <div class="field"><label>Type</label><select name="req_type">{% for x in RequirementType %}<option value="{{ x.value }}" {{ 'selected' if r and r.req_type==x }}>{{ x.label }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Texte de référence</label><input type="text" name="source" value="{{ r.source or '' if r else '' }}" placeholder="Ex. Loi organique n° 2004-63, art. 22"></div>
+    </div>
+    <div class="form-grid">
+      <div class="field"><label>Autorité / émetteur</label><input type="text" name="issuer" value="{{ r.issuer or '' if r else '' }}"></div>
+      <div class="field"><label>Partie intéressée concernée</label><select name="party_id"><option value="">-</option>{% for p in parties %}<option value="{{ p.id }}" {{ 'selected' if r and r.party_id==p.id }}>{{ p.ref }} - {{ p.name }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="field"><label>Obligation (ce qui est exigé)</label><textarea name="obligation" rows="3">{{ r.obligation or '' if r else '' }}</textarea></div>
+    <div class="field"><label>Mise en conformité (comment l'organisme y répond)</label><textarea name="response" rows="3">{{ r.response or '' if r else '' }}</textarea></div>
+    <div class="field"><label>Mesures de l'Annexe A associées</label><select name="controls" multiple size="6">{% for c in controls %}<option value="{{ c.id }}" {{ 'selected' if r and c in r.controls }}>{{ c.annex_ref }} - {{ c.title|truncate(60) }}</option>{% endfor %}</select>
+      <div class="muted" style="font-size:11px;margin-top:3px;">Ctrl / Cmd + clic pour une sélection multiple.</div></div>
+    <div class="form-grid">
+      <div class="field"><label>Conformité</label><select name="status">{% for x in ComplianceStatus %}<option value="{{ x.value }}" {{ 'selected' if r and r.status==x }}>{{ x.label }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Responsable</label><select name="owner_id"><option value="">-</option>{% for u in users %}<option value="{{ u.id }}" {{ 'selected' if r and r.owner_id==u.id }}>{{ u.name }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="form-grid">
+      <div class="field"><label>Dernière revue</label><input type="date" name="last_review" value="{{ r.last_review.isoformat() if r and r.last_review else '' }}"></div>
+      <div class="field"><label>Prochaine revue</label><input type="date" name="next_review" value="{{ r.next_review.isoformat() if r and r.next_review else '' }}"></div>
+    </div>
+    <div><button class="btn btn--primary" type="submit">Enregistrer</button></div>
+  </div></div>
+</form>
+{% endblock %}

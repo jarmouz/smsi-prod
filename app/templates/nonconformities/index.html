@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% from 'partials/macros.html' import export_menu with context %}
+{% block title %}Non-conformités - {{ APP_NAME }}{% endblock %}
+{% block heading %}Non-conformités et actions correctives{% endblock %}
+{% block topactions %}{{ export_menu([('non-conformites', 'Registre des non-conformités')]) }} {% if current_user.can_edit %}<a href="{{ url_for('nonconformities.create') }}" class="btn btn--primary btn--sm">+ Non-conformité</a>{% endif %}{% endblock %}
+{% block content %}
+<div class="kpis" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px;">
+  <div class="kpi kpi--retard"><div class="kpi__label">Ouvertes</div><div class="kpi__value">{{ stats.open }}</div><div class="kpi__sub">dont {{ stats.major }} majeure(s)</div></div>
+  <div class="kpi kpi--sla"><div class="kpi__label">Efficacité à vérifier</div><div class="kpi__value">{{ stats.verify }}</div></div>
+  <div class="kpi kpi--retard"><div class="kpi__label">Avec actions en retard</div><div class="kpi__value">{{ stats.overdue }}</div></div>
+  <div class="kpi kpi--total"><div class="kpi__label">Clôturées</div><div class="kpi__value">{{ stats.closed }}</div><div class="kpi__sub">efficacité vérifiée</div></div>
+</div>
+<form class="toolbar" method="get">
+  <select name="statut" onchange="this.form.submit()"><option value="">Tous statuts</option><option value="ouvertes" {{ 'selected' if f_status=='ouvertes' }}>Non clôturées</option>{% for s in NcStatus %}<option value="{{ s.value }}" {{ 'selected' if f_status==s.value }}>{{ s.label }}</option>{% endfor %}</select>
+  <select name="source" onchange="this.form.submit()"><option value="">Toutes origines</option>{% for s in NcSource %}<option value="{{ s.value }}" {{ 'selected' if f_source==s.value }}>{{ s.label }}</option>{% endfor %}</select>
+  {% if f_status or f_source %}<a href="{{ url_for('nonconformities.index') }}" class="btn btn--ghost btn--sm">Réinitialiser</a>{% endif %}
+</form>
+<div class="panel" style="margin-top:16px;"><div class="panel__body--flush"><div class="table-wrap">
+  <table class="grid">
+    <thead><tr><th style="width:110px;">Réf.</th><th>Non-conformité</th><th style="width:170px;">Origine</th><th style="width:90px;">Gravité</th><th style="width:90px;">Actions</th><th style="width:150px;">Statut</th></tr></thead>
+    <tbody>
+    {% for n in ncs %}
+      <tr class="row-link" onclick="window.location='{{ url_for('nonconformities.detail', nc_id=n.id) }}'">
+        <td class="ref">{{ n.ref }}</td>
+        <td class="subj">{{ n.title }}<div class="muted" style="font-size:11px;">{{ n.detected_at|d }}{{ ' - ' + n.owner.name if n.owner }}{% if n.control %} - {{ n.control.annex_ref }}{% elif n.clause %} - clause {{ n.clause }}{% endif %}</div></td>
+        <td class="muted">{{ n.source.label }}</td>
+        <td>{% if n.severity.value == 'MAJEURE' %}<span class="appl appl--out">Majeure</span>{% else %}<span class="muted">Mineure</span>{% endif %}</td>
+        <td class="mono">{{ n.actions|selectattr('status.value', 'in', ['REALISEE', 'VERIFIEE'])|list|length }}/{{ n.actions|length }}{% if n.is_overdue and n.status.value != 'CLOTUREE' %} <span class="due-cell">retard</span>{% endif %}</td>
+        <td>{% if n.status.value == 'CLOTUREE' %}<span class="appl appl--in">Clôturée</span>{% else %}<span class="muted">{{ n.status.label }}</span>{% endif %}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="6"><div class="empty" style="padding:30px;"><h3>Aucune non-conformité</h3><p>Enregistrez ici toute non-conformité, quelle que soit son origine (10.2).</p></div></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div></div></div>
+{% endblock %}

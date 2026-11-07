@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}Activité - {{ APP_NAME }}{% endblock %}
+{% block heading %}{{ 'Modifier ' + p.ref if p else 'Nouvelle activité (BIA)' }}{% endblock %}
+{% block topactions %}<a href="{{ url_for('continuity.index') }}" class="btn btn--ghost btn--sm">Retour</a>{% endblock %}
+{% block content %}
+<form method="post" style="max-width:820px;">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="panel"><div class="panel__head"><h2>Analyse d'impact</h2></div><div class="panel__body stack">
+    <div class="field"><label>Activité / processus *</label><input type="text" name="name" required value="{{ p.name if p else '' }}" placeholder="Ex. Calcul et diffusion de la paie"></div>
+    <div class="field"><label>Description</label><textarea name="description" rows="2">{{ p.description or '' if p else '' }}</textarea></div>
+    <div class="form-grid">
+      <div class="field"><label>Responsable</label><select name="owner_id"><option value="">-</option>{% for u in users %}<option value="{{ u.id }}" {{ 'selected' if p and p.owner_id==u.id }}>{{ u.name }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Criticité</label><select name="criticality">{% for n, l in levels.items() %}<option value="{{ n }}" {{ 'selected' if (p and p.criticality==n) or (not p and n==2) }}>{{ n }} - {{ l }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="field"><label>Impacts d'une interruption dans le temps</label><textarea name="impacts" rows="3" placeholder="Ex. 4 h : appels clients ; 24 h : pénalités SLA ; 72 h : paies en retard, impact légal">{{ p.impacts or '' if p else '' }}</textarea></div>
+    <div class="form-grid" style="grid-template-columns:repeat(3,1fr);">
+      <div class="field"><label title="Durée maximale d'interruption admissible">DMIA (heures)</label><input type="text" inputmode="decimal" name="mtpd_hours" value="{{ ('%g'|format(p.mtpd_hours))|replace('.', ',') if p and p.mtpd_hours is not none else '' }}"></div>
+      <div class="field"><label>RTO (heures)</label><input type="text" inputmode="decimal" name="rto_hours" value="{{ ('%g'|format(p.rto_hours))|replace('.', ',') if p and p.rto_hours is not none else '' }}"></div>
+      <div class="field"><label>RPO (heures)</label><input type="text" inputmode="decimal" name="rpo_hours" value="{{ ('%g'|format(p.rpo_hours))|replace('.', ',') if p and p.rpo_hours is not none else '' }}"></div>
+    </div>
+    <div class="field"><label>Dépendances (personnes, fournisseurs, sites, applications)</label><textarea name="dependencies" rows="2">{{ p.dependencies or '' if p else '' }}</textarea></div>
+    <div class="field"><label>Stratégie de continuité et mode dégradé (A.5.29)</label><textarea name="strategy" rows="2">{{ p.strategy or '' if p else '' }}</textarea></div>
+    <div class="form-grid">
+      <div class="field"><label>Actifs supports</label><select name="assets" multiple size="6">{% for a in assets %}<option value="{{ a.id }}" {{ 'selected' if p and a in p.assets }}>{{ a.ref }} - {{ a.name|truncate(40) }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Plan de continuité / reprise</label><select name="plan_id"><option value="">-</option>{% for d in documents %}<option value="{{ d.id }}" {{ 'selected' if p and p.plan_id==d.id }}>{{ d.ref }} - {{ d.title|truncate(40) }}</option>{% endfor %}</select></div>
+    </div>
+    <div><button class="btn btn--primary" type="submit">Enregistrer</button></div>
+  </div></div>
+</form>
+{% endblock %}

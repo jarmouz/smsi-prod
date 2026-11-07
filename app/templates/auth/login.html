@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Connexion - {{ APP_NAME }}</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  <style>
+    html,body{height:100%;margin:0;overflow:hidden;font-family:var(--font-body)}
+    .lg-wrap{height:100vh;display:grid;grid-template-columns:1.05fr .95fr}
+    .lg-aside{position:relative;padding:40px 48px 32px;display:flex;flex-direction:column;gap:36px;background:var(--surface);border-right:1px solid var(--line);color:var(--ink-900);overflow-y:auto}
+    .lg-logo{width:220px;height:auto;display:block;margin:0 0 44px}
+    .lg-main{flex:1;display:flex;flex-direction:column;justify-content:center;gap:36px}
+    .lg-kicker{font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--kicker);margin:0 0 14px}
+    .lg-head .ttl{font-family:var(--font-display);font-weight:800;font-size:38px;line-height:1.06;letter-spacing:-.015em;margin:0 0 14px;max-width:460px;color:var(--ink-900)}
+    .lg-head p{color:var(--ink-500);font-size:15px;line-height:1.6;max-width:440px;margin:0}
+    .lg-steps{display:grid;grid-template-columns:1fr 1fr;border-top:2px solid var(--rule-strong);max-width:520px}
+    .lg-step{padding:24px 24px 6px 0;display:flex;flex-direction:column;gap:8px}
+    .lg-step .n{font-family:var(--font-display);font-weight:800;font-size:44px;line-height:1;color:var(--teal-600)}
+    .lg-step:last-child .n{color:var(--kicker)}
+    .lg-step b{font-size:17px;font-weight:700;line-height:1.3}
+    .lg-step span{font-size:13.5px;line-height:1.5;color:var(--ink-500)}
+    .lg-site{border-top:1px solid var(--line);padding-top:14px;font-size:13px;color:var(--ink-500)}
+    .lg-form{display:flex;flex-direction:column;justify-content:center;padding:48px 56px;width:100%;max-width:600px;margin:0 auto}
+    .lg-form h1{font-family:var(--font-display);font-weight:800;font-size:32px;letter-spacing:-.015em;margin:0 0 8px;color:var(--ink-900)}
+    .lg-form .sub{color:var(--text-dim);font-size:14px;margin:0 0 30px;line-height:1.5}
+    .lg-meta{margin-top:26px;color:var(--text-dim);font-size:12.5px;line-height:1.7}
+    .lg-meta .l{display:inline-flex;align-items:center;gap:7px}
+    .lg-meta svg{width:14px;height:14px;stroke:var(--acc);fill:none;stroke-width:2}
+    .lg-legal{font-size:12px;color:var(--ink-500);margin:18px 0 0}
+    .remember{display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--text-dim);margin:4px 0 26px;font-weight:500}
+    .remember input{width:16px;height:16px;accent-color:var(--acc)}
+    @media(max-width:860px){.lg-wrap{grid-template-columns:1fr}.lg-aside{display:none}}
+  </style>
+</head>
+<body>
+<div class="lg-wrap">
+
+  <aside class="lg-aside">
+    <div class="lg-main">
+      <div class="lg-head">
+        <p class="lg-kicker">SMSI - ISO/IEC 27001:2022</p>
+        <h2 class="ttl">Un SMSI qui s'améliore en continu.</h2>
+        <p>Applicabilité, risques, incidents, audits et preuves reliés dans un même cycle, prêts pour la certification.</p>
+      </div>
+
+      <div class="lg-steps">
+        <div class="lg-step"><span class="n">01</span><b>Évaluer</b><span>Mesurer la conformité et les risques.</span></div>
+        <div class="lg-step"><span class="n">02</span><b>Corriger</b><span>Traiter les écarts et les risques prioritaires.</span></div>
+        <div class="lg-step"><span class="n">03</span><b>Maintenir</b><span>Suivre les mesures et réunir les preuves.</span></div>
+        <div class="lg-step"><span class="n">04</span><b>Réévaluer</b><span>Auditer, revoir et relancer le cycle.</span></div>
+      </div>
+    </div>
+
+    <div class="lg-site">kaizen-intelligence.tn</div>
+  </aside>
+
+  <main class="lg-form">
+    <img class="lg-logo" src="{{ url_for('static', filename='img/logo-kaizen-horizontal.svg') }}" alt="Kaizen Intelligence">
+    {% if mfa_step %}
+    <h1>Vérification</h1>
+    <p class="sub">Saisissez le code à 6 chiffres affiché par votre application d'authentification, ou l'un de vos codes de secours.</p>
+    {% else %}
+    <h1>Connexion</h1>
+    <p class="sub">Accédez à votre espace de management de la sécurité.</p>
+    {% endif %}
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+      <div class="flashes" style="margin-bottom:18px;">
+        {% for cat, msg in messages %}<div class="flash flash--{{ cat }}">{{ msg }}</div>{% endfor %}
+      </div>
+      {% endif %}
+    {% endwith %}
+
+    {% if mfa_step %}
+    <form method="post" action="{{ url_for('auth.mfa') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="field">
+        <label for="code">Code de vérification</label>
+        <input type="text" id="code" name="code" required autofocus autocomplete="one-time-code" inputmode="numeric" placeholder="123456" style="font-size:20px;letter-spacing:.2em;text-align:center;">
+      </div>
+      <button class="btn btn--primary" style="width:100%;justify-content:center;padding:13px;font-size:14.5px;margin-top:10px;" type="submit">Vérifier</button>
+      <p style="margin:14px 0 0;font-size:13px;"><a href="{{ url_for('auth.login') }}">Revenir à la connexion</a></p>
+    </form>
+    {% else %}
+    <form method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="field">
+        <label for="email">Adresse e-mail</label>
+        <input type="email" id="email" name="email" required autofocus placeholder="vous@organisation.tn">
+      </div>
+      <div class="field">
+        <label for="password">Mot de passe</label>
+        <input type="password" id="password" name="password" required placeholder="Votre mot de passe">
+      </div>
+      <label class="remember"><input type="checkbox" name="remember"> Rester connecté</label>
+      <button class="btn btn--primary" style="width:100%;justify-content:center;padding:13px;font-size:14.5px;" type="submit">Se connecter</button>
+    </form>
+    {% endif %}
+
+    <div class="lg-meta">
+      <span class="l"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Connexion chiffrée.</span>
+      Accès réservé aux utilisateurs autorisés.
+    </div>
+    <p class="lg-legal">Kaizen Intelligence | kaizen-intelligence.tn</p>
+  </main>
+
+</div>
+</body>
+</html>

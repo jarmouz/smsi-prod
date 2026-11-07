@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+{% from 'partials/macros.html' import control_status, applicability, risk_chip, history_panel with context %}
+{% block title %}{{ c.annex_ref }} - {{ APP_NAME }}{% endblock %}
+{% block heading %}{{ c.annex_ref }} - {{ c.title }}{% endblock %}
+{% block topactions %}<a href="{{ url_for('soa.index') }}" class="btn btn--ghost btn--sm">Retour</a>{% endblock %}
+
+{% block content %}
+<div class="detail-grid">
+  <div class="stack">
+    <div class="panel">
+      <div class="panel__head"><h2>Déclaration d'applicabilité</h2></div>
+      <div class="panel__body">
+        {% if current_user.can_edit %}
+        <form method="post" action="{{ url_for('soa.update', control_id=c.id) }}" class="stack">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="form-grid">
+            <div class="field">
+              <label>Applicabilité</label>
+              <select name="applicable">
+                <option value="oui" {{ 'selected' if c.applicable }}>Retenue (applicable)</option>
+                <option value="non" {{ 'selected' if not c.applicable }}>Exclue</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Statut de mise en œuvre</label>
+              <select name="status">
+                {% for s in ControlStatus %}{% if s.value != 'NON_APPLICABLE' %}<option value="{{ s.value }}" {{ 'selected' if c.status==s }}>{{ s.label }}</option>{% endif %}{% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label>Justification {{ '(d’exclusion)' if not c.applicable else '(d’inclusion)' }}</label>
+            <textarea name="justification" rows="2" placeholder="Motif de sélection ou d'exclusion de la mesure…">{{ c.justification or '' }}</textarea>
+          </div>
+          <div class="field">
+            <label>Mise en œuvre / référence</label>
+            <textarea name="implementation" rows="3" placeholder="Comment la mesure est appliquée, documents et dispositifs associés…">{{ c.implementation or '' }}</textarea>
+          </div>
+          <div class="field">
+            <label>Responsable</label>
+            <select name="owner_id">
+              <option value="">-</option>
+              {% for u in users %}<option value="{{ u.id }}" {{ 'selected' if c.owner_id==u.id }}>{{ u.name }}</option>{% endfor %}
+            </select>
+          </div>
+          <div><button class="btn btn--primary" type="submit">Enregistrer</button></div>
+        </form>
+        {% else %}
+          <div class="meta-list">
+            <div><span>Applicabilité</span>{{ applicability(c) }}</div>
+            <div><span>Statut</span>{{ control_status(c.status) }}</div>
+            <div><span>Justification</span><b style="white-space:pre-line;">{{ c.justification or '-' }}</b></div>
+            <div><span>Mise en œuvre</span><b style="white-space:pre-line;">{{ c.implementation or '-' }}</b></div>
+            <div><span>Responsable</span><b>{{ c.owner.name if c.owner else '-' }}</b></div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel__head"><h2>Preuves rattachées</h2><span class="rail__badge">{{ c.evidences|length }}</span></div>
+      <div class="panel__body--flush">
+        {% if c.evidences %}
+        <div class="table-wrap"><table class="grid"><tbody>
+          {% for e in c.evidences %}
+          <tr class="row-link" onclick="window.location='{{ url_for('evidence.edit', ev_id=e.id) }}'">
+            <td class="ref">{{ e.ref }}</td><td class="subj">{{ e.title }}</td><td class="muted">{{ e.collected_at|d }}</td>
+          </tr>
+          {% endfor %}
+        </tbody></table></div>
+        {% else %}<div class="empty" style="padding:22px;"><p>Aucune preuve rattachée à cette mesure.</p></div>{% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="stack">
+    <div class="panel">
+      <div class="panel__head"><h2>Repères</h2></div>
+      <div class="panel__body">
+        <div class="meta-list">
+          <div><span>Thème</span><b>{{ c.theme.annex }} - {{ c.theme.label }}</b></div>
+          <div><span>Référence</span><b class="mono">{{ c.annex_ref }}</b></div>
+          <div><span>Dernière modif.</span><b>{{ c.updated_at|d }}</b></div>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel__head"><h2>Risques traités</h2><span class="rail__badge">{{ c.risks|length }}</span></div>
+      <div class="panel__body--flush">
+        {% if c.risks %}
+        <div class="table-wrap"><table class="grid"><tbody>
+          {% for r in c.risks %}
+          <tr class="row-link" onclick="window.location='{{ url_for('risks.detail', risk_id=r.id) }}'">
+            <td class="ref">{{ r.ref }}</td><td class="subj">{{ r.title }}</td><td>{{ risk_chip(r.residual_level) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody></table></div>
+        {% else %}<div class="empty" style="padding:22px;"><p>Cette mesure ne traite aucun risque enregistré.</p></div>{% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+<div style="margin-top:16px;">{{ history_panel(c) }}</div>
+{% endblock %}

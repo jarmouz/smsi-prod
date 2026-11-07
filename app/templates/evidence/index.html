@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% from 'partials/macros.html' import control_chip %}
+{% block title %}Preuves - {{ APP_NAME }}{% endblock %}
+{% block heading %}Gestion des preuves{% endblock %}
+{% block topactions %}{% if current_user.can_edit %}<a href="{{ url_for('evidence.create') }}" class="btn btn--primary btn--sm">+ Nouvelle preuve</a>{% endif %}{% endblock %}
+
+{% block content %}
+<form class="toolbar" method="get">
+  <select name="mesure" onchange="this.form.submit()">
+    <option value="">Toutes les mesures</option>
+    {% for c in controls %}<option value="{{ c.id }}" {{ 'selected' if f_control==c.id }}>{{ c.annex_ref }} - {{ c.title }}</option>{% endfor %}
+  </select>
+  {% if f_control %}<a href="{{ url_for('evidence.index') }}" class="btn btn--ghost btn--sm">Réinitialiser</a>{% endif %}
+</form>
+
+<div class="panel" style="margin-top:16px;">
+  <div class="panel__body--flush"><div class="table-wrap">
+    <table class="grid">
+      <thead><tr><th style="width:90px;">Réf.</th><th>Preuve</th><th style="width:100px;">Recueil</th><th>Mesures</th><th style="width:96px;"></th></tr></thead>
+      <tbody>
+        {% for e in evidences %}
+        <tr>
+          <td class="ref">{{ e.ref }}</td>
+          <td class="subj">{{ e.title }}
+            {% if e.location %}<a href="{{ e.location }}" target="_blank" class="muted" style="font-size:11px;"> </a>{% endif %}
+            {% if e.description %}<div class="muted" style="font-size:11.5px;">{{ e.description|truncate(70) }}</div>{% endif %}
+            {% if att_counts.get(e.id) %}<div class="muted" style="font-size:11px;">{{ att_counts[e.id] }} pièce(s) jointe(s)</div>{% endif %}
+          </td>
+          <td class="muted">{{ e.collected_at|d }}</td>
+          <td>{% for c in e.controls %}{{ control_chip(c) }}{% else %}<span class="muted">-</span>{% endfor %}</td>
+          <td>{% if current_user.can_edit %}<a href="{{ url_for('evidence.edit', ev_id=e.id) }}" class="btn btn--ghost btn--sm">Modifier</a>{% endif %}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5"><div class="empty" style="padding:30px;"><h3>Aucune preuve</h3><p>Archivez les éléments prouvant la mise en œuvre des mesures.</p></div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div></div>
+</div>
+{% endblock %}

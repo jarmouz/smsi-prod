@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% from 'partials/macros.html' import risk_chip, score_badge, acceptance_chip, export_menu with context %}
+{% block title %}Gestion des risques - {{ APP_NAME }}{% endblock %}
+{% block heading %}Gestion des risques{% endblock %}
+{% block topactions %}{{ export_menu([('registre-risques', 'Registre des risques'), ('plan-traitement', 'Plan de traitement des risques')]) }} {% if current_user.can_edit %}<a href="{{ url_for('imports.upload', kind='risques') }}" class="btn btn--subtle btn--sm">Importer</a> <a href="{{ url_for('risks.create') }}" class="btn btn--primary btn--sm">+ Nouveau risque</a>{% endif %}{% endblock %}
+
+{% block content %}
+<form class="toolbar" method="get">
+  <select name="statut" onchange="this.form.submit()">
+    <option value="">Tous statuts</option>
+    {% for s in RiskStatus %}<option value="{{ s.value }}" {{ 'selected' if f_status==s.value }}>{{ s.label }}</option>{% endfor %}
+  </select>
+  <select name="niveau" onchange="this.form.submit()">
+    <option value="">Tous niveaux (résiduel)</option>
+    {% for lv in ['critique', 'eleve', 'modere', 'faible'] %}
+    <option value="{{ lv }}" {{ 'selected' if f_level==lv }}>{{ risk_level_label(lv) }}</option>{% endfor %}
+  </select>
+  <select name="acceptation" onchange="this.form.submit()">
+    <option value="">Toutes acceptations</option>
+    <option value="a_faire" {{ 'selected' if f_acc=='a_faire' }}>À accepter / ré-accepter</option>
+    <option value="acceptes" {{ 'selected' if f_acc=='acceptes' }}>Acceptés</option>
+  </select>
+  {% if f_status or f_level or f_acc %}<a href="{{ url_for('risks.index') }}" class="btn btn--ghost btn--sm">Réinitialiser</a>{% endif %}
+</form>
+
+<div class="panel" style="margin-top:16px;">
+  <div class="panel__body--flush"><div class="table-wrap">
+    <table class="grid">
+      <thead><tr>
+        <th style="width:96px;">Réf.</th><th>Risque</th><th style="width:120px;">Traitement</th>
+        <th style="width:80px;text-align:center;">Inhérent</th><th style="width:80px;text-align:center;">Résiduel</th>
+        <th style="width:100px;">Niveau</th><th style="width:110px;">Acceptation</th><th style="width:120px;">Statut</th>
+      </tr></thead>
+      <tbody>
+        {% for r in risks %}
+        <tr class="row-link" onclick="window.location='{{ url_for('risks.detail', risk_id=r.id) }}'">
+          <td class="ref">{{ r.ref }}</td>
+          <td class="subj">{{ r.title }}
+            {% if r.controls %}<span class="muted" style="font-size:11px;"> - {{ r.controls|length }} mesure(s)</span>{% endif %}
+            <div class="muted" style="font-size:11.5px;">{{ r.asset or '' }}</div>
+          </td>
+          <td class="muted">{{ r.treatment.label }}</td>
+          <td style="text-align:center;">{{ score_badge(r.inherent_score, r.inherent_level) }}</td>
+          <td style="text-align:center;">{{ score_badge(r.residual_score, r.residual_level) }}</td>
+          <td>{{ risk_chip(r.residual_level) }}</td>
+          <td>{{ acceptance_chip(r) }}</td>
+          <td class="muted">{{ r.status.label }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8"><div class="empty" style="padding:30px;"><h3>Aucun risque</h3><p>Commencez par enregistrer un risque.</p></div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div></div>
+</div>
+{% endblock %}

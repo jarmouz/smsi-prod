@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}Double authentification - {{ APP_NAME }}{% endblock %}
+{% block heading %}Activer la double authentification{% endblock %}
+{% block content %}
+<div class="panel" style="max-width:620px;">
+  <div class="panel__head"><h2>1. Scannez le QR code</h2></div>
+  <div class="panel__body stack">
+    <p style="font-size:12.5px;margin:0;">Avec votre application d'authentification, scannez ce code, ou saisissez la clé manuellement.</p>
+    <div id="qr" style="background:#fff;padding:10px;width:max-content;"></div>
+    <div class="field"><label>Clé (saisie manuelle)</label><input type="text" readonly value="{{ secret }}" class="mono" onclick="this.select()"></div>
+  </div>
+  <div class="panel__head" style="border-top:1px solid var(--line);"><h2>2. Confirmez avec un code</h2></div>
+  <div class="panel__body">
+    <form method="post" action="{{ url_for('account.mfa_enable') }}" class="meta-inline">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="text" name="code" required autofocus inputmode="numeric" autocomplete="one-time-code" placeholder="123456" style="width:140px;font-size:16px;letter-spacing:.15em;">
+      <button class="btn btn--primary btn--sm" type="submit">Activer</button>
+    </form>
+  </div>
+</div>
+<script src="{{ url_for('static', filename='js/qrcode.min.js') }}"></script>
+<script>new QRCode(document.getElementById("qr"), {text: {{ uri|tojson }}, width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M});</script>
+{% endblock %}

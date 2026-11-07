@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+{% block title %}Vérifier les documents - {{ APP_NAME }}{% endblock %}
+{% block heading %}Déposer des documents existants{% endblock %}
+{% block topactions %}<a href="{{ url_for('imports.docs_upload', token=token) }}" class="btn btn--ghost btn--sm">Ajouter des fichiers</a>{% endblock %}
+{% block content %}
+<ol class="imp-steps">
+  <li class="is-done"><span>1</span>Fichiers</li>
+  <li class="is-current"><span>2</span>Vérification des métadonnées</li>
+  <li><span>3</span>Création des documents</li>
+</ol>
+{% set mode = opts.get('mode', 'APPROUVE' if can_approve else 'BROUILLON') %}
+{% if progress is not none %}
+<div class="panel imp-notice" style="margin-bottom:16px;" id="docs-progress">
+  <div class="panel__body">
+    {% set left = rows|selectattr('include')|list|length %}
+    <b>Création en cours : {{ progress }} document(s) créé(s), {{ left }} restant(s).</b>
+    <div class="dz-bar" style="margin-top:10px;"><i style="width:{{ (progress * 100 / (progress + left))|round|int }}%"></i></div>
+    <p class="muted" style="margin:8px 0 0;">Les fichiers sont transférés vers le stockage documentaire par lots. Ne fermez pas la page ; si elle s'arrête, cliquez sur « Créer les documents retenus » pour reprendre.</p>
+  </div>
+</div>
+{% endif %}
+<form method="post" id="docs-form">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="panel imp-notice" style="margin-bottom:16px;">
+    <div class="panel__body imp-source" style="align-items:flex-start;">
+      <fieldset class="imp-mode">
+        <legend class="muted">Statut des documents créés</legend>
+        <label><input type="radio" name="mode" value="APPROUVE" {{ 'checked' if mode == 'APPROUVE' }} {{ 'disabled' if not can_approve }}>
+          <span><b>Approuvés</b> : documents déjà en vigueur. La date d'approbation d'origine est conservée, la version est inscrite à l'historique comme reprise de l'existant.{% if not can_approve %} <i class="muted">(réservé au RSSI)</i>{% endif %}</span></label>
+        <label><input type="radio" name="mode" value="BROUILLON" {{ 'checked' if mode == 'BROUILLON' }}>
+          <span><b>Brouillons</b> : à relire puis à soumettre au circuit d'approbation.</span></label>
+      </fieldset>
+      <label style="margin-left:auto;"><span class="muted">Revue tous les</span><input type="number" name="review_months" min="1" max="60" value="{{ opts.get('review_months', 12) }}" style="width:64px;"><span class="muted">mois</span></label>
+    </div>
+  </div>
+
+  <div class="imp-filter">
+    {% if ai_on %}<button type="button" class="btn btn--subtle btn--sm ai-btn" id="ai-run" title="Chaque document retenu est transmis à Anthropic pour analyse"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.6L19.5 10.5l-5.6 1.9L12 18l-1.9-5.6L4.5 10.5l5.6-1.9z"/><path d="M19 3v4M17 5h4"/></svg>Analyser les documents retenus avec l'IA</button><span id="ai-status" class="muted" style="font-size:12.5px;"></span>{% endif %}
+    <span class="muted" style="font-size:12.5px;">{{ rows|length }} fichier(s) · <b id="n-inc">{{ rows|selectattr('include')|list|length }}</b> retenu(s). Les valeurs proposées viennent du fichier ; survolez une cellule pour en voir l'origine.</span>
+  </div>
+  <div class="panel"><div class="panel__body--flush"><div class="table-wrap">
+    <table class="grid docs-grid">
+      <thead><tr>
+        <th style="width:34px;"><input type="checkbox" id="inc-all" aria-label="Tout sélectionner" checked></th>
+        <th>Titre</th><th style="width:130px;">Référence</th><th style="width:150px;">Type</th><th style="width:76px;">Version</th>
+        <th style="width:170px;">Propriétaire</th><th style="width:150px;">Approuvé le</th>
+      </tr></thead>
+      <tbody>
+      {% for r in rows %}
+        {% set k = r.id %}
+        <tr class="{{ 'is-off' if not r.include }}" data-id="{{ k }}">
+          <td><input type="checkbox" name="inc_{{ k }}" value="1" class="inc" {{ 'checked' if r.include }} aria-label="Retenir {{ r.name }}"></td>
+          <td>
+            <input type="text" name="title_{{ k }}" value="{{ r.title }}" title="Origine : {{ r.source.get('title', 'nom du fichier') }}">
+            <div class="muted docs-file">{{ r.path }}{% if r.ai %}<span class="ai-tag">IA</span>{% endif %}</div>
+            <div class="ai-extra" {{ 'hidden' if not (r.summary or r.controls) }}>
+              <input type="text" name="controls_{{ k }}" value="{{ r.controls }}" placeholder="Mesures Annexe A (ex. A.5.1, A.5.37)" title="Mesures de l'Annexe A concernées (inscrites dans la note du document)">
+              <input type="text" name="summary_{{ k }}" value="{{ r.summary }}" placeholder="Résumé" title="Résumé (inscrit dans la note du document)">
+            </div>
+            {% if r.dup %}<div class="imp-msg imp-msg--warn">Déjà présent : <a href="{{ url_for('documents.detail', doc_id=r.dup.id) }}">{{ r.dup.ref }} {{ r.dup.title }}</a> (non retenu par défaut)</div>{% endif %}
+          </td>
+          <td><input type="text" name="ref_{{ k }}" value="{{ r.ref }}" placeholder="auto (DOC-…)" title="{{ 'Origine : ' ~ r.source.ref if r.source.get('ref') else 'Référence attribuée automatiquement si vide' }}"></td>
+          <td><select name="type_{{ k }}">{% for t in DocType %}<option value="{{ t.value }}" {{ 'selected' if r.doc_type == t.value }}>{{ t.label }}</option>{% endfor %}</select></td>
+          <td><input type="text" name="version_{{ k }}" value="{{ r.version }}" title="Origine : {{ r.source.get('version', 'valeur par défaut') }}"></td>
+          <td>
+            <select name="owner_{{ k }}"><option value="">-</option>{% for u in users %}<option value="{{ u.id }}" {{ 'selected' if r.owner_id == u.id }}>{{ u.name }}</option>{% endfor %}</select>
+            {% if r.owner_hint and not r.owner_id %}<div class="muted docs-file">Fichier : {{ r.owner_hint }}</div>{% endif %}
+          </td>
+          <td><input type="date" name="approved_{{ k }}" value="{{ r.approved }}" title="Origine : {{ r.source.get('approved', 'inconnue') }}">
+            {% if r.approved and r.source.get('approved') == 'dernière modification du fichier' %}<div class="muted docs-file">date du fichier</div>{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div></div></div>
+
+  <div class="imp-confirm">
+    <button class="btn btn--ghost" form="cancel-form">Annuler</button>
+    <button class="btn btn--subtle" name="action" value="save">Enregistrer les corrections</button>
+    <div class="spacer"></div>
+    <span class="muted" style="font-size:12.5px;">Chaque création est tracée dans le journal d'activité.</span>
+    <button class="btn btn--primary" name="action" value="create">Créer les documents retenus</button>
+  </div>
+</form>
+<form method="post" id="cancel-form" action="{{ url_for('imports.docs_cancel', token=token) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"></form>
+<script>
+(function () {
+  var boxes = document.querySelectorAll('.docs-grid .inc'), all = document.getElementById('inc-all'), n = document.getElementById('n-inc');
+  function sync() {
+    var c = 0;
+    boxes.forEach(function (b) { b.closest('tr').classList.toggle('is-off', !b.checked); if (b.checked) c++; });
+    n.textContent = c; all.checked = c === boxes.length; all.indeterminate = c > 0 && c < boxes.length;
+  }
+  {% if progress is not none %}
+  // lot suivant : renvoi automatique du formulaire
+  var f = document.getElementById('docs-form'), b = document.createElement('input');
+  b.type = 'hidden'; b.name = 'action'; b.value = 'create'; f.appendChild(b);
+  setTimeout(function () { f.submit(); }, 400);
+  {% endif %}
+  var run = document.getElementById('ai-run'), status = document.getElementById('ai-status');
+  if (run) run.addEventListener('click', async function () {
+    var rows = Array.from(document.querySelectorAll('.docs-grid tbody tr')).filter(function (tr) { return tr.querySelector('.inc').checked; });
+    if (!rows.length) { status.textContent = 'Cochez au moins un document.'; return; }
+    run.disabled = true;
+    var csrf = document.querySelector('#docs-form [name=csrf_token]').value, ok = 0, ko = [];
+    for (var i = 0; i < rows.length; i++) {
+      var tr = rows[i], id = tr.dataset.id;
+      status.textContent = 'Analyse ' + (i + 1) + ' / ' + rows.length + '…';
+      var fd = new FormData(); fd.append('csrf_token', csrf);
+      try {
+        var r = await fetch('{{ url_for("imports.docs_ai", token=token, item_id=0) }}'.replace(/0$/, id), { method: 'POST', body: fd, headers: { 'Accept': 'application/json' }, credentials: 'same-origin' });
+        var j = await r.json();
+        if (!j.ok) { ko.push(tr.querySelector('.docs-file').textContent.trim() + ' : ' + j.error); continue; }
+        var set = function (name, val) { var el = tr.querySelector('[name="' + name + '_' + id + '"]'); if (el && val) { el.value = val; el.classList.add('is-ai'); } };
+        set('title', j.title); set('ref', j.ref); set('version', j.version); set('approved', j.approved);
+        set('type', j.doc_type); set('controls', j.controls); set('summary', j.summary);
+        if (j.owner_id) set('owner', String(j.owner_id));
+        tr.querySelector('.ai-extra').hidden = false;
+        ok++;
+      } catch (e) { ko.push('Document ' + id + ' : ' + e.message); }
+    }
+    status.textContent = ok + ' document(s) analysé(s) : vérifiez les cases surlignées avant de créer.' + (ko.length ? ' Échecs : ' + ko.join(' · ') : '');
+    run.disabled = false;
+  });
+  boxes.forEach(function (b) { b.addEventListener('change', sync); });
+  all.addEventListener('change', function () { boxes.forEach(function (b) { b.checked = all.checked; }); sync(); });
+  sync();
+})();
+</script>
+{% endblock %}

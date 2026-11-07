@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% from 'partials/macros.html' import attachments_panel, history_panel with context %}
+{% block title %}Preuve de compétence - {{ APP_NAME }}{% endblock %}
+{% block heading %}{{ 'Preuve de compétence' if rec else 'Nouvelle preuve de compétence' }}{% endblock %}
+{% block topactions %}<a href="{{ url_for('competences.index') }}" class="btn btn--ghost btn--sm">Retour</a>{% endblock %}
+{% block content %}
+<div class="detail-grid">
+<form method="post" class="stack">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="panel"><div class="panel__head"><h2>Preuve (7.2 d)</h2></div><div class="panel__body stack">
+    <div class="form-grid">
+      <div class="field"><label>Personne *</label><select name="user_id" required><option value="">-</option>{% for u in users %}<option value="{{ u.id }}" {{ 'selected' if (rec and rec.user_id==u.id) or (not rec and preset_user==u.id) }}>{{ u.name }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Compétence requise couverte</label><select name="requirement_id"><option value="">-</option>{% for r in reqs %}<option value="{{ r.id }}" {{ 'selected' if (rec and rec.requirement_id==r.id) or (not rec and preset_req==r.id) }}>{{ r.title|truncate(50) }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="field"><label>Intitulé *</label><input type="text" name="title" required value="{{ rec.title if rec else '' }}" placeholder="Ex. Certification ISO/IEC 27001 Lead Auditor"></div>
+    <div class="form-grid">
+      <div class="field"><label>Type</label><select name="ctype">{% for x in CompetenceType %}<option value="{{ x.value }}" {{ 'selected' if rec and rec.ctype==x }}>{{ x.label }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Organisme</label><input type="text" name="provider" value="{{ rec.provider or '' if rec else '' }}"></div>
+    </div>
+    <div class="form-grid">
+      <div class="field"><label>Obtenue le</label><input type="date" name="obtained_at" value="{{ rec.obtained_at.isoformat() if rec and rec.obtained_at else '' }}"></div>
+      <div class="field"><label>Expire le</label><input type="date" name="expires_at" value="{{ rec.expires_at.isoformat() if rec and rec.expires_at else '' }}"><div class="muted" style="font-size:11px;margin-top:3px;">Vide : calculée selon le renouvellement de la compétence.</div></div>
+    </div>
+    <div class="field"><label>Note</label><textarea name="note" rows="2">{{ rec.note or '' if rec else '' }}</textarea></div>
+    <div><button class="btn btn--primary" type="submit">Enregistrer</button></div>
+  </div></div>
+</form>
+{% if rec %}<div class="stack">{{ attachments_panel('competence', rec.id, attachments, current_user.can_edit) }}{{ history_panel(rec) }}</div>{% endif %}
+</div>
+{% endblock %}

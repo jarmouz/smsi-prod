@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Modifier' if review else 'Nouvelle' }} revue - {{ APP_NAME }}{% endblock %}
+{% block heading %}{{ 'Modifier ' + review.ref if review else 'Nouvelle revue de direction' }}{% endblock %}
+{% block topactions %}<a href="{{ url_for('reviews.index') }}" class="btn btn--ghost btn--sm">Retour</a>{% endblock %}
+
+{% block content %}
+<form method="post" enctype="multipart/form-data" class="detail-grid">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="stack">
+    <div class="panel">
+      <div class="panel__head"><h2>Revue</h2></div>
+      <div class="panel__body stack">
+        <div class="field"><label>Objet *</label><input type="text" name="title" required value="{{ review.title if review else '' }}" placeholder="Ex. Revue de direction - 1er semestre 2026"></div>
+        <div class="form-grid">
+          <div class="field"><label>Date</label><input type="date" name="review_date" value="{{ review.review_date.isoformat() if review and review.review_date else '' }}"></div>
+          <div class="field"><label>Statut</label><select name="status">{% for s in ReviewStatus %}<option value="{{ s.value }}" {{ 'selected' if review and review.status==s }}>{{ s.label }}</option>{% endfor %}</select></div>
+        </div>
+        <div class="field"><label>Participants</label><input type="text" name="participants" value="{{ review.participants if review else '' }}" placeholder="Direction, RSSI, DSI…"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel__head"><h2>Données d'entrée (clause 9.3.2)</h2></div>
+      <div class="panel__body">
+        <div class="field"><textarea name="inputs" rows="6" placeholder="État des actions des revues précédentes, évolution du contexte, performance du SMSI (indicateurs, NC, audits), risques et opportunités, retours des parties intéressées…">{{ review.inputs if review else '' }}</textarea></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel__head"><h2>Décisions & conclusions (clause 9.3.3)</h2></div>
+      <div class="panel__body">
+        <div class="field"><textarea name="decisions" rows="5" placeholder="Décisions relatives aux opportunités d'amélioration, aux changements du SMSI, aux besoins en ressources…">{{ review.decisions if review else '' }}</textarea></div>
+      </div>
+    </div>
+    {% if not review %}<div class="panel"><div class="panel__head"><h2>Pièces jointes</h2></div><div class="panel__body"><div class="field"><input type="file" name="attachments" multiple><div class="muted" style="font-size:11.5px;margin-top:4px;">PV, présentation… D'autres pourront être ajoutés ensuite.</div></div></div></div>{% endif %}
+    <div><button class="btn btn--primary" type="submit">{{ 'Enregistrer' if review else 'Créer la revue' }}</button></div>
+  </div>
+
+  <div class="stack">
+    <div class="panel">
+      <div class="panel__head"><h2>Synthèse SMSI</h2></div>
+      <div class="panel__body">
+        <p class="muted" style="font-size:12px;margin-bottom:10px;">Repères automatiques pour alimenter les données d'entrée.</p>
+        <div class="meta-list">
+          <div><span>Mise en œuvre DdA</span><b>{{ digest.soa_rate }}% ({{ digest.applicable }} retenues)</b></div>
+          <div><span>Risques ouverts</span><b>{{ digest.risks_open }}</b></div>
+          <div><span>dont élevés</span><b>{{ digest.risks_high }}</b></div>
+          <div><span>Non-conformités ouvertes (10.2)</span><b>{{ digest.nc_open }} dont {{ digest.nc_major }} majeure(s) - {{ digest.nc_closed }} clôturée(s)</b></div>
+          <div><span>Indicateurs (9.1)</span><b>{{ digest.kpi_ok }}/{{ digest.kpi_total }} dans la cible, {{ digest.kpi_off }} hors cible</b></div>
+          <div><span>Objectifs (6.2)</span><b>{{ digest.obj_reached }}/{{ digest.obj_total }} atteints, {{ digest.obj_overdue }} en retard</b></div>
+          <div><span>Fournisseurs (A.5.19-22)</span><b>{{ digest.sup_gaps }}/{{ digest.sup_total }} avec écarts</b></div>
+          <div><span>Exigences (A.5.31)</span><b>{{ digest.req_nok }} non conformes ou partielles, {{ digest.req_todo }} à évaluer</b></div>
+          <div><span>Continuité (A.5.30)</span><b>{{ digest.bcp_overdue }} activité(s) critique(s) à tester</b></div>
+          <div><span>Changements (6.3, A.8.32)</span><b>{{ digest.chg_pending }} en attente de décision ou de revue</b></div>
+          <div><span>Compétences (7.2)</span><b>{{ digest.comp_gaps }} écart(s)</b></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}

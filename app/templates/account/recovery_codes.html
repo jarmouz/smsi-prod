@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}Codes de secours - {{ APP_NAME }}{% endblock %}
+{% block heading %}Codes de secours{% endblock %}
+{% block content %}
+<div class="panel" style="max-width:620px;">
+  <div class="panel__head"><h2>{{ 'Double authentification activée' if first else 'Nouveaux codes de secours' }}</h2></div>
+  <div class="panel__body stack">
+    <div class="flash flash--warning" style="margin:0;">Conservez ces codes en lieu sûr (gestionnaire de mots de passe). Ils ne seront plus affichés. Chaque code permet une seule connexion si vous n'avez plus accès à votre application.{{ ' Les anciens codes ne sont plus valables.' if not first }}</div>
+    <div class="mono" style="display:grid;grid-template-columns:repeat(2, max-content);gap:8px 32px;font-size:16px;padding:8px 4px;">
+      {% for c in codes %}<span>{{ c }}</span>{% endfor %}
+    </div>
+    <div><a class="btn btn--primary btn--sm" href="{{ url_for('account.home') }}">J'ai conservé mes codes</a></div>
+  </div>
+</div>
+{% endblock %}

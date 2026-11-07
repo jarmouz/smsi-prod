@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% from 'partials/macros.html' import export_menu with context %}
+{% block title %}Programme d'audit - {{ APP_NAME }}{% endblock %}
+{% block heading %}Programme d'audit pluriannuel{% endblock %}
+{% block topactions %}<a href="{{ url_for('audits.index') }}" class="btn btn--ghost btn--sm">Audits</a> {{ export_menu([('programme-audit', "Programme d'audit")]) }}{% endblock %}
+{% block content %}
+{% set can_plan = current_user.role.value in ['RSSI', 'AUDITEUR'] and not current_user.is_readonly %}
+<p class="muted" style="font-size:12.5px;margin:0 0 12px;max-width:900px;">Programme d'audit interne (9.2.2) : fréquence, méthodes, responsabilités et couverture des exigences sur le cycle de certification ({{ window|first }}-{{ window|last }}). Chaque case indique le trimestre prévu, l'auditeur et l'audit réalisé.</p>
+{% if uncovered %}<div class="flash flash--warning" style="margin-bottom:12px;">Domaines non couverts sur le cycle {{ window|first }}-{{ window|last }} : {{ uncovered|join(', ') }}.</div>{% endif %}
+{% if conflicts %}<div class="flash flash--warning" style="margin-bottom:12px;">Indépendance à vérifier : {{ conflicts|length }} case(s) où l'auditeur est responsable de mesures du thème audité (9.2.2 : les auditeurs ne doivent pas auditer leur propre travail).</div>{% endif %}
+<div class="panel"><div class="panel__body--flush"><div class="table-wrap">
+  <table class="grid">
+    <thead><tr><th style="width:240px;">Domaine</th>{% for y in years %}<th style="text-align:center;{{ 'background:var(--teal-050);' if y in window }}">{{ y }}</th>{% endfor %}</tr></thead>
+    <tbody>
+    {% for code, label in domains %}
+      <tr>
+        <td class="subj">{{ label }}</td>
+        {% for y in years %}{% set it = items.get((y, code)) %}
+        <td style="vertical-align:top;font-size:11.5px;{{ 'background:var(--teal-050);' if y in window }}">
+          {% if it %}
+            <div><b>{{ 'T%d'|format(it.quarter) if it.quarter else 'Prévu' }}</b>{% if it.audit %} - <a href="{{ url_for('audits.detail', audit_id=it.audit.id) }}">{{ it.audit.ref }}</a> <span class="muted">({{ it.audit.status.label }})</span>{% endif %}</div>
+            {% if it.auditor %}<div class="muted">{{ it.auditor.name }}{% if conflicts.get((y, code)) %} <span class="due-cell" title="Responsable de {{ conflicts[(y, code)] }} mesure(s) de ce thème">⚠ indépendance</span>{% endif %}</div>{% endif %}
+            {% if it.note %}<div class="muted">{{ it.note }}</div>{% endif %}
+          {% endif %}
+          {% if can_plan %}
+          <details style="margin-top:2px;"><summary class="muted" style="cursor:pointer;list-style:none;font-size:11px;">{{ 'modifier' if it else '+ planifier' }}</summary>
+            <form method="post" action="{{ url_for('audits.programme_set') }}" class="stack" style="position:absolute;z-index:5;background:var(--surface);border:1px solid var(--line);padding:12px;box-shadow:var(--shadow-lg);width:250px;margin-top:4px;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="year" value="{{ y }}"><input type="hidden" name="domain" value="{{ code }}">
+              <div class="field"><label>Trimestre</label><select name="quarter"><option value="">-</option>{% for q in [1,2,3,4] %}<option value="{{ q }}" {{ 'selected' if it and it.quarter==q }}>T{{ q }}</option>{% endfor %}</select></div>
+              <div class="field"><label>Auditeur</label><select name="auditor_id"><option value="">-</option>{% for u in auditors %}<option value="{{ u.id }}" {{ 'selected' if it and it.auditor_id==u.id }}>{{ u.name }}</option>{% endfor %}</select></div>
+              <div class="field"><label>Audit réalisé</label><select name="audit_id"><option value="">-</option>{% for a in audits %}<option value="{{ a.id }}" {{ 'selected' if it and it.audit_id==a.id }}>{{ a.ref }} - {{ a.title|truncate(30) }}</option>{% endfor %}</select></div>
+              <div class="field"><label>Note</label><input type="text" name="note" value="{{ it.note or '' if it else '' }}"></div>
+              <div class="meta-inline"><button class="btn btn--primary btn--sm" type="submit">Enregistrer</button>{% if it %}<button class="btn btn--ghost btn--sm" type="submit" name="clear" value="1">Retirer</button>{% endif %}</div>
+            </form>
+          </details>
+          {% endif %}
+        </td>{% endfor %}
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div></div></div>
+{% endblock %}

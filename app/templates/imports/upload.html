@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block title %}Importer - {{ spec.title }} - {{ APP_NAME }}{% endblock %}
+{% block heading %}Importer : {{ spec.title }}{% endblock %}
+{% block topactions %}<a href="{{ url_for(spec.back) }}" class="btn btn--ghost btn--sm">Retour</a>{% endblock %}
+{% block content %}
+{% set step = 1 %}{% include 'imports/_steps.html' %}
+<div class="detail-grid">
+  <div class="panel">
+    <div class="panel__head"><h2>Votre fichier existant</h2></div>
+    <div class="panel__body">
+      <form method="post" enctype="multipart/form-data" class="stack">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="field" style="margin-bottom:0;">
+          <label>Fichier Excel (.xlsx) ou CSV</label>
+          <input type="file" name="file" accept=".xlsx,.xlsm,.csv{{ ',.docx,.odt,.pdf,.txt' if ai_on }}" required>
+          <div class="hint">Déposez votre tableur tel quel : les colonnes n'ont pas besoin de porter nos noms, et la ligne d'en-têtes peut être précédée d'un titre. Vous associerez les colonnes à l'étape suivante. Rien n'est enregistré avant l'aperçu.</div>
+          {% if ai_on %}<div class="ai-note" style="margin-top:8px;">Registre rédigé dans un <b>Word ou un PDF</b> ? Déposez-le aussi : l'assistance IA en extrait les lignes (le document est transmis à Anthropic pour analyse), puis vous suivez le même parcours.</div>{% endif %}
+        </div>
+        <div><button class="btn btn--primary" type="submit">Lire le fichier</button></div>
+      </form>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel__head"><h2>Ce que fait l'import</h2></div>
+    <div class="panel__body stack" style="gap:12px;font-size:13px;">
+      <p style="margin:0;">{{ spec.intro }}</p>
+      <div class="meta-list" style="font-size:12.5px;">
+        {% for f in spec.fields %}<div><span>{{ f.label }}{{ ' *' if f.required }}</span><b style="font-weight:500;">{{ f.hint or 'texte libre' }}</b></div>{% endfor %}
+      </div>
+      <div>
+        <a href="{{ url_for('imports.template', kind=kind) }}" class="btn btn--subtle btn--sm">{{ "Télécharger la DdA actuelle (modèle pré-rempli)" if kind == 'dda' else 'Télécharger un modèle Excel' }}</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

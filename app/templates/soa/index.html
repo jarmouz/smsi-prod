@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+{% from 'partials/macros.html' import control_status, applicability, export_menu with context %}
+{% block title %}Déclaration d'applicabilité - {{ APP_NAME }}{% endblock %}
+{% block heading %}Déclaration d'applicabilité (DdA){% endblock %}
+{% block topactions %}{{ export_menu([('dda', "Déclaration d'applicabilité")]) }}{% if current_user.can_edit %} <a href="{{ url_for('imports.upload', kind='dda') }}" class="btn btn--subtle btn--sm">Importer</a>{% endif %}{% endblock %}
+
+{% block content %}
+{% set can_edit = current_user.can_edit %}
+<div class="kpis" style="grid-template-columns:repeat(4,1fr);margin-bottom:18px;">
+  <div class="kpi kpi--total"><div class="kpi__label">Catalogue</div><div class="kpi__value">{{ stats.total }}</div><div class="kpi__sub">mesures Annexe A:2022</div></div>
+  <div class="kpi kpi--sla"><div class="kpi__label">Retenues</div><div class="kpi__value">{{ stats.applicable }}</div><div class="kpi__sub">applicables</div></div>
+  <div class="kpi kpi--ouvert"><div class="kpi__label">Implémentées</div><div class="kpi__value">{{ stats.implementees }}</div><div class="kpi__sub">mesures en place</div></div>
+  <div class="kpi kpi--bientot"><div class="kpi__label">Exclues</div><div class="kpi__value">{{ stats.exclues }}</div><div class="kpi__sub">avec justification</div></div>
+</div>
+
+<form class="toolbar" method="get">
+  <input type="text" name="q" class="search" placeholder="Rechercher (réf. ou intitulé)…" value="{{ search or '' }}">
+  <select name="theme" onchange="this.form.submit()">
+    <option value="">Tous les thèmes</option>
+    {% for t in Theme %}<option value="{{ t.value }}" {{ 'selected' if f_theme==t.value }}>{{ t.annex }} - {{ t.label }}</option>{% endfor %}
+  </select>
+  <select name="statut" onchange="this.form.submit()">
+    <option value="">Tous statuts</option>
+    {% for s in ControlStatus %}<option value="{{ s.value }}" {{ 'selected' if f_status==s.value }}>{{ s.label }}</option>{% endfor %}
+  </select>
+  <select name="applicable" onchange="this.form.submit()">
+    <option value="">Retenues + exclues</option>
+    <option value="oui" {{ 'selected' if f_appl=='oui' }}>Retenues</option>
+    <option value="non" {{ 'selected' if f_appl=='non' }}>Exclues</option>
+  </select>
+  <button class="btn btn--subtle btn--sm" type="submit">Filtrer</button>
+  {% if search or f_theme or f_status or f_appl %}<a href="{{ url_for('soa.index') }}" class="btn btn--ghost btn--sm">Réinitialiser</a>{% endif %}
+</form>
+
+{% if can_edit %}<p class="muted" style="font-size:12.5px;margin:12px 2px 0;">Cliquez sur une ligne pour modifier l'applicabilité, le statut et la justification directement ici.</p>{% endif %}
+
+{% for theme, controls in grouped.items() %}
+<div class="panel" style="margin-top:14px;">
+  <div class="panel__head"><h2>{{ theme.annex }} - {{ theme.label }}</h2><span class="rail__badge">{{ controls|length }}</span></div>
+  <div class="panel__body--flush"><div class="table-wrap">
+    <table class="grid">
+      <thead><tr><th style="width:70px;">Réf.</th><th>Intitulé</th><th style="width:90px;">Applicab.</th><th style="width:130px;">Statut</th><th style="width:130px;">Responsable</th>{% if can_edit %}<th style="width:80px;"></th>{% endif %}</tr></thead>
+      <tbody>
+        {% for c in controls %}
+        <tr id="c{{ c.id }}"{% if can_edit %} class="row-link" onclick="toggleEdit({{ c.id }}, event)"{% endif %}>
+          <td class="ref">{{ c.annex_ref }}</td>
+          <td class="subj">{{ c.title }}
+            {% if c.risks %}<span class="muted" style="font-size:11px;"> - {{ c.risks|length }} risque(s)</span>{% endif %}
+            {% if c.evidences %}<span class="muted" style="font-size:11px;"> - {{ c.evidences|length }} preuve(s)</span>{% endif %}
+            {% if c.justification %}<div class="muted" style="font-size:11px;">{{ c.justification|truncate(90) }}</div>{% endif %}
+          </td>
+          <td>{{ applicability(c) }}</td>
+          <td>{{ control_status(c.status) }}</td>
+          <td class="muted">{{ c.owner.name if c.owner else '-' }}</td>
+          {% if can_edit %}<td style="text-align:right;"><a href="{{ url_for('soa.detail', control_id=c.id) }}" class="muted" style="font-size:11px;" onclick="event.stopPropagation()">Détail</a></td>{% endif %}
+        </tr>
+        {% if can_edit %}
+        <tr id="edit-c{{ c.id }}" class="edit-row" style="display:none;">
+          <td colspan="6" style="background:var(--paper);">
+            <form method="post" action="{{ url_for('soa.update', control_id=c.id) }}" class="soa-edit">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="next" value="{{ url_for('soa.index', theme=f_theme, statut=f_status, applicable=f_appl, q=search) }}#c{{ c.id }}">
+              <div class="form-grid" style="margin-bottom:10px;">
+                <div class="field"><label>Applicabilité</label>
+                  <select name="applicable">
+                    <option value="oui" {{ 'selected' if c.applicable }}>Retenue (applicable)</option>
+                    <option value="non" {{ 'selected' if not c.applicable }}>Exclue</option>
+                  </select>
+                </div>
+                <div class="field"><label>Statut de mise en œuvre</label>
+                  <select name="status">
+                    {% for s in ControlStatus %}{% if s.value != 'NON_APPLICABLE' %}<option value="{{ s.value }}" {{ 'selected' if c.status==s }}>{{ s.label }}</option>{% endif %}{% endfor %}
+                  </select>
+                </div>
+              </div>
+              <div class="field" style="margin-bottom:10px;"><label>Justification (inclusion / exclusion)</label>
+                <textarea name="justification" rows="2" placeholder="Motif de sélection ou d'exclusion…">{{ c.justification or '' }}</textarea>
+              </div>
+              <div class="field" style="margin-bottom:10px;"><label>Mise en œuvre / référence</label>
+                <textarea name="implementation" rows="2" placeholder="Comment la mesure est appliquée…">{{ c.implementation or '' }}</textarea>
+              </div>
+              <div class="form-grid" style="align-items:end;">
+                <div class="field"><label>Responsable</label>
+                  <select name="owner_id"><option value="">-</option>{% for u in users %}<option value="{{ u.id }}" {{ 'selected' if c.owner_id==u.id }}>{{ u.name }}</option>{% endfor %}</select>
+                </div>
+                <div style="display:flex;gap:8px;justify-content:flex-end;">
+                  <button type="button" class="btn btn--ghost btn--sm" onclick="toggleEdit({{ c.id }}, event)">Annuler</button>
+                  <button type="submit" class="btn btn--primary btn--sm">Enregistrer</button>
+                </div>
+              </div>
+            </form>
+          </td>
+        </tr>
+        {% endif %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div></div>
+</div>
+{% else %}
+<div class="empty" style="margin-top:14px;"><h3>Aucune mesure</h3><p>Aucun résultat pour ces filtres.</p></div>
+{% endfor %}
+
+{% if can_edit %}
+<script>
+function toggleEdit(id, ev) {
+  if (ev) ev.stopPropagation();
+  var row = document.getElementById('edit-c' + id);
+  if (!row) return;
+  row.style.display = (row.style.display === 'none' || !row.style.display) ? 'table-row' : 'none';
+}
+// ouvrir automatiquement la ligne ciblée par l'ancre (#cID) après enregistrement
+window.addEventListener('DOMContentLoaded', function () {
+  if (location.hash && /^#c\d+$/.test(location.hash)) {
+    var el = document.querySelector(location.hash);
+    if (el) el.scrollIntoView({block:'center'});
+  }
+});
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% from 'partials/macros.html' import severity, incident_status %}
+{% block title %}Incidents - {{ APP_NAME }}{% endblock %}
+{% block heading %}Gestion des incidents{% endblock %}
+{% block topactions %}{% if current_user.can_edit %}<a href="{{ url_for('incidents.create') }}" class="btn btn--primary btn--sm">+ Déclarer un incident</a>{% endif %}{% endblock %}
+{% block content %}
+<div class="kpis" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px;">
+  <div class="kpi kpi--ouvert"><div class="kpi__label">Incidents ouverts</div><div class="kpi__value">{{ stats.ouverts }}</div></div>
+  <div class="kpi kpi--retard"><div class="kpi__label">Critiques ouverts</div><div class="kpi__value">{{ stats.critiques }}</div></div>
+  <div class="kpi kpi--total"><div class="kpi__label">Total</div><div class="kpi__value">{{ stats.total }}</div></div>
+</div>
+<form class="toolbar" method="get">
+  <select name="statut" onchange="this.form.submit()"><option value="">Tous statuts</option>{% for x in IncidentStatus %}<option value="{{ x.value }}" {{ 'selected' if f_status==x.value }}>{{ x.label }}</option>{% endfor %}</select>
+  <select name="gravite" onchange="this.form.submit()"><option value="">Toutes gravités</option>{% for x in IncidentSeverity %}<option value="{{ x.value }}" {{ 'selected' if f_sev==x.value }}>{{ x.label }}</option>{% endfor %}</select>
+  {% if f_status or f_sev %}<a href="{{ url_for('incidents.index') }}" class="btn btn--ghost btn--sm">Réinitialiser</a>{% endif %}
+</form>
+<div class="panel" style="margin-top:16px;"><div class="panel__body--flush"><div class="table-wrap">
+  <table class="grid">
+    <thead><tr><th style="width:120px;">Réf.</th><th>Incident</th><th style="width:100px;">Gravité</th><th style="width:100px;">Détecté</th><th style="width:110px;">Statut</th></tr></thead>
+    <tbody>
+      {% for i in incidents %}
+      <tr class="row-link" onclick="window.location='{{ url_for('incidents.detail', incident_id=i.id) }}'">
+        <td class="ref">{{ i.ref }}</td>
+        <td class="subj">{{ i.title }}<div class="muted" style="font-size:11px;">{{ i.category.label }}{% if i.assignee %} - {{ i.assignee.name }}{% endif %}</div></td>
+        <td>{{ severity(i.severity) }}</td>
+        <td class="muted">{{ i.detected_at|d }}</td>
+        <td>{{ incident_status(i.status) }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5"><div class="empty" style="padding:30px;"><h3>Aucun incident</h3><p>Déclarez et suivez les incidents (mesures A.5.24–A.5.28).</p></div></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div></div></div>
+{% endblock %}

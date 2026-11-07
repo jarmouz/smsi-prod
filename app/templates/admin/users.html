@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block title %}Utilisateurs - {{ APP_NAME }}{% endblock %}
+{% block heading %}Utilisateurs{% endblock %}
+{% block content %}
+<div class="detail-grid">
+  <div class="panel">
+    <div class="panel__head"><h2>Comptes</h2><span class="rail__badge">{{ people|length }}</span></div>
+    <div class="panel__body--flush"><div class="table-wrap">
+      <table class="grid">
+        <thead><tr><th>Nom</th><th>Rôle</th><th style="width:70px;">2FA</th><th style="width:80px;">État</th><th style="width:200px;"></th></tr></thead>
+        <tbody>
+          {% for u in people %}
+          <tr>
+            <td class="subj">{{ u.name }}<div class="muted" style="font-size:11.5px;">{{ u.email }}{{ ' - ' + u.job_title if u.job_title }}</div></td>
+            <td class="muted">{{ u.role_label }}{{ ' (lecture seule)' if u.is_readonly }}{% if u.must_change_password %}<div style="font-size:10.5px;">mot de passe à changer</div>{% endif %}</td>
+            <td>{% if u.mfa_enabled %}<span class="appl appl--in">Oui</span>{% else %}<span class="muted">Non</span>{% endif %}</td>
+            <td>{% if u.is_active_flag %}<span class="appl appl--in">Actif</span>{% else %}<span class="appl appl--out">Inactif</span>{% endif %}</td>
+            <td>
+              <details style="display:inline;"><summary class="btn btn--ghost btn--sm" style="list-style:none;">Modifier</summary>
+                <form method="post" action="{{ url_for('admin.update_user', user_id=u.id) }}" class="stack" style="position:absolute;z-index:5;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;box-shadow:var(--shadow-lg);width:260px;margin-top:6px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <div class="field"><label>Nom</label><input type="text" name="name" value="{{ u.name }}"></div>
+                  <div class="field"><label>Fonction</label><input type="text" name="job_title" value="{{ u.job_title or '' }}"></div>
+                  <div class="field"><label>Rôle</label><select name="role">{% for r in Role %}<option value="{{ r.value }}" {{ 'selected' if u.role==r }}>{{ r.label }}</option>{% endfor %}</select></div>
+                  <div class="field"><label>Nouveau mot de passe</label><input type="text" name="password" placeholder="(inchangé)"></div>
+                  <button class="btn btn--primary btn--sm" type="submit">Enregistrer</button>
+                </form>
+              </details>
+              <form method="post" action="{{ url_for('admin.reset_access', user_id=u.id) }}" style="display:inline;" onsubmit="return confirm('Générer un mot de passe temporaire et supprimer la double authentification de {{ u.name }} ?');">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn--ghost btn--sm" type="submit" title="Mot de passe temporaire et double authentification à reconfigurer">Réinitialiser l'accès</button></form>
+              <form method="post" action="{{ url_for('admin.toggle_user', user_id=u.id) }}" style="display:inline;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn--ghost btn--sm" type="submit">{{ 'Désactiver' if u.is_active_flag else 'Activer' }}</button></form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div></div>
+  </div>
+  <div class="panel">
+    <div class="panel__head"><h2>Nouvel utilisateur</h2></div>
+    <div class="panel__body">
+      <form method="post" action="{{ url_for('admin.create_user') }}" class="stack">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="field"><label>Nom *</label><input type="text" name="name" required></div>
+        <div class="field"><label>E-mail *</label><input type="email" name="email" required></div>
+        <div class="field"><label>Fonction</label><input type="text" name="job_title"></div>
+        <div class="field"><label>Rôle</label><select name="role">{% for r in Role %}<option value="{{ r.value }}" {{ 'selected' if r.value=='LECTEUR' }}>{{ r.label }}</option>{% endfor %}</select></div>
+        <div class="field"><label>Mot de passe initial</label><input type="text" name="password" placeholder="Vide : mot de passe temporaire généré"><div class="muted" style="font-size:11px;margin-top:3px;">À changer par l'utilisateur à sa première connexion.</div></div>
+        <button class="btn btn--primary" type="submit">Créer</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

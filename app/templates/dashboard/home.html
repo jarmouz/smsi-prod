@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+{% from 'partials/macros.html' import risk_chip, cell_color, control_chip with context %}
+{% block title %}Tableau de bord - {{ APP_NAME }}{% endblock %}
+{% block heading %}Tableau de bord SMSI{% endblock %}
+
+{% block content %}
+<div class="kpis">
+  <div class="kpi kpi--accent">
+    <div class="kpi__label">Mise en œuvre DdA</div>
+    <div class="kpi__value">{{ soa_rate }}<small>%</small></div>
+    <div class="kpi__sub">{{ implemented_n }}/{{ applicable_n }} mesures retenues</div>
+  </div>
+  <div class="kpi kpi--retard">
+    <div class="kpi__label">Risques élevés</div>
+    <div class="kpi__value">{{ high_risks_n }}</div>
+    <div class="kpi__sub">{{ open_risks_n }} risques ouverts</div>
+  </div>
+  <a class="kpi kpi--ouvert" href="{{ url_for('nonconformities.index', statut='ouvertes') }}" style="text-decoration:none;color:inherit;">
+    <div class="kpi__label">Non-conformités</div>
+    <div class="kpi__value">{{ open_ncs }}</div>
+    <div class="kpi__sub">ouvertes{{ ' - %d majeure(s)'|format(pilot.nc_major) if pilot.nc_major }}</div>
+  </a>
+  <div class="kpi kpi--bientot">
+    <div class="kpi__label">Actions en retard</div>
+    <div class="kpi__value">{{ overdue_actions_n }}</div>
+    <div class="kpi__sub">{{ open_actions_n }} actions ouvertes</div>
+  </div>
+  <div class="kpi kpi--retard">
+    <div class="kpi__label">Incidents ouverts</div>
+    <div class="kpi__value">{{ open_incidents }}</div>
+    <div class="kpi__sub">à traiter</div>
+  </div>
+  <div class="kpi kpi--total">
+    <div class="kpi__label">Documents à revoir</div>
+    <div class="kpi__value">{{ docs_to_review|length }}</div>
+    <div class="kpi__sub">{{ evidence_n }} preuves archivées</div>
+  </div>
+</div>
+<div class="kpis" style="grid-template-columns:repeat(4,1fr);margin-top:-6px;">
+  <a class="kpi kpi--accent" href="{{ url_for('objectives.index') }}" style="text-decoration:none;color:inherit;">
+    <div class="kpi__label">Indicateurs dans la cible</div>
+    <div class="kpi__value">{{ pilot.kpi_ok }}<small>/{{ pilot.kpi_total }}</small></div>
+    <div class="kpi__sub">{{ pilot.kpi_off }} hors cible - {{ pilot.kpi_due }} mesure(s) attendue(s)</div></a>
+  <a class="kpi kpi--total" href="{{ url_for('objectives.index') }}" style="text-decoration:none;color:inherit;">
+    <div class="kpi__label">Objectifs atteints</div>
+    <div class="kpi__value">{{ pilot.obj_reached }}<small>/{{ pilot.obj_total }}</small></div>
+    <div class="kpi__sub">{{ pilot.obj_overdue }} en retard</div></a>
+  <a class="kpi kpi--retard" href="{{ url_for('suppliers.index', ecarts=1) }}" style="text-decoration:none;color:inherit;">
+    <div class="kpi__label">Fournisseurs avec écarts</div>
+    <div class="kpi__value">{{ pilot.sup_gaps }}<small>/{{ pilot.sup_total }}</small></div>
+    <div class="kpi__sub">clauses, DPA, évaluation</div></a>
+  <a class="kpi kpi--ouvert" href="{{ url_for('requirements.index') }}" style="text-decoration:none;color:inherit;">
+    <div class="kpi__label">Exigences à traiter</div>
+    <div class="kpi__value">{{ pilot.req_nok }}<small>/{{ pilot.req_total }}</small></div>
+    <div class="kpi__sub">non conformes ou partielles - {{ pilot.req_todo }} à évaluer</div></a>
+</div>
+
+<div class="two-col">
+  <div class="stack">
+    <div class="panel">
+      <div class="panel__head"><h2>Matrice des risques (résiduel)</h2><div class="spacer"></div><a href="{{ url_for('risks.index') }}" class="btn btn--subtle btn--sm">Registre</a></div>
+      <div class="panel__body">
+        <div style="display:flex;gap:14px;align-items:flex-end;">
+          <div class="axis-label" style="writing-mode:vertical-rl;transform:rotate(180deg);align-self:center;">Vraisemblance</div>
+          <table class="matrix">
+            <tbody>
+              {% for l in range(n_l, 0, -1) %}
+              <tr>
+                <th>{{ l }}</th>
+                {% for i in range(1, n_i + 1) %}
+                {% set cnt = matrix[(l,i)]|length %}
+                <td><div class="cell" style="background:{{ cell_color(l*i) }};{{ 'color:#1F2937;' if risk_level(l*i) == 'modere' }}{{ 'opacity:.28' if cnt==0 }}">{{ cnt if cnt else '' }}</div></td>
+                {% endfor %}
+              </tr>
+              {% endfor %}
+              <tr><th></th>{% for i in range(1, n_i + 1) %}<th>{{ i }}</th>{% endfor %}</tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="axis-label" style="text-align:center;margin-top:6px;padding-left:34px;">Impact</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel__head"><h2>Couverture par thème (Annexe A)</h2></div>
+      <div class="panel__body stack">
+        {% for row in theme_rows %}
+        <div class="statrow">
+          <span class="lbl" style="width:190px;">{{ row.theme.annex }} - {{ row.theme.label }}</span>
+          <span class="bar"><span style="width:{{ row.rate }}%;background:var(--teal-500)"></span></span>
+          <span class="val">{{ row.impl }}/{{ row.total }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="stack">
+    <div class="panel">
+      <div class="panel__head"><h2>DdA - progression</h2></div>
+      <div class="panel__body">
+        <div class="ring-wrap">
+          <div class="ring" style="--p:{{ soa_rate }}"><span>{{ soa_rate }}%</span></div>
+          <div style="font-size:13px;color:var(--text-dim);line-height:1.7;">
+            <div><b style="color:var(--ink-900);font-size:15px;">{{ implemented_n }}</b> implémentées</div>
+            <div><b style="color:var(--ink-900);font-size:15px;">{{ applicable_n }}</b> retenues</div>
+            <div><b style="color:var(--ink-900);font-size:15px;">{{ controls_total }}</b> au catalogue</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel__head"><h2>Risques prioritaires</h2></div>
+      <div class="panel__body--flush">
+        {% if high_risks %}
+        <div class="table-wrap"><table class="grid">
+          <tbody>
+          {% for r in high_risks %}
+          <tr class="row-link" onclick="window.location='{{ url_for('risks.detail', risk_id=r.id) }}'">
+            <td class="ref">{{ r.ref }}</td>
+            <td class="subj">{{ r.title }}</td>
+            <td>{{ risk_chip(r.residual_level) }}</td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table></div>
+        {% else %}
+        <div class="empty" style="padding:26px;"><h3>Aucun risque élevé</h3><p>Rien de critique en attente.</p></div>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if next_review %}
+    <div class="panel"><div class="panel__body" style="display:flex;align-items:center;gap:12px;">
+      <div style="flex:1;"><b style="font-family:var(--font-display);">Prochaine revue de direction</b><div class="muted" style="font-size:12.5px;">{{ next_review.title }} - {{ next_review.review_date|d }}</div></div>
+      <a href="{{ url_for('reviews.detail', review_id=next_review.id) }}" class="btn btn--ghost btn--sm">Voir</a>
+    </div></div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

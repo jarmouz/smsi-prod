@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}Nouvel audit - {{ APP_NAME }}{% endblock %}
+{% block heading %}Nouvel audit interne{% endblock %}
+{% block topactions %}<a href="{{ url_for('audits.index') }}" class="btn btn--ghost btn--sm">Retour</a>{% endblock %}
+
+{% block content %}
+<form method="post" enctype="multipart/form-data" style="max-width:640px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="panel">
+    <div class="panel__head"><h2>Programme d'audit</h2></div>
+    <div class="panel__body stack">
+      <div class="field"><label>Objet de l'audit *</label><input type="text" name="title" required placeholder="Ex. Audit interne annuel du SMSI"></div>
+      <div class="field"><label>Périmètre</label><textarea name="scope" rows="3" placeholder="Processus, sites, clauses et mesures couverts…"></textarea></div>
+      <div class="form-grid">
+        <div class="field"><label>Date planifiée</label><input type="date" name="planned_date"></div>
+        <div class="field"><label>Statut</label><select name="status">{% for s in AuditStatus %}<option value="{{ s.value }}">{{ s.label }}</option>{% endfor %}</select></div>
+      </div>
+      <div class="field"><label>Auditeur responsable</label>
+        <select name="lead_auditor_id"><option value="">-</option>{% for u in users %}<option value="{{ u.id }}">{{ u.name }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Pièces jointes (optionnel)</label><input type="file" name="attachments" multiple><div class="muted" style="font-size:11.5px;margin-top:4px;">Plan d'audit, rapport… D'autres pourront être ajoutés ensuite.</div></div>
+      <div><button class="btn btn--primary" type="submit">Créer l'audit</button></div>
+    </div>
+  </div>
+</form>
+{% endblock %}

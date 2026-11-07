@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% from 'partials/macros.html' import finding_type %}
+{% block title %}Audit interne - {{ APP_NAME }}{% endblock %}
+{% block heading %}Audit interne{% endblock %}
+{% block topactions %}<a href="{{ url_for('audits.programme') }}" class="btn btn--subtle btn--sm">Programme pluriannuel</a> {% if current_user.role.value in ['RSSI','AUDITEUR'] %}<a href="{{ url_for('audits.create') }}" class="btn btn--primary btn--sm">+ Nouvel audit</a>{% endif %}{% endblock %}
+
+{% block content %}
+<div class="two-col">
+  <div class="panel">
+    <div class="panel__head"><h2>Audits</h2><span class="rail__badge">{{ audits|length }}</span></div>
+    <div class="panel__body--flush"><div class="table-wrap">
+      <table class="grid">
+        <thead><tr><th style="width:110px;">Réf.</th><th>Objet</th><th style="width:90px;">Date</th><th style="width:80px;text-align:center;">Constats</th><th style="width:100px;">Statut</th></tr></thead>
+        <tbody>
+          {% for a in audits %}
+          <tr class="row-link" onclick="window.location='{{ url_for('audits.detail', audit_id=a.id) }}'">
+            <td class="ref">{{ a.ref }}</td>
+            <td class="subj">{{ a.title }}{% if a.nc_count %}<span class="muted" style="font-size:11px;"> - {{ a.nc_count }} NC</span>{% endif %}</td>
+            <td class="muted">{{ a.planned_date|d }}</td>
+            <td style="text-align:center;">{{ a.findings|length }}</td>
+            <td class="muted">{{ a.status.label }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="5"><div class="empty" style="padding:28px;"><h3>Aucun audit</h3><p>Planifiez un audit interne.</p></div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel__head"><h2>Actions correctives ouvertes</h2><span class="rail__badge">{{ open_actions|length }}</span></div>
+    <div class="panel__body--flush">
+      {% if open_actions %}
+      <div class="table-wrap"><table class="grid"><tbody>
+        {% for ac in open_actions %}
+        <tr class="row-link" onclick="window.location='{{ url_for('audits.detail', audit_id=ac.finding.audit_id) }}'">
+          <td class="subj">{{ ac.description|truncate(60) }}<div class="muted" style="font-size:11px;">{{ ac.finding.audit.ref }} - {{ ac.finding.ref }}</div></td>
+          <td style="width:96px;" class="{{ 'due-cell' if ac.is_overdue }}">{{ ac.due_date|d }}</td>
+          <td style="width:90px;" class="muted">{{ ac.status.label }}</td>
+        </tr>
+        {% endfor %}
+      </tbody></table></div>
+      {% else %}<div class="empty" style="padding:28px;"><h3>Rien à traiter</h3><p>Aucune action corrective ouverte.</p></div>{% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

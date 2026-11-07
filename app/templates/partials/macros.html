@@ -1,0 +1,172 @@
+{% macro risk_chip(level) -%}
+<span class="risk risk--{{ level }}">{{ risk_level_label(level) }}</span>
+{%- endmacro %}
+
+{% macro control_status(status) -%}
+<span class="cstatus cstatus--{{ status.value }}">{{ status.label }}</span>
+{%- endmacro %}
+
+{% macro finding_type(t) -%}
+<span class="ftype ftype--{{ t.value }}">{{ t.short }}</span>
+{%- endmacro %}
+
+{% macro applicability(c) -%}
+  {% if c.applicable %}<span class="appl appl--in">Retenue</span>{% else %}<span class="appl appl--out">Exclue</span>{% endif %}
+{%- endmacro %}
+
+{% macro control_chip(c) -%}
+<span class="chip"><a href="{{ url_for('soa.detail', control_id=c.id) }}">{{ c.annex_ref }}</a></span>
+{%- endmacro %}
+
+{% macro score_badge(score, level) -%}
+<span class="scorebox" style="background:{{ score_color(level) }}{{ ';color:#1F2937' if level == 'modere' }}">{{ score if score else '-' }}</span>
+{%- endmacro %}
+
+{# couleur d'un niveau de risque #}
+{% macro score_color(level) -%}
+{{ {'faible':'#2A7E4F','modere':'#E8B04A','eleve':'#B4532C','critique':'#C0392B','inconnu':'#5B6676'}[level] }}
+{%- endmacro %}
+
+{# couleur d'une cellule de matrice à partir du score l*i #}
+{% macro cell_color(score) -%}
+{{ score_color(risk_level(score)) }}
+{%- endmacro %}
+
+{# Panneau de pièces jointes réutilisable #}
+{% macro attachments_panel(entity_type, entity_id, items, can_edit, extra=None) %}
+<div class="panel">
+  <div class="panel__head"><h2>Pièces jointes</h2><span class="rail__badge">{{ items|length }}</span></div>
+  <div class="panel__body--flush">
+    {% if items %}
+    <div class="table-wrap"><table class="grid"><tbody>
+      {% for a in items %}
+      <tr>
+        <td style="width:34px;"><span class="filetag filetag--{{ a.ext or 'gen' }}">{{ a.ext or '?' }}</span></td>
+        <td class="subj"><a href="{{ url_for('attachments.download', att_id=a.id) }}">{{ a.filename }}</a>
+          <div class="muted" style="font-size:11px;">{{ a.size_human }}{% if a.uploaded_by %} - {{ a.uploaded_by.name }}{% endif %} - {{ a.uploaded_at|d }}</div></td>
+        {% if can_edit %}
+        <td style="width:40px;text-align:right;">
+          <form method="post" action="{{ url_for('attachments.delete', att_id=a.id) }}" onsubmit="return confirm('Supprimer cette pièce jointe ?');">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            {% if extra %}<input type="hidden" name="audit_id" value="{{ extra }}">{% endif %}
+            <button class="btn btn--ghost btn--sm" type="submit" title="Supprimer">Supprimer</button>
+          </form>
+        </td>{% endif %}
+      </tr>
+      {% endfor %}
+    </tbody></table></div>
+    {% else %}<div class="empty" style="padding:20px;"><p>Aucune pièce jointe.</p></div>{% endif %}
+    {% if can_edit %}
+    <form method="post" action="{{ url_for('attachments.upload', entity_type=entity_type, entity_id=entity_id) }}" enctype="multipart/form-data" style="display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--line);">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      {% if extra %}<input type="hidden" name="audit_id" value="{{ extra }}">{% endif %}
+      <input type="file" name="file" required style="flex:1;font-size:12.5px;">
+      <button class="btn btn--subtle btn--sm" type="submit">Téléverser</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% endmacro %}
+
+{% macro severity(s) -%}
+<span class="sev sev--{{ s.value }}">{{ s.label }}</span>
+{%- endmacro %}
+
+{% macro classification(c) -%}
+<span class="cls cls--{{ c.value }}">{{ c.label }}</span>
+{%- endmacro %}
+
+{% macro incident_status(s) -%}
+<span class="istatus istatus--{{ s.value }}">{{ s.label }}</span>
+{%- endmacro %}
+
+{# Détail des changements d'une entrée du journal : {champ: [avant, après]} #}
+{% macro change_list(changes) -%}
+{%- if changes %}
+<ul style="margin:4px 0 0;padding-left:16px;font-size:11.5px;color:var(--text-dim);">
+  {%- for k, v in changes.items() %}
+  <li><b>{{ FIELD_LABELS.get(k, k) }}</b> : {% if v[0] is not none %}<span style="text-decoration:line-through;">{{ v[0]|truncate(120) }}</span> → {% endif %}{{ (v[1] or '-')|truncate(160) }}</li>
+  {%- endfor %}
+</ul>
+{%- endif %}
+{%- endmacro %}
+
+{# Historique d'un objet (panneau) #}
+{% macro history_panel(entity) -%}
+{%- set items = activity_history(entity) -%}
+<div class="panel">
+  <div class="panel__head"><h2>Historique</h2><span class="rail__badge">{{ items|length }}</span></div>
+  <div class="panel__body">
+    {% for l in items %}
+    <div style="padding:6px 0;{{ 'border-top:1px solid var(--line);' if not loop.first }}">
+      <div style="font-size:12px;"><b>{{ l.action_label }}</b> - {{ l.user_name or 'Système' }} <span class="muted">- {{ l.created_at|dt }}</span></div>
+      {% if l.summary %}<div style="font-size:12px;">{{ l.summary }}</div>{% endif %}
+      {% if l.action != 'create' %}{{ change_list(l.changes) }}{% endif %}
+    </div>
+    {% else %}<p class="muted" style="margin:0;font-size:12.5px;">Aucun événement enregistré.</p>{% endfor %}
+  </div>
+</div>
+{%- endmacro %}
+
+{# État d'acceptation du risque résiduel #}
+{% macro acceptance_chip(r) -%}
+{%- set st = r.acceptance_state -%}
+{%- if st == 'valid' -%}<span class="appl appl--in" title="Accepté par {{ r.accepted_by.name if r.accepted_by else '-' }} le {{ r.accepted_at|d }}">Accepté</span>
+{%- elif st == 'required' -%}<span class="appl appl--out">À accepter</span>
+{%- elif st == 'expired' -%}<span class="appl appl--out">Acceptation expirée</span>
+{%- elif st == 'outdated' -%}<span class="appl appl--out">À ré-accepter</span>
+{%- else -%}<span class="muted" style="font-size:11.5px;">Dans les critères</span>{%- endif -%}
+{%- endmacro %}
+
+{# Menu d'export des livrables (DdA, registre, plan de traitement) #}
+{%- macro export_menu(items) -%}
+<details style="display:inline-block;position:relative;"><summary class="btn btn--subtle btn--sm" style="list-style:none;">Exporter</summary>
+  <div style="position:absolute;right:0;z-index:20;background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow-lg);padding:8px;min-width:250px;">
+  {%- for kind, label in items %}
+    <div style="font-size:11px;font-weight:700;color:var(--text-dim);padding:6px 6px 2px;">{{ label }}</div>
+    <div style="display:flex;gap:6px;padding:0 6px 6px;">
+      {%- for fmt, fl in [('xlsx', 'Excel'), ('pdf', 'PDF'), ('docx', 'Word')] %}{% if fmt != 'pdf' or oo_enabled %}<a class="btn btn--ghost btn--sm" href="{{ url_for('soa.export', kind=kind, fmt=fmt) }}">{{ fl }}</a>{% endif %}{% endfor %}
+    </div>
+  {%- endfor %}
+  </div>
+</details>
+{%- endmacro %}
+
+{# État d'un indicateur : couleur de signal + libellé (jamais la couleur seule) #}
+{% macro kpi_state(state) -%}
+{%- if state == 'ok' -%}<span class="appl appl--in">✓ Atteint</span>
+{%- elif state == 'alerte' -%}<span class="appl" style="background:#FDF3E1;color:#7A5300;">! Alerte</span>
+{%- elif state == 'hors_cible' -%}<span class="appl appl--out">✗ Hors cible</span>
+{%- else -%}<span class="muted" style="font-size:11.5px;">Pas de mesure</span>{%- endif -%}
+{%- endmacro %}
+
+{% macro kpi_trend(t) -%}
+{%- if t == 1 -%}<span title="En amélioration" style="color:var(--sig-green);">▲ amélioration</span>
+{%- elif t == -1 -%}<span title="En dégradation" style="color:var(--sig-red);">▼ dégradation</span>
+{%- elif t == 0 -%}<span class="muted">= stable</span>{%- endif -%}
+{%- endmacro %}
+
+{# Graphique d'un indicateur : série unique (ligne 2px, marqueurs 8px), cible en
+   pointillés étiquetée, seuil d'alerte discret, survol = valeur et période. #}
+{% macro kpi_svg(ind, width=640, height=220) -%}
+{%- set c = kpi_chart(ind, width, height) -%}
+{%- set mini = height <= 80 -%}
+<svg viewBox="0 0 {{ c.width }} {{ c.height }}" width="100%" style="max-width:{{ c.width }}px;display:block;{{ '' if mini else 'overflow:visible;' }}" role="img"
+     aria-label="Évolution de {{ ind.name }} : {{ c.points|length }} mesure(s), cible {{ ind.fmt(ind.target) }}">
+  {%- if not mini %}
+  {%- for t in c.ticks %}<line x1="{{ c.left }}" x2="{{ c.right }}" y1="{{ t.y }}" y2="{{ t.y }}" stroke="var(--line)" stroke-width="1"/>
+  <text x="{{ c.left - 6 }}" y="{{ t.y + 3 }}" text-anchor="end" font-size="10" fill="var(--ink-500)">{{ t.label }}</text>{% endfor %}
+  {%- for p in c.xlabels %}<text x="{{ p.x }}" y="{{ c.bottom + 16 }}" text-anchor="middle" font-size="10" fill="var(--ink-500)">{{ p.short }}</text>{% endfor %}
+  {%- endif %}
+  {%- if c.alert_y is not none and not mini %}<line x1="{{ c.left }}" x2="{{ c.right }}" y1="{{ c.alert_y }}" y2="{{ c.alert_y }}" stroke="var(--sig-amber)" stroke-width="1" stroke-dasharray="2 3"/>
+  <text x="{{ c.right + 4 }}" y="{{ c.alert_y + 3 }}" font-size="10" fill="var(--ink-500)">Alerte</text>{% endif %}
+  <line x1="{{ c.left }}" x2="{{ c.right }}" y1="{{ c.target_y }}" y2="{{ c.target_y }}" stroke="var(--ink-500)" stroke-width="{{ 1 if mini else 1.5 }}" stroke-dasharray="5 4"/>
+  {%- if not mini %}<text x="{{ c.right + 4 }}" y="{{ c.target_y + 3 }}" font-size="10" font-weight="700" fill="var(--ink-900)">Cible</text>{% endif %}
+  {%- if c.points|length > 1 %}<polyline points="{{ c.path }}" fill="none" stroke="var(--acc)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>{% endif %}
+  {%- for p in c.points %}
+  <g>{% if not mini %}<circle cx="{{ p.x }}" cy="{{ p.y }}" r="12" fill="transparent"><title>{{ p.period }} : {{ p.value }}</title></circle>{% endif %}
+    {% if not mini or loop.last %}<circle cx="{{ p.x }}" cy="{{ p.y }}" r="{{ 2.5 if mini else 4 }}" fill="var(--acc)" stroke="var(--surface)" stroke-width="2" pointer-events="none"/>{% endif %}</g>
+  {%- endfor %}
+  {%- if c.points and not mini %}{% set lp = c.points[-1] %}<text x="{{ lp.x }}" y="{{ lp.y - 10 }}" text-anchor="middle" font-size="11" font-weight="700" fill="var(--ink-900)">{{ lp.value }}</text>{% endif %}
+</svg>
+{%- endmacro %}

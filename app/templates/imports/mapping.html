@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block title %}Correspondance - {{ spec.title }} - {{ APP_NAME }}{% endblock %}
+{% block heading %}Importer : {{ spec.title }}{% endblock %}
+{% block topactions %}<form method="post" action="{{ url_for('imports.cancel', kind=kind, token=token) }}" style="display:inline;"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn--ghost btn--sm">Annuler</button></form>{% endblock %}
+{% block content %}
+{% set svgicon_spark = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.6L19.5 10.5l-5.6 1.9L12 18l-1.9-5.6L4.5 10.5l5.6-1.9z"/><path d="M19 3v4M17 5h4"/></svg>' %}
+{% set step = 2 %}{% include 'imports/_steps.html' %}
+
+<form method="post" class="panel" style="margin-bottom:16px;">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="action" value="reload">
+  <div class="panel__body imp-source">
+    <div><span class="muted">Fichier</span><b>{{ st.filename }}</b></div>
+    {% if st.sheets|length > 1 %}
+    <label><span class="muted">Feuille</span>
+      <select name="sheet" onchange="this.form.submit()">{% for s in st.sheets %}<option {{ 'selected' if s == st.sheet }}>{{ s }}</option>{% endfor %}</select>
+    </label>
+    {% else %}<input type="hidden" name="sheet" value="{{ st.sheet }}">{% endif %}
+    <label><span class="muted">En-têtes en ligne</span>
+      <input type="number" name="header_row" min="1" value="{{ st.header_row + 1 }}" style="width:76px;">
+    </label>
+    <button class="btn btn--subtle btn--sm" type="submit">Relire</button>
+    <div class="muted" style="margin-left:auto;">{{ nrows }} ligne(s) de données</div>
+  </div>
+</form>
+
+<form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="panel">
+    <div class="panel__head"><h2>Associer vos colonnes aux champs du SMSI</h2><span class="spacer"></span><span class="muted" style="font-size:12px;">{{ "Proposition de l'IA : vérifiez-la." if st.ai_mapped else "Proposition automatique d'après vos en-têtes : vérifiez-la." }}</span>
+      {% if ai_on %}<button class="btn btn--subtle btn--sm ai-btn" form="ai-form" title="Envoie les en-têtes et quelques valeurs d'exemple à l'IA">{{ svgicon_spark|safe }}Proposer avec l'IA</button>{% endif %}</div>
+    <div class="panel__body--flush"><div class="table-wrap">
+      <table class="grid imp-map">
+        <thead><tr><th style="width:230px;">Champ SMSI</th><th style="width:320px;">Colonne de votre fichier</th><th>Exemples de valeurs</th></tr></thead>
+        <tbody>
+        {% for f in spec.fields %}
+          {% set cur = st.mapping.get(f.key) %}
+          <tr>
+            <td><b>{{ f.label }}</b>{% if f.required %} <span class="imp-req">obligatoire</span>{% endif %}{% if f.hint %}<div class="muted" style="font-size:11.5px;">{{ f.hint }}</div>{% endif %}</td>
+            <td>
+              <select name="f_{{ f.key }}" data-samples="{{ f.key }}" class="{{ 'is-set' if cur is not none }}{{ ' is-ai' if st.ai_mapped and f.key in st.ai_mapped }}">
+                <option value="">- Ne pas importer -</option>
+                {% for h in headers %}<option value="{{ loop.index0 }}" {{ 'selected' if cur == loop.index0 }}>{{ col_letter(loop.index0) }} · {{ h or '(sans en-tête)' }}</option>{% endfor %}
+              </select>
+            </td>
+            <td class="muted imp-samples" id="s_{{ f.key }}">{% if cur is not none %}{{ samples[cur]|join(' · ') or '(colonne vide)' }}{% endif %}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div></div>
+  </div>
+  {% set unused = [] %}
+  {% for h in headers %}{% if loop.index0 not in st.mapping.values() and h %}{% set _ = unused.append(col_letter(loop.index0) ~ ' · ' ~ h) %}{% endif %}{% endfor %}
+  {% if unused %}<p class="muted" style="font-size:12px;margin:10px 2px 0;">Colonnes non importées : {{ unused|join(', ') }}</p>{% endif %}
+  <div style="display:flex;gap:10px;margin-top:16px;">
+    <button class="btn btn--primary" type="submit">Voir l'aperçu</button>
+  </div>
+</form>
+<form method="post" id="ai-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="ai"></form>
+<script>
+(function () {
+  var S = {{ samples|tojson }};
+  document.querySelectorAll('select[data-samples]').forEach(function (sel) {
+    sel.addEventListener('change', function () {
+      var out = document.getElementById('s_' + sel.dataset.samples);
+      var v = sel.value;
+      sel.classList.toggle('is-set', v !== ''); sel.classList.remove('is-ai');
+      out.textContent = v === '' ? '' : (S[+v].join(' · ') || '(colonne vide)');
+    });
+  });
+})();
+</script>
+{% endblock %}

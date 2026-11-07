@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% from 'partials/macros.html' import score_color %}
+{% block title %}Critères de risque - {{ APP_NAME }}{% endblock %}
+{% block heading %}Critères de risque{% endblock %}
+{% block content %}
+{% set nl, ni = crit.scale.likelihood, crit.scale.impact %}
+<p class="muted" style="font-size:12.5px;margin:0 0 14px;max-width:860px;">Méthode d'appréciation et critères d'acceptation des risques de l'organisation (ISO/IEC 27001, 6.1.2 a). Échelle actuelle : <b>{{ nl }} niveaux de vraisemblance × {{ ni }} niveaux d'impact</b>, score de 1 à {{ top }}. Les critères s'appliquent immédiatement à tous les risques, tableaux de bord et exports ; toute modification est tracée dans le journal d'activité.</p>
+
+<div class="panel" style="margin-bottom:16px;">
+  <div class="panel__head"><h2>Taille des échelles</h2><span class="rail__badge">{{ nl }}×{{ ni }}</span></div>
+  <div class="panel__body">
+    <form method="post" action="{{ url_for('admin.risk_scale') }}" class="meta-inline" style="flex-wrap:wrap;gap:12px;align-items:flex-end;"
+          onsubmit="return confirm('Changer la taille des échelles réinitialise les seuils et les descriptions. Continuer ?');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="field" style="margin:0;"><label>Vraisemblance</label><select name="scale_likelihood" style="width:auto;">{% for n in sizes %}<option value="{{ n }}" {{ 'selected' if n == nl }}>{{ n }} niveaux</option>{% endfor %}</select></div>
+      <div class="field" style="margin:0;"><label>Impact</label><select name="scale_impact" style="width:auto;">{% for n in sizes %}<option value="{{ n }}" {{ 'selected' if n == ni }}>{{ n }} niveaux</option>{% endfor %}</select></div>
+      {% if nb_risks %}<label style="display:flex;align-items:center;gap:6px;font-size:12.5px;"><input type="checkbox" name="rescale" value="1" checked style="width:auto;"> Convertir proportionnellement les cotations des {{ nb_risks }} risque(s) existant(s)</label>{% endif %}
+      <button class="btn btn--subtle btn--sm" type="submit">Appliquer</button>
+    </form>
+    <p class="muted" style="font-size:11.5px;margin:8px 0 0;">Exemples courants : 4×4 (score max 16), 5×5 (25), 4×5. La conversion conserve les extrêmes (1 reste 1, le maximum reste le maximum) ; les acceptations de risques dont le score change deviennent caduques et doivent être renouvelées.</p>
+  </div>
+</div>
+
+<form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="detail-grid">
+    <div class="stack">
+      <div class="panel">
+        <div class="panel__head"><h2>Niveaux de risque</h2></div>
+        <div class="panel__body stack">
+          {% for k in keys %}
+          <div class="form-grid">
+            <div class="field"><label>Libellé</label><input type="text" name="label_{{ k }}" value="{{ crit.levels[k].label }}" maxlength="30"></div>
+            <div class="field"><label>Score à partir de</label><input type="number" name="min_{{ k }}" min="1" max="{{ top }}" value="{{ crit.levels[k].min }}" {{ 'readonly' if k == 'faible' }}></div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel__head"><h2>Acceptation</h2></div>
+        <div class="panel__body stack">
+          <div class="field"><label>Seuil d'acceptation : score résiduel maximal acceptable sans acceptation formelle</label><input type="number" name="acceptance" min="1" max="{{ top }}" value="{{ crit.acceptance }}"></div>
+          <p class="muted" style="font-size:12px;margin:0;">Au-delà de ce seuil, le propriétaire du risque doit accepter formellement le risque résiduel (justification et date de validité), ou le traiter davantage.</p>
+        </div>
+      </div>
+      <div><button class="btn btn--primary" type="submit">Enregistrer les critères</button></div>
+    </div>
+    <div class="stack">
+      <div class="panel">
+        <div class="panel__head"><h2>Échelle de vraisemblance</h2><span class="rail__badge">{{ nl }}</span></div>
+        <div class="panel__body stack">{% for i in range(1, nl + 1) %}<div class="field"><label>{{ i }}</label><input type="text" name="likelihood_{{ i }}" value="{{ crit.likelihood[i-1] }}" maxlength="200"></div>{% endfor %}</div>
+      </div>
+      <div class="panel">
+        <div class="panel__head"><h2>Échelle d'impact</h2><span class="rail__badge">{{ ni }}</span></div>
+        <div class="panel__body stack">{% for i in range(1, ni + 1) %}<div class="field"><label>{{ i }}</label><input type="text" name="impact_{{ i }}" value="{{ crit.impact[i-1] }}" maxlength="200"></div>{% endfor %}</div>
+      </div>
+      <div class="panel">
+        <div class="panel__head"><h2>Matrice résultante</h2></div>
+        <div class="panel__body">
+          <table style="border-collapse:collapse;font-size:11px;margin:auto;">
+            {% for l in range(nl, 0, -1) %}<tr><td class="muted" style="padding:2px 6px;">V{{ l }}</td>
+              {% for i in range(1, ni + 1) %}{% set sc = l * i %}<td style="width:38px;height:28px;text-align:center;color:#fff;background:{{ score_color(risk_level(sc)) }};{{ 'outline:2px solid #111;outline-offset:-2px;' if sc <= crit.acceptance }}">{{ sc }}</td>{% endfor %}</tr>{% endfor %}
+            <tr><td></td>{% for i in range(1, ni + 1) %}<td class="muted" style="text-align:center;">I{{ i }}</td>{% endfor %}</tr>
+          </table>
+          <p class="muted" style="font-size:11px;text-align:center;margin:8px 0 0;">Cases encadrées : acceptables selon le seuil d'acceptation.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}

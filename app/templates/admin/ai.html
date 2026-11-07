@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block title %}Assistance IA - {{ APP_NAME }}{% endblock %}
+{% block heading %}Assistance IA{% endblock %}
+{% block content %}
+<div class="detail-grid">
+  <div class="stack">
+    <div class="panel">
+      <div class="panel__head"><h2>État pour l'organisation</h2><div class="spacer"></div>
+        {% if enabled and configured %}<span class="imp-act imp-act--create">Activée</span>{% else %}<span class="imp-act imp-act--same">Désactivée</span>{% endif %}</div>
+      <div class="panel__body stack" style="gap:12px;font-size:13px;">
+        {% if not configured %}
+          <div class="flash flash--warning">La plateforme n'a pas encore de clé d'API Anthropic : l'assistance ne peut pas être activée. L'administrateur de la plateforme la renseigne dans « Plateforme - organisations ».</div>
+        {% elif enabled %}
+          <p style="margin:0;">Activée par <b>{{ by or '-' }}</b> le {{ at or '-' }}.</p>
+          <form method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="disable">
+            <button class="btn btn--ghost">Désactiver l'assistance IA</button></form>
+        {% else %}
+          <form method="post" class="stack" style="gap:12px;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="enable">
+            <label class="ai-consent"><input type="checkbox" name="consent" value="1">
+              <span>J'ai l'accord de l'organisation pour que, <b>lorsqu'un utilisateur clique sur un bouton d'assistance IA</b>, le contenu concerné (en-têtes et exemples de valeurs d'un tableur, document Word ou PDF déposé) soit transmis à <b>Anthropic</b>, sous-traitant établi aux États-Unis, pour analyse par le modèle Claude. Ce traitement doit être couvert par le registre des traitements et les engagements contractuels de l'organisation.</span></label>
+            <div><button class="btn btn--primary">Activer l'assistance IA</button></div>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel__head"><h2>Consommation</h2></div>
+      <div class="panel__body--flush"><div class="table-wrap">
+        <table class="grid">
+          <thead><tr><th>Mois</th><th style="width:110px;">Appels</th><th style="width:150px;">Jetons envoyés</th><th style="width:150px;">Jetons reçus</th></tr></thead>
+          <tbody>{% for when, u in months %}<tr><td>{{ when.strftime('%m/%Y') }}</td><td class="num">{{ u.calls }}</td><td class="num">{{ '{:,}'.format(u.input).replace(',', ' ') }}</td><td class="num">{{ '{:,}'.format(u.output).replace(',', ' ') }}</td></tr>{% endfor %}</tbody>
+        </table>
+      </div></div>
+      <div class="panel__body" style="font-size:12px;padding-top:10px;"><span class="muted">Chaque appel est aussi inscrit au journal d'activité (finalité et volume, jamais le contenu). Modèle : {{ model }}.</span></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel__head"><h2>Ce que fait l'assistance</h2></div>
+    <div class="panel__body stack" style="gap:10px;font-size:13px;">
+      <p style="margin:0;">Elle sert uniquement à la <b>reprise de l'existant</b> et ne fait que <b>proposer</b> : rien n'est enregistré sans passer par l'écran d'aperçu et la validation d'un utilisateur.</p>
+      <ul style="margin:0;padding-left:18px;line-height:1.6;">
+        <li><b>Imports de tableurs</b> : propose la correspondance des colonnes quand les en-têtes sont inhabituels.</li>
+        <li><b>Registre rédigé dans un Word ou un PDF</b> (DdA, inventaire, registre des risques, fournisseurs) : extrait les lignes, qui suivent ensuite le parcours d'import normal.</li>
+        <li><b>Dépôt de documents</b> : propose titre, type, référence, version, date d'approbation, propriétaire, mesures de l'Annexe A concernées et un résumé.</li>
+      </ul>
+      <p class="muted" style="margin:0;font-size:12px;">Aucun envoi automatique : seuls les fichiers sur lesquels un utilisateur lance l'assistance sont transmis. La désactivation est immédiate.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

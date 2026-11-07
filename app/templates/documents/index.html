@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title %}Documents - {{ APP_NAME }}{% endblock %}
+{% block heading %}Gestion documentaire{% endblock %}
+{% block topactions %}{% if current_user.can_edit %}<a href="{{ url_for('imports.docs_start') }}" class="btn btn--subtle btn--sm">Déposer des documents</a> <a href="{{ url_for('documents.create') }}" class="btn btn--primary btn--sm">+ Nouveau document</a>{% endif %}{% endblock %}
+
+{% block content %}
+{% if to_review %}
+<div class="flash flash--warning" style="margin-bottom:14px;">{{ to_review|length }} document(s) à revoir prochainement ou en retard de revue.</div>
+{% endif %}
+
+<form class="toolbar" method="get">
+  <select name="type" onchange="this.form.submit()"><option value="">Tous types</option>{% for t in DocType %}<option value="{{ t.value }}" {{ 'selected' if f_type==t.value }}>{{ t.label }}</option>{% endfor %}</select>
+  <select name="statut" onchange="this.form.submit()"><option value="">Tous statuts</option>{% for s in DocStatus %}<option value="{{ s.value }}" {{ 'selected' if f_status==s.value }}>{{ s.label }}</option>{% endfor %}</select>
+  {% if f_type or f_status %}<a href="{{ url_for('documents.index') }}" class="btn btn--ghost btn--sm">Réinitialiser</a>{% endif %}
+</form>
+
+<div class="panel" style="margin-top:16px;">
+  <div class="panel__body--flush"><div class="table-wrap">
+    <table class="grid">
+      <thead><tr><th style="width:90px;">Réf.</th><th>Titre</th><th style="width:110px;">Type</th><th style="width:60px;">Version</th><th style="width:100px;">Statut</th><th style="width:110px;">Revue</th><th style="width:96px;"></th></tr></thead>
+      <tbody>
+        {% for d in docs %}
+        <tr>
+          <td class="ref">{{ d.ref }}</td>
+          <td class="subj"><a href="{{ url_for('documents.detail', doc_id=d.id) }}">{{ d.title }}</a>{% if d.location %} <a href="{{ d.location }}" target="_blank" class="muted" style="font-size:11px;">lien</a>{% endif %}{% if att_counts.get(d.id) %} <span class="muted" style="font-size:11px;">- {{ att_counts[d.id] }} PJ</span>{% endif %}</td>
+          <td class="muted">{{ d.doc_type.label }}</td>
+          <td class="mono">{{ d.version }}</td>
+          <td class="muted">{{ d.status.label }}{% if d.status.value == 'BROUILLON' and d.versions %}<div style="font-size:10.5px;">v{{ d.versions[0].version }} en vigueur</div>{% endif %}</td>
+          <td class="{{ 'due-cell' if d.review_overdue }}">{{ d.next_review_at|d }}{% if d.review_soon and not d.review_overdue %} <span class="muted">(bientôt)</span>{% endif %}</td>
+          <td>{% if current_user.can_edit %}<a href="{{ url_for('documents.edit', doc_id=d.id) }}" class="btn btn--ghost btn--sm">Modifier</a>{% endif %}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7"><div class="empty" style="padding:30px;"><h3>Aucun document</h3><p>Ajoutez vos politiques et procédures.</p></div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div></div>
+</div>
+{% endblock %}

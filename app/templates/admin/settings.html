@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% block title %}Paramètres - {{ APP_NAME }}{% endblock %}
+{% block heading %}Paramètres{% endblock %}
+{% block content %}
+<div class="detail-grid">
+  <div class="stack">
+    <form method="post" action="{{ url_for('admin.save_settings') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="panel">
+        <div class="panel__head"><h2>Organisation</h2></div>
+        <div class="panel__body">
+          <div class="field"><label>Nom de l'organisation</label><input type="text" name="org_name" value="{{ v.org_name }}"></div>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin:4px 0 12px;"><input type="checkbox" name="mfa_required" {{ 'checked' if v.mfa_required }} style="width:auto;"> Double authentification obligatoire pour tous les utilisateurs</label>
+          <div class="field"><label>URL publique de l'application</label><input type="text" name="app_base_url" value="{{ v.app_base_url }}" placeholder="https://smsi.mondomaine.fr"></div>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:16px;">
+        <div class="panel__head"><h2>Messagerie (SMTP)</h2></div>
+        <div class="panel__body stack">
+          <p class="muted" style="font-size:12px;margin:0;">{% if v.smtp_inherited %}Serveur SMTP de la plateforme utilisé par défaut. {% endif %}Laissez le serveur vide pour utiliser celui de la plateforme ; renseignez-le pour utiliser votre propre configuration complète.</p>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;"><input type="checkbox" name="notifications_enabled" {{ 'checked' if v.notifications_enabled }} style="width:auto;"> Notifications par e-mail activées</label>
+          <div class="form-grid">
+            <div class="field"><label>Serveur SMTP</label><input type="text" name="smtp_host" value="{{ v.smtp_host }}" placeholder="smtp.exemple.fr"></div>
+            <div class="field"><label>Port</label><input type="text" name="smtp_port" value="{{ v.smtp_port }}" placeholder="587"></div>
+          </div>
+          <div class="form-grid">
+            <div class="field"><label>Utilisateur</label><input type="text" name="smtp_username" value="{{ v.smtp_username }}"></div>
+            <div class="field"><label>Mot de passe</label><input type="password" name="smtp_password" placeholder="(inchangé)"></div>
+          </div>
+          <div class="form-grid">
+            <div class="field"><label>Adresse d'expédition</label><input type="text" name="smtp_from_address" value="{{ v.smtp_from_address }}" placeholder="smsi@exemple.fr"></div>
+            <div class="field"><label>Nom d'expéditeur</label><input type="text" name="smtp_from_name" value="{{ v.smtp_from_name }}" placeholder="SMSI"></div>
+          </div>
+          <div class="meta-inline">
+            <label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" name="smtp_use_tls" {{ 'checked' if v.smtp_use_tls }} style="width:auto;"> STARTTLS</label>
+            <label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" name="smtp_use_ssl" {{ 'checked' if v.smtp_use_ssl }} style="width:auto;"> SSL/TLS direct</label>
+          </div>
+          <div><button class="btn btn--primary" type="submit">Enregistrer</button></div>
+        </div>
+      </div>
+    </form>
+  </div>
+  <div class="stack">
+    <div class="panel">
+      <div class="panel__head"><h2>Test d'envoi</h2></div>
+      <div class="panel__body">
+        <form method="post" action="{{ url_for('admin.test_email') }}" class="stack">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="field"><label>Envoyer un test à</label><input type="email" name="test_to" placeholder="{{ current_user.email }}"></div>
+          <button class="btn btn--subtle" type="submit">Envoyer l'e-mail de test</button>
+        </form>
+        <p class="muted" style="font-size:12px;margin-top:10px;">Enregistrez d'abord la configuration SMTP.</p>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel__head"><h2>Stockage des fichiers</h2></div>
+      <div class="panel__body">
+        {% if v.storage_backend == 'webdav' %}
+        <div class="meta-list" style="font-size:12.5px;">
+          <div><span>Backend</span><b>Nextcloud (WebDAV)</b></div>
+          <div><span>Serveur</span><b>{{ v.nc_url or '-' }}</b></div>
+          <div><span>Compte de service</span><b>{{ v.nc_user or '-' }}</b></div>
+          <div><span>Dossier des pièces jointes</span><b>{{ v.nc_folder }}</b></div>
+          <div><span>Dossier Docs</span><b>{{ v.docs_root }}</b></div>
+        </div>
+        <p class="muted" style="font-size:11.5px;margin:10px 0;">Les pièces jointes du SMSI sont stockées dans Nextcloud via un compte de service - transparent pour les utilisateurs.</p>
+        <form method="post" action="{{ url_for('admin.test_nextcloud') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn--subtle" type="submit">Tester la connexion Nextcloud</button>
+        </form>
+        {% else %}
+        <div class="meta-list" style="font-size:12.5px;">
+          <div><span>Backend</span><b>Disque local</b></div>
+        </div>
+        <p class="muted" style="font-size:11.5px;margin-top:10px;">Pour stocker les fichiers dans Nextcloud, définissez <span class="mono">STORAGE_BACKEND=webdav</span> et les variables <span class="mono">NEXTCLOUD_*</span> dans l'environnement, puis redémarrez.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

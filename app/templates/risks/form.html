@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Modifier' if risk else 'Nouveau' }} risque - {{ APP_NAME }}{% endblock %}
+{% block heading %}{{ 'Modifier ' + risk.ref if risk else 'Nouveau risque' }}{% endblock %}
+{% block topactions %}<a href="{{ url_for('risks.index') }}" class="btn btn--ghost btn--sm">Retour</a>{% endblock %}
+
+{% block content %}
+{% set sel = risk.controls|map(attribute='id')|list if risk else [] %}
+<form method="post" class="detail-grid">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="stack">
+    <div class="panel">
+      <div class="panel__head"><h2>Description du risque</h2></div>
+      <div class="panel__body stack">
+        <div class="field"><label>Intitulé *</label><input type="text" name="title" required value="{{ risk.title if risk else '' }}" placeholder="Ex. Compromission de comptes à privilèges"></div>
+        <div class="field"><label>Description</label><textarea name="description" rows="2">{{ risk.description if risk else '' }}</textarea></div>
+        <div class="form-grid">
+          <div class="field"><label>Actif / périmètre</label><input type="text" name="asset" value="{{ risk.asset if risk else '' }}"></div>
+          <div class="field"><label>Menace</label><input type="text" name="threat" value="{{ risk.threat if risk else '' }}"></div>
+        </div>
+        <div class="field"><label>Vulnérabilité</label><input type="text" name="vulnerability" value="{{ risk.vulnerability if risk else '' }}"></div>
+        <div class="field"><label>Actifs de l'inventaire concernés</label>
+          <select name="assets" multiple size="5">{% for a in assets %}<option value="{{ a.id }}" {{ 'selected' if risk and a in risk.assets }}>{{ a.ref }} - {{ a.name|truncate(50) }}</option>{% endfor %}</select>
+          <div class="muted" style="font-size:11px;margin-top:3px;">Ctrl / Cmd + clic pour une sélection multiple. Le champ « Actif / périmètre » reste disponible pour un libellé libre.</div></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel__head"><h2>Évaluation</h2></div>
+      <div class="panel__body stack">
+        <div class="section-title">Risque inhérent (avant traitement)</div>
+        <div class="form-grid">
+          <div class="field"><label>Vraisemblance (1–5)</label>
+            <select name="likelihood">{% for n in range(1, risk_criteria()['scale']['likelihood'] + 1) %}<option value="{{ n }}" {{ 'selected' if risk and risk.likelihood==n or (not risk and n==(risk_criteria()['scale']['likelihood'] + 1) // 2) }}>{{ n }} - {{ risk_criteria()['likelihood'][n-1]|truncate(48) }}</option>{% endfor %}</select></div>
+          <div class="field"><label>Impact (1–5)</label>
+            <select name="impact">{% for n in range(1, risk_criteria()['scale']['impact'] + 1) %}<option value="{{ n }}" {{ 'selected' if risk and risk.impact==n or (not risk and n==(risk_criteria()['scale']['impact'] + 1) // 2) }}>{{ n }} - {{ risk_criteria()['impact'][n-1]|truncate(48) }}</option>{% endfor %}</select></div>
+        </div>
+        <div class="field"><label>Option de traitement</label>
+          <select name="treatment">{% for t in Treatment %}<option value="{{ t.value }}" {{ 'selected' if risk and risk.treatment==t }}>{{ t.label }}</option>{% endfor %}</select></div>
+        <div class="section-title">Risque résiduel (après mesures)</div>
+        <div class="form-grid">
+          <div class="field"><label>Vraisemblance résiduelle</label>
+            <select name="residual_likelihood"><option value="">-</option>{% for n in range(1, risk_criteria()['scale']['likelihood'] + 1) %}<option value="{{ n }}" {{ 'selected' if risk and risk.residual_likelihood==n }}>{{ n }} - {{ risk_criteria()['likelihood'][n-1]|truncate(48) }}</option>{% endfor %}</select></div>
+          <div class="field"><label>Impact résiduel</label>
+            <select name="residual_impact"><option value="">-</option>{% for n in range(1, risk_criteria()['scale']['impact'] + 1) %}<option value="{{ n }}" {{ 'selected' if risk and risk.residual_impact==n }}>{{ n }} - {{ risk_criteria()['impact'][n-1]|truncate(48) }}</option>{% endfor %}</select></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stack">
+    <div class="panel">
+      <div class="panel__head"><h2>Paramètres</h2></div>
+      <div class="panel__body stack">
+        <div class="field"><label>Statut</label>
+          <select name="status">{% for s in RiskStatus %}<option value="{{ s.value }}" {{ 'selected' if risk and risk.status==s }}>{{ s.label }}</option>{% endfor %}</select></div>
+        <div class="field"><label>Propriétaire du risque</label>
+          <select name="owner_id"><option value="">-</option>{% for u in users %}<option value="{{ u.id }}" {{ 'selected' if risk and risk.owner_id==u.id }}>{{ u.name }}</option>{% endfor %}</select></div>
+        <div class="field"><label>Prochaine revue</label>
+          <input type="date" name="review_date" value="{{ risk.review_date.isoformat() if risk and risk.review_date else '' }}"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel__head"><h2>Mesures de traitement (Annexe A)</h2></div>
+      <div class="panel__body">
+        <p class="muted" style="font-size:12px;margin-bottom:8px;">Sélectionnez les mesures qui traitent ce risque.</p>
+        <div class="ctrl-picker">
+          {% for t in Theme %}
+          <div class="section-title" style="margin:6px 0 2px;">{{ t.annex }} - {{ t.label }}</div>
+          {% for c in controls if c.theme == t %}
+          <label><input type="checkbox" name="controls" value="{{ c.id }}" {{ 'checked' if c.id in sel }}><span class="ref">{{ c.annex_ref }}</span><span>{{ c.title }}</span></label>
+          {% endfor %}
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <div><button class="btn btn--primary" type="submit">{{ 'Enregistrer' if risk else 'Créer le risque' }}</button></div>
+  </div>
+</form>
+{% endblock %}

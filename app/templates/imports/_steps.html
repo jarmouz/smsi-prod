@@ -1,0 +1,6 @@
+{# Fil d'étapes de l'import : step = 1 (fichier), 2 (correspondance), 3 (aperçu) #}
+<ol class="imp-steps">
+  {% for n, lbl in [(1, 'Fichier'), (2, 'Correspondance des colonnes'), (3, 'Aperçu et import')] %}
+  <li class="{{ 'is-done' if n < step }}{{ 'is-current' if n == step }}"><span>{{ n }}</span>{{ lbl }}</li>
+  {% endfor %}
+</ol>

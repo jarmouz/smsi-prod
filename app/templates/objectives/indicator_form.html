@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}Indicateur - {{ APP_NAME }}{% endblock %}
+{% block heading %}{{ 'Modifier ' + i.ref if i else 'Nouvel indicateur' }}{% endblock %}
+{% block topactions %}<a href="{{ url_for('objectives.indicator', ind_id=i.id) if i else url_for('objectives.index') }}" class="btn btn--ghost btn--sm">Retour</a>{% endblock %}
+{% block content %}
+<form method="post" style="max-width:760px;">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="panel"><div class="panel__head"><h2>Indicateur (9.1)</h2></div><div class="panel__body stack">
+    <div class="field"><label>Ce qui est mesuré *</label><input type="text" name="name" required value="{{ i.name if i else '' }}" placeholder="Ex. Taux de clic aux campagnes de phishing"></div>
+    <div class="form-grid">
+      <div class="field"><label>Objectif</label><select name="objective_id"><option value="">- (surveillance seule)</option>{% for o in objectives %}<option value="{{ o.id }}" {{ 'selected' if (i and i.objective_id==o.id) or (not i and preset_objective==o.id) }}>{{ o.ref }} - {{ o.title|truncate(50) }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Mesure de l'Annexe A</label><select name="control_id"><option value="">-</option>{% for c in controls %}<option value="{{ c.id }}" {{ 'selected' if i and i.control_id==c.id }}>{{ c.annex_ref }} - {{ c.title|truncate(45) }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="form-grid">
+      <div class="field"><label>Sens</label><select name="direction">{% for x in Direction %}<option value="{{ x.value }}" {{ 'selected' if i and i.direction==x }}>{{ x.label }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Unité</label><input type="text" name="unit" maxlength="24" value="{{ i.unit or '' if i else '' }}" placeholder="%, j, nb..."></div>
+    </div>
+    <div class="form-grid">
+      <div class="field"><label>Cible *</label><input type="text" name="target" required inputmode="decimal" value="{{ i.fmt(i.target).split(' ')[0] if i else '' }}"></div>
+      <div class="field"><label>Seuil d'alerte (optionnel)</label><input type="text" name="alert" inputmode="decimal" value="{{ i.fmt(i.alert).split(' ')[0] if i and i.alert is not none else '' }}"></div>
+    </div>
+    <div class="form-grid">
+      <div class="field"><label>Fréquence de mesure (quand)</label><select name="frequency">{% for x in Frequency %}<option value="{{ x.value }}" {{ 'selected' if i and i.frequency==x }}>{{ x.label }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Mesuré par (qui)</label><select name="owner_id"><option value="">-</option>{% for u in users %}<option value="{{ u.id }}" {{ 'selected' if i and i.owner_id==u.id }}>{{ u.name }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="field"><label>Méthode et source de mesure (comment)</label><textarea name="method" rows="2">{{ i.method if i else '' }}</textarea></div>
+    <div class="field"><label>Analysé et évalué par</label><input type="text" name="analyst" value="{{ i.analyst or '' if i else '' }}" placeholder="Ex. Comité sécurité mensuel"></div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;"><input type="checkbox" name="active" {{ 'checked' if not i or i.active }} style="width:auto;"> Indicateur suivi</label>
+    <div><button class="btn btn--primary" type="submit">Enregistrer</button></div>
+  </div></div>
+</form>
+{% endblock %}

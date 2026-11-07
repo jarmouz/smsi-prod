@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% from 'partials/macros.html' import attachments_panel %}
+{% block title %}{{ 'Modifier' if doc else 'Nouveau' }} document - {{ APP_NAME }}{% endblock %}
+{% block heading %}{{ 'Modifier ' + doc.ref if doc else 'Nouveau document' }}{% endblock %}
+{% block topactions %}<a href="{{ url_for('documents.detail', doc_id=doc.id) if doc else url_for('documents.index') }}" class="btn btn--ghost btn--sm">Retour</a>{% endblock %}
+{% block content %}
+<form method="post" enctype="multipart/form-data" style="max-width:680px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="panel">
+    <div class="panel__head"><h2>Document du SMSI</h2></div>
+    <div class="panel__body stack">
+      <div class="form-grid">
+        <div class="field"><label>Référence</label><input type="text" name="ref" value="{{ doc.ref if doc else '' }}" placeholder="Auto (DOC-00X) si vide"></div>
+        <div class="field"><label>Version</label><input type="text" name="version" value="{{ doc.version if doc else '1.0' }}" {{ 'readonly title="Version gérée par le circuit d\'approbation"' if doc and doc.status.value != 'BROUILLON' }}></div>
+      </div>
+      <div class="field"><label>Titre *</label><input type="text" name="title" required value="{{ doc.title if doc else '' }}"></div>
+      <div class="form-grid">
+        <div class="field"><label>Type</label><select name="doc_type">{% for t in DocType %}<option value="{{ t.value }}" {{ 'selected' if doc and doc.doc_type==t }}>{{ t.label }}</option>{% endfor %}</select></div>
+        <div class="field"><label>Statut</label><input type="text" value="{{ doc.status.label if doc else 'Brouillon' }}" readonly title="Le statut évolue via le circuit d'approbation"></div>
+      </div>
+      <div class="field"><label>Propriétaire</label><select name="owner_id"><option value="">-</option>{% for u in users %}<option value="{{ u.id }}" {{ 'selected' if doc and doc.owner_id==u.id }}>{{ u.name }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Emplacement / lien</label><input type="text" name="location" value="{{ doc.location if doc else '' }}" placeholder="URL ou chemin du fichier"></div>
+      <div class="field"><label>Prochaine revue</label><input type="date" name="next_review_at" value="{{ doc.next_review_at.isoformat() if doc and doc.next_review_at else '' }}"><div class="muted" style="font-size:11.5px;margin-top:4px;">Fixée automatiquement à 12 mois lors de l'approbation si elle est vide ou dépassée.</div></div>
+      <div class="field"><label>Note</label><textarea name="note" rows="2">{{ doc.note if doc else '' }}</textarea></div>
+      {% if not doc %}<div class="field"><label>Pièces jointes (optionnel)</label><input type="file" name="attachments" multiple><div class="muted" style="font-size:11.5px;margin-top:4px;">Vous pouvez joindre le fichier du document dès maintenant. D'autres pourront être ajoutés ensuite.</div></div>{% endif %}
+      <div><button class="btn btn--primary" type="submit">{{ 'Enregistrer' if doc else 'Créer le document' }}</button></div>
+    </div>
+  </div>
+</form>
+{% if doc %}<div style="max-width:680px;margin-top:16px;">{{ attachments_panel('document', doc.id, attachments, current_user.can_edit) }}</div>{% endif %}
+{% endblock %}

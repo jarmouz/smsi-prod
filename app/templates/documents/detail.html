@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% from 'partials/macros.html' import attachments_panel, history_panel with context %}
+{% block title %}{{ d.ref }} - {{ APP_NAME }}{% endblock %}
+{% block heading %}{{ d.ref }} - {{ d.title }}{% endblock %}
+{% block topactions %}<a href="{{ url_for('documents.index') }}" class="btn btn--ghost btn--sm">Retour</a>{% if current_user.can_edit %}<a href="{{ url_for('documents.edit', doc_id=d.id) }}" class="btn btn--primary btn--sm">Modifier</a>{% endif %}{% endblock %}
+{% block content %}
+{% set current = d.versions|selectattr('retired_at', 'none')|first %}
+<div class="detail-grid">
+  <div class="stack">
+    <div class="panel">
+      <div class="panel__head"><h2>Document</h2></div>
+      <div class="panel__body"><div class="meta-list">
+        <div><span>Type</span><b>{{ d.doc_type.label }}</b></div>
+        <div><span>Version de travail</span><b>{{ d.version }} - {{ d.status.label }}</b></div>
+        <div><span>Version en vigueur</span><b>{% if current %}{{ current.version }}, approuvée le {{ current.approved_at|d }} par {{ current.approved_by.name if current.approved_by else '-' }}{% elif d.status.value == 'APPROUVE' %}{{ d.version }} (approuvée le {{ d.approved_at|d }}, avant la mise en place du circuit){% else %}aucune{% endif %}</b></div>
+        <div><span>Propriétaire</span><b>{{ d.owner.name if d.owner else '-' }}</b></div>
+        <div><span>Prochaine revue</span><b class="{{ 'due-cell' if d.review_overdue }}">{{ d.next_review_at|d }}</b></div>
+        {% if d.location %}<div><span>Emplacement</span><b><a href="{{ d.location }}" target="_blank">{{ d.location }}</a></b></div>{% endif %}
+        {% if d.note %}<div><span>Note</span><b>{{ d.note }}</b></div>{% endif %}
+      </div></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel__head"><h2>Historique des versions approuvées</h2><span class="rail__badge">{{ d.versions|length }}</span></div>
+      <div class="panel__body--flush"><div class="table-wrap">
+        <table class="grid">
+          <thead><tr><th style="width:70px;">Version</th><th>Modifications</th><th style="width:150px;">Soumise par</th><th style="width:150px;">Approuvée</th><th style="width:100px;">Statut</th></tr></thead>
+          <tbody>
+          {% for v in d.versions %}
+            <tr><td class="mono">{{ v.version }}</td><td style="font-size:12.5px;">{{ v.change_summary or '-' }}</td>
+              <td class="muted" style="font-size:12px;">{{ v.submitted_by.name if v.submitted_by else '-' }}<div>{{ v.submitted_at|d }}</div></td>
+              <td class="muted" style="font-size:12px;">{{ v.approved_by.name if v.approved_by else '-' }}<div>{{ v.approved_at|d }}</div></td>
+              <td>{% if v.retired_at %}<span class="muted" style="font-size:11.5px;">Remplacée le {{ v.retired_at|d }}</span>{% else %}<span class="appl appl--in">En vigueur</span>{% endif %}</td></tr>
+          {% else %}
+            <tr><td colspan="5" class="muted" style="padding:14px;font-size:12.5px;">Aucune version approuvée via le circuit pour l'instant.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div></div>
+    </div>
+    {{ attachments_panel('document', d.id, attachments, current_user.can_edit) }}
+  </div>
+
+  <div class="stack">
+    <div class="panel">
+      <div class="panel__head"><h2>Circuit d'approbation</h2></div>
+      <div class="panel__body stack">
+        <div class="meta-inline" style="font-size:11.5px;gap:6px;">
+          {% for st, lbl in [('BROUILLON', 'Brouillon'), ('EN_REVUE', 'Soumis'), ('APPROUVE', 'Approuvé')] %}
+          <span class="appl {{ 'appl--in' if d.status.value == st else '' }}" style="{{ '' if d.status.value == st else 'opacity:.5;' }}">{{ lbl }}</span>{% if not loop.last %}<span class="muted">→</span>{% endif %}
+          {% endfor %}
+        </div>
+        {% if d.status.value == 'BROUILLON' %}
+          {% if current_user.can_edit %}
+          <form method="post" action="{{ url_for('documents.submit', doc_id=d.id) }}" class="stack">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="field"><label>Modifications de la version {{ d.version }} *</label><textarea name="change_summary" rows="3" required placeholder="Ex. mise à jour du périmètre suite à l'ouverture du site de Sfax">{{ d.change_summary or '' }}</textarea></div>
+            <div><button class="btn btn--primary btn--sm" type="submit">Soumettre pour approbation</button></div>
+          </form>
+          {% else %}<p class="muted" style="font-size:12.5px;margin:0;">Brouillon en cours de rédaction.</p>{% endif %}
+        {% elif d.status.value == 'EN_REVUE' %}
+          <div class="meta-list" style="font-size:12.5px;">
+            <div><span>Soumis par</span><b>{{ d.submitted_by.name if d.submitted_by else '-' }} le {{ d.submitted_at|dt }}</b></div>
+            <div><span>Modifications</span><b>{{ d.change_summary or '-' }}</b></div>
+          </div>
+          {% if current_user.role.value == 'RSSI' and not current_user.is_readonly %}
+          {% if d.submitted_by_id == current_user.id %}<p class="muted" style="font-size:11.5px;margin:0;">Vous avez soumis cette version : une approbation par une autre personne est recommandée (séparation des tâches).</p>{% endif %}
+          <form method="post" action="{{ url_for('documents.approve', doc_id=d.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn--primary btn--sm" type="submit">Approuver la version {{ d.version }}</button></form>
+          <form method="post" action="{{ url_for('documents.reject', doc_id=d.id) }}" class="stack">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="field"><label>Motif du renvoi</label><input type="text" name="comment" placeholder="Corrections demandées"></div>
+            <div><button class="btn btn--ghost btn--sm" type="submit">Renvoyer en brouillon</button></div>
+          </form>
+          {% else %}<p class="muted" style="font-size:12.5px;margin:0;">En attente d'approbation par le RSSI.</p>{% endif %}
+        {% elif d.status.value == 'APPROUVE' %}
+          <p style="font-size:12.5px;margin:0;">Version {{ d.version }} approuvée{% if d.approved_by %} par {{ d.approved_by.name }}{% endif %} le {{ d.approved_at|d }}.</p>
+          {% if current_user.can_edit %}
+          <form method="post" action="{{ url_for('documents.new_version', doc_id=d.id) }}" class="meta-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <select name="kind" style="width:auto;"><option value="mineure">Version mineure</option><option value="majeure">Version majeure</option></select>
+            <button class="btn btn--subtle btn--sm" type="submit">Créer une nouvelle version</button>
+          </form>
+          {% endif %}
+        {% else %}
+          <p class="muted" style="font-size:12.5px;margin:0;">Document obsolète : retiré de la diffusion, conservé pour la traçabilité.</p>
+        {% endif %}
+        {% if d.status.value != 'OBSOLETE' and current_user.role.value == 'RSSI' and not current_user.is_readonly %}
+        <form method="post" action="{{ url_for('documents.retire', doc_id=d.id) }}" onsubmit="return confirm('Rendre ce document obsolète ?');">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn--ghost btn--sm" type="submit">Rendre obsolète</button></form>
+        {% endif %}
+      </div>
+    </div>
+    {{ history_panel(d) }}
+  </div>
+</div>
+{% endblock %}

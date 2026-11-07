@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+{% block title %}Plateforme - {{ APP_NAME }}{% endblock %}
+{% block heading %}Organisations{% endblock %}
+{% block content %}
+<div class="detail-grid">
+  <div class="stack">
+    <div class="panel">
+      <div class="panel__head"><h2>Organisations clientes</h2><span class="rail__badge">{{ orgs|length }}</span></div>
+      <div class="panel__body--flush"><div class="table-wrap">
+        <table class="grid">
+          <thead><tr><th>Organisation</th><th style="width:90px;">Utilisateurs</th><th style="width:70px;">Risques</th><th style="width:80px;">État</th><th style="width:210px;"></th></tr></thead>
+          <tbody>
+            {% for o in orgs %}
+            <tr>
+              <td class="subj">{{ o.name }}{% if current_org and o.id == current_org.id %} <span class="appl appl--in">courante</span>{% endif %}
+                <div class="muted" style="font-size:11.5px;">{{ o.slug }}{{ ' - Docs : ' + o.docs_folder if o.docs_folder }} - {{ controls.get(o.id, 0) }} mesures</div></td>
+              <td class="muted">{{ users.get(o.id, 0) }}</td>
+              <td class="muted">{{ risks.get(o.id, 0) }}</td>
+              <td>{% if o.is_active %}<span class="appl appl--in">Active</span>{% else %}<span class="appl appl--out">Inactive</span>{% endif %}</td>
+              <td>{% if not readonly %}
+                <form method="post" action="{{ url_for('platform.enter', org_id=o.id) }}" style="display:inline;">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn--primary btn--sm" type="submit">Accéder</button></form>
+                <details style="display:inline;"><summary class="btn btn--ghost btn--sm" style="list-style:none;">Modifier</summary>
+                  <form method="post" action="{{ url_for('platform.update', org_id=o.id) }}" class="stack" style="position:absolute;z-index:5;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;box-shadow:var(--shadow-lg);width:280px;margin-top:6px;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="field"><label>Nom</label><input type="text" name="name" value="{{ o.name }}"></div>
+                    <div class="field"><label>Dossier Docs (Nextcloud)</label><input type="text" name="docs_folder" value="{{ o.docs_folder or '' }}" placeholder="(défaut : SMSI-Organisations/{{ o.slug }})"></div>
+                    <button class="btn btn--primary btn--sm" type="submit">Enregistrer</button>
+                  </form>
+                </details>
+                <form method="post" action="{{ url_for('platform.toggle', org_id=o.id) }}" style="display:inline;">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn--ghost btn--sm" type="submit">{{ 'Désactiver' if o.is_active else 'Activer' }}</button></form>
+              {% endif %}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div></div>
+    </div>
+
+    {% if not readonly %}
+    <div class="panel">
+      <div class="panel__head"><h2>SMTP de la plateforme</h2></div>
+      <div class="panel__body">
+        <form method="post" action="{{ url_for('platform.save_smtp') }}" class="stack">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <p class="muted" style="font-size:12px;margin:0;">Utilisé par toutes les organisations qui n'ont pas configuré leur propre serveur.</p>
+          <div class="form-grid">
+            <div class="field"><label>Serveur SMTP</label><input type="text" name="smtp_host" value="{{ smtp.smtp_host }}"></div>
+            <div class="field"><label>Port</label><input type="text" name="smtp_port" value="{{ smtp.smtp_port }}" placeholder="587"></div>
+          </div>
+          <div class="form-grid">
+            <div class="field"><label>Utilisateur</label><input type="text" name="smtp_username" value="{{ smtp.smtp_username }}"></div>
+            <div class="field"><label>Mot de passe</label><input type="password" name="smtp_password" placeholder="(inchangé)"></div>
+          </div>
+          <div class="form-grid">
+            <div class="field"><label>Adresse d'expédition</label><input type="text" name="smtp_from_address" value="{{ smtp.smtp_from_address }}"></div>
+            <div class="field"><label>Nom d'expéditeur</label><input type="text" name="smtp_from_name" value="{{ smtp.smtp_from_name }}" placeholder="SMSI"></div>
+          </div>
+          <div class="meta-inline">
+            <label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" name="smtp_use_tls" {{ 'checked' if smtp.smtp_use_tls != '0' }} style="width:auto;"> STARTTLS</label>
+            <label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" name="smtp_use_ssl" {{ 'checked' if smtp.smtp_use_ssl == '1' }} style="width:auto;"> SSL/TLS direct</label>
+          </div>
+          <div><button class="btn btn--primary" type="submit">Enregistrer</button></div>
+        </form>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel__head"><h2>Assistance IA (Anthropic)</h2><div class="spacer"></div>{% if ai_key %}<span class="imp-act imp-act--create">Clé configurée</span>{% else %}<span class="imp-act imp-act--same">Non configurée</span>{% endif %}</div>
+      <div class="panel__body">
+        <form method="post" action="{{ url_for('platform.save_ai') }}" class="stack">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <p class="muted" style="font-size:12px;margin:0;">Clé de l'API Claude utilisée par l'assistance à la reprise de l'existant. L'assistance reste désactivée dans chaque organisation tant que son RSSI ne l'a pas activée (Administration › Assistance IA).</p>
+          <div class="field" style="margin-bottom:0;"><label>Clé d'API</label><input type="password" name="ai_api_key" autocomplete="off" placeholder="{{ ai_key or 'sk-ant-…' }}"><div class="hint">La clé est vérifiée auprès d'Anthropic avant d'être enregistrée. Laissez vide puis « Vérifier » pour tester la clé actuelle.</div></div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="btn btn--primary" type="submit" name="action" value="save">Enregistrer / vérifier</button>
+            {% if ai_key %}<button class="btn btn--ghost" type="submit" name="action" value="remove" onclick="return confirm('Supprimer la clé ? L\'assistance IA sera coupée pour toutes les organisations.');">Supprimer la clé</button>{% endif %}
+          </div>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if readonly %}
+  <div class="panel">
+    <div class="panel__head"><h2>Mode consultation</h2></div>
+    <div class="panel__body"><p class="muted" style="font-size:12.5px;margin:0;">Ce compte de démonstration voit la console d'administration en lecture seule. La plateforme gère plusieurs organisations totalement cloisonnées : chacune dispose de ses propres données, utilisateurs, documents et paramètres.</p></div>
+  </div>
+  {% else %}
+  <div class="stack">
+  <div class="panel">
+    <div class="panel__head"><h2>Organisation de démonstration</h2></div>
+    <div class="panel__body stack">
+      <p class="muted" style="font-size:12px;margin:0;">Entreprise fictive « {{ demo_content.ORG_NAME }} » : SMSI complet en phase de pré-certification (93 mesures, risques, audits, revues, incidents, documents et fichiers Docs).</p>
+      {% if demo %}
+      <div class="meta-list" style="font-size:12.5px;">
+        <div><span>Prospects (lecture seule)</span><b class="mono">{{ demo_content.PROSPECT[0] }}@{{ demo_content.DOMAIN }}</b></div>
+        <div><span>Mot de passe prospects</span><b class="mono">{{ demo_content.PROSPECT_PASSWORD }}</b></div>
+        <div><span>Admin démo (lecture seule)</span><b class="mono">{{ demo_content.DEMO_ADMIN[0] }}@{{ demo_content.DOMAIN }} / {{ demo_content.DEMO_ADMIN_PASSWORD }}</b></div>
+        <div><span>Équipe de démo</span><b>&lt;rôle&gt;@{{ demo_content.DOMAIN }}</b></div>
+        <div><span>Mot de passe équipe</span><b class="mono">{{ demo_content.DEMO_PASSWORD }}</b></div>
+        <div><span>Rôles</span><b>{{ demo_content.USERS.keys()|join(', ') }}</b></div>
+      </div>
+      <p class="muted" style="font-size:11.5px;margin:0;">Ne communiquez aux prospects que le compte prospects : les comptes de l'équipe peuvent modifier la démo.</p>
+      {% endif %}
+      <form method="post" action="{{ url_for('platform.load_demo') }}" onsubmit="return {{ 'confirm(\'Effacer et recharger toutes les données de la démo ?\')' if demo else 'true' }};">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn {{ 'btn--subtle' if demo else 'btn--primary' }}" type="submit">{{ 'Réinitialiser la démo' if demo else 'Créer la démo' }}</button>
+      </form>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel__head"><h2>Nouvelle organisation</h2></div>
+    <div class="panel__body">
+      <form method="post" action="{{ url_for('platform.create') }}" class="stack">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="field"><label>Nom *</label><input type="text" name="name" required></div>
+        <div class="field"><label>Identifiant (slug)</label><input type="text" name="slug" placeholder="généré depuis le nom"></div>
+        <div class="field"><label>Dossier Docs (Nextcloud)</label><input type="text" name="docs_folder" placeholder="défaut : SMSI-Organisations/&lt;slug&gt;"></div>
+        <div class="rail__section" style="padding:6px 0 0;">Premier RSSI (facultatif)</div>
+        <div class="field"><label>Nom</label><input type="text" name="admin_name"></div>
+        <div class="field"><label>E-mail</label><input type="email" name="admin_email"></div>
+        <div class="field"><label>Mot de passe</label><input type="text" name="admin_password" placeholder="Vide : mot de passe temporaire généré"></div>
+        <p class="muted" style="font-size:11.5px;margin:0;">Le catalogue des 93 mesures de l'Annexe A est créé automatiquement.</p>
+        <button class="btn btn--primary" type="submit">Créer</button>
+      </form>
+    </div>
+  </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

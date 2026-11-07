@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% block title %}Docs - {{ APP_NAME }}{% endblock %}
+{% block heading %}Espace documentaire{% endblock %}
+{% block content %}
+{% set can_edit = current_user.can_edit %}
+
+<div class="toolbar" style="justify-content:space-between;">
+  <nav class="crumbs">
+    {% for cr in crumbs %}
+      {% if not loop.last %}<a href="{{ url_for('docs.browse', rel=cr.rel) if cr.rel else url_for('docs.browse') }}">{{ cr.name }}</a><span class="sep">/</span>
+      {% else %}<b>{{ cr.name }}</b>{% endif %}
+    {% endfor %}
+  </nav>
+  {% if can_edit and not error %}
+  <div style="display:flex;gap:8px;">
+    <form method="post" action="{{ url_for('docs.mkdir') }}" style="display:flex;gap:6px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="rel" value="{{ rel }}">
+      <input type="text" name="name" placeholder="Nouveau dossier" style="width:auto;">
+      <button class="btn btn--subtle btn--sm" type="submit">Créer</button>
+    </form>
+    <form method="post" action="{{ url_for('docs.upload') }}" enctype="multipart/form-data" style="display:flex;gap:6px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="rel" value="{{ rel }}">
+      <input type="file" name="files" multiple required style="width:auto;font-size:12.5px;">
+      <button class="btn btn--primary btn--sm" type="submit">Téléverser</button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+
+{% if error %}
+<div class="flash flash--danger" style="margin-top:14px;">{{ error }}</div>
+{% else %}
+<div class="panel" style="margin-top:14px;">
+  <div class="panel__body--flush"><div class="table-wrap">
+    <table class="grid">
+      <thead><tr><th style="width:40px;"></th><th>Nom</th><th style="width:110px;">Taille</th><th style="width:180px;">Modifié</th>{% if can_edit %}<th style="width:44px;"></th>{% endif %}</tr></thead>
+      <tbody>
+        {% if rel %}
+        <tr class="row-link" onclick="window.location='{{ url_for('docs.browse', rel=rel.rsplit('/',1)[0]) if '/' in rel else url_for('docs.browse') }}'">
+          <td></td><td class="subj muted">Dossier parent</td><td></td><td></td>{% if can_edit %}<td></td>{% endif %}
+        </tr>
+        {% endif %}
+        {% for e in entries %}
+        <tr {% if e.is_dir %}class="row-link" onclick="window.location='{{ url_for('docs.browse', rel=e.rel) }}'"{% endif %}>
+          <td>{% if e.is_dir %}<span class="ficon ficon--dir"></span>{% else %}<span class="filetag filetag--{{ e.name.rsplit('.',1)[-1]|lower if '.' in e.name else 'gen' }}">{{ e.name.rsplit('.',1)[-1]|lower if '.' in e.name else '?' }}</span>{% endif %}</td>
+          <td class="subj">
+            {% if e.is_dir %}{{ e.name }}
+            {% else %}<a href="{{ url_for('docs.download', rel=e.rel) }}">{{ e.name }}</a>
+              {% if oo_enabled and oo_editable(e.name) %}<a href="{{ url_for('onlyoffice.edit', rel=e.rel) }}" class="btn btn--ghost btn--sm" style="margin-left:8px;">Éditer</a>{% endif %}
+            {% endif %}
+          </td>
+          <td class="muted">{{ human_size(e.size) if not e.is_dir else '-' }}</td>
+          <td class="muted" style="font-size:12px;">{{ e.mtime or '' }}</td>
+          {% if can_edit %}
+          <td style="text-align:right;" onclick="event.stopPropagation()">
+            <form method="post" action="{{ url_for('docs.delete') }}" onsubmit="return confirm('Supprimer « {{ e.name }} » ?');">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="target" value="{{ e.rel }}">
+              <button class="btn btn--ghost btn--sm" type="submit" title="Supprimer">Supprimer</button>
+            </form>
+          </td>
+          {% endif %}
+        </tr>
+        {% else %}
+        <tr><td colspan="{{ 5 if can_edit else 4 }}"><div class="empty" style="padding:30px;"><h3>Dossier vide</h3><p>{% if can_edit %}Téléversez un fichier ou créez un dossier.{% else %}Aucun document ici.{% endif %}</p></div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div></div>
+</div>
+<p class="muted" style="font-size:11.5px;margin-top:10px;">Ces fichiers sont stockés dans Nextcloud (dossier partagé), accessibles directement ici.</p>
+{% endif %}
+{% endblock %}

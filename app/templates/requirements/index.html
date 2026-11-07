@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% from 'partials/macros.html' import export_menu with context %}
+{% block title %}Exigences légales et contractuelles - {{ APP_NAME }}{% endblock %}
+{% block heading %}Exigences légales, réglementaires et contractuelles{% endblock %}
+{% block topactions %}{{ export_menu([('exigences', 'Registre des exigences')]) }} {% if current_user.can_edit %}<a href="{{ url_for('requirements.create') }}" class="btn btn--primary btn--sm">+ Exigence</a>{% endif %}{% endblock %}
+{% macro compliance(st) -%}
+{%- if st.value == 'CONFORME' -%}<span class="appl appl--in">✓ Conforme</span>
+{%- elif st.value == 'NON_CONFORME' -%}<span class="appl appl--out">✗ Non conforme</span>
+{%- elif st.value == 'PARTIEL' -%}<span class="appl" style="background:#FDF3E1;color:#7A5300;">! Partiel</span>
+{%- else -%}<span class="muted" style="font-size:11.5px;">À évaluer</span>{%- endif -%}
+{%- endmacro %}
+{% block content %}
+<div class="kpis" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px;">
+  <div class="kpi kpi--total"><div class="kpi__label">Exigences recensées</div><div class="kpi__value">{{ stats.total }}</div></div>
+  <div class="kpi kpi--sla"><div class="kpi__label">Conformes</div><div class="kpi__value">{{ stats.CONFORME }}</div></div>
+  <div class="kpi kpi--retard"><div class="kpi__label">Non conformes / partielles</div><div class="kpi__value">{{ stats.NON_CONFORME + stats.PARTIEL }}</div><div class="kpi__sub">{{ stats.A_EVALUER }} à évaluer</div></div>
+  <div class="kpi kpi--retard"><div class="kpi__label">Revues en retard</div><div class="kpi__value">{{ stats.overdue }}</div></div>
+</div>
+<form class="toolbar" method="get">
+  <select name="type" onchange="this.form.submit()"><option value="">Tous types</option>{% for x in RequirementType %}<option value="{{ x.value }}" {{ 'selected' if f_type==x.value }}>{{ x.label }}</option>{% endfor %}</select>
+  <select name="statut" onchange="this.form.submit()"><option value="">Toutes conformités</option>{% for x in ComplianceStatus %}<option value="{{ x.value }}" {{ 'selected' if f_status==x.value }}>{{ x.label }}</option>{% endfor %}</select>
+  {% if f_type or f_status %}<a href="{{ url_for('requirements.index') }}" class="btn btn--ghost btn--sm">Réinitialiser</a>{% endif %}
+</form>
+<div class="panel" style="margin-top:16px;"><div class="panel__body--flush"><div class="table-wrap">
+  <table class="grid">
+    <thead><tr><th style="width:85px;">Réf.</th><th>Exigence</th><th>Obligation et mise en conformité</th><th style="width:150px;">Mesures</th><th style="width:130px;">Conformité</th>{% if current_user.can_edit %}<th style="width:80px;"></th>{% endif %}</tr></thead>
+    <tbody>
+    {% for r in reqs %}
+      <tr id="r{{ r.id }}">
+        <td class="ref">{{ r.ref }}</td>
+        <td class="subj">{{ r.title }}<div class="muted" style="font-size:11px;">{{ r.req_type.label }}{{ ' - ' + r.source if r.source }}{{ ' - ' + r.issuer if r.issuer }}{% if r.party %} - <a href="{{ url_for('context.index') }}#parties">{{ r.party.name }}</a>{% endif %}</div></td>
+        <td style="font-size:12px;">{{ r.obligation or '' }}{% if r.response %}<div class="muted">→ {{ r.response }}</div>{% endif %}</td>
+        <td>{% for c in r.controls %}<a class="chip" href="{{ url_for('soa.detail', control_id=c.id) }}">{{ c.annex_ref }}</a> {% else %}<span class="muted">-</span>{% endfor %}</td>
+        <td>{{ compliance(r.status) }}<div class="{{ 'due-cell' if r.review_overdue }}" style="font-size:11px;">{{ 'revue ' ~ (r.next_review|d) if r.next_review }}</div></td>
+        {% if current_user.can_edit %}<td><a class="btn btn--ghost btn--sm" href="{{ url_for('requirements.edit', req_id=r.id) }}">Modifier</a></td>{% endif %}
+      </tr>
+    {% else %}
+      <tr><td colspan="6"><div class="empty" style="padding:30px;"><h3>Aucune exigence</h3><p>Recensez les exigences légales, réglementaires et contractuelles applicables (A.5.31).</p></div></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div></div></div>
+{% endblock %}
