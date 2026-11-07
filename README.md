@@ -69,6 +69,33 @@ Normes disponibles (3.2) :
 | ISO 9001:2015 | 63 exigences (chapitres 4 à 10) | Qualité : cartographie des processus, satisfaction client, réclamations ; risques qualité et opportunités, produits non conformes (dans les registres communs) |
 
 Catalogues et correspondances (96) : `app/services/catalogue_data.py`.
+
+### Socle commun SMI (3.4) : pas de double évaluation
+
+Les chapitres 4 à 10 des normes ISO de systèmes de management suivent la même
+**structure harmonisée** (annexe SL) : contexte, parties intéressées, politique,
+rôles, risques et opportunités, objectifs, ressources, compétences,
+sensibilisation, communication, informations documentées, audit interne, revue
+de direction, non-conformités, amélioration. Ces 26 exigences communes forment le
+**socle commun** (onglet « Socle commun SMI » de la DdA), présent pour chaque
+organisation et évalué **une seule fois**.
+
+Chaque exigence de l'ISO 9001, de l'ISO 22301 et de l'ISO/IEC 20000-1 est rattachée
+au socle (`COMMON` dans `catalogue_data.py`) :
+
+| Relation | Sens | Dans l'application |
+|---|---|---|
+| commune | texte de la structure harmonisée, couvert par le socle | **héritée** : statut, applicabilité et responsable recopiés du socle, preuves du socle visibles ; seule une précision propre à la norme se saisit |
+| complément | le socle couvre la partie commune, la norme ajoute des exigences | évaluée dans la norme, le socle sert de base |
+| (aucune) | exigence propre à la norme (chapitre 8 métier, orientation client...) | évaluée dans la norme |
+
+Pour l'ISO/IEC 27001, 27701 et 42001, seules les annexes de mesures sont
+cataloguées : le socle tient lieu de leurs chapitres 4 à 10. Une exigence
+« commune » déjà évaluée avant la 3.4 n'est pas écrasée : elle reste « évaluée
+séparément » et peut être rattachée au socle (bouton « Évaluer via le socle
+commun » ; si le socle est encore vide, l'évaluation y est reprise avec ses
+preuves). Les registres communs (audits, revues, documents, objectifs,
+non-conformités) étaient déjà partagés entre normes.
 Une base neuve s'initialise avec `flask init-platform` (organisation + RSSI) ;
 `flask init-db` est réservé au développement (il efface tout).
 

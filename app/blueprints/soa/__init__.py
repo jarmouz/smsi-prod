@@ -56,10 +56,16 @@ def index():
         "exclues": len(allc) - len(appl),
         "implementees": len([c for c in appl if c.status == ControlStatus.IMPLEMENTE]),
     }
+    if fw.kind == "common":
+        stats["socle"] = fw_svc.socle_stats()
+    elif fw.kind == "requirements":
+        stats["heritees"] = sum(1 for c in allc if c.inherited)
+    rels = {c.id: fw_svc.common_relation(c) for c in controls} if fw.kind == "requirements" else {}
+    heirs = {c.id: fw_svc.heirs(c) for c in controls} if fw.kind == "common" else {}
     users = User.query.filter_by(is_active_flag=True).order_by(User.name).all()
     return render_template("soa/index.html", grouped=grouped, stats=stats, users=users,
                            f_theme=f_theme, f_status=f_status, f_appl=f_appl, search=search,
-                           fw=fw, fws=fws, norme=norme, groups=groups)
+                           fw=fw, fws=fws, norme=norme, groups=groups, rels=rels, heirs=heirs)
 
 
 @bp.route("/<int:control_id>")
@@ -69,13 +75,22 @@ def detail(control_id):
     users = User.query.filter_by(is_active_flag=True).order_by(User.name).all()
     from app.services import frameworks as fw_svc
     return render_template("soa/detail.html", c=c, users=users, corresp=fw_svc.correspondences(c),
-                           norme=None if c.framework.code == fw_svc.CORE else c.framework.code)
+                           norme=None if c.framework.code == fw_svc.CORE else c.framework.code,
+                           rel=fw_svc.common_relation(c),
+                           heirs=fw_svc.heirs(c) if c.framework.kind == "common" else [])
 
 
 @bp.route("/<int:control_id>/modifier", methods=["POST"])
 @editor_required
 def update(control_id):
     c = db.session.get(Control, control_id) or abort(404)
+    from app.services import frameworks as fw_svc
+    if c.inherited:
+        # Évaluation tenue dans le socle commun : seul le complément propre à la norme est saisi ici
+        c.implementation = (request.form.get("implementation") or "").strip() or None
+        db.session.commit()
+        flash(f"Exigence {c.annex_ref} : complément enregistré (évaluation tenue dans le socle commun).", "success")
+        return redirect(request.form.get("next") or url_for("soa.detail", control_id=c.id))
     c.applicable = request.form.get("applicable") == "oui"
     try:
         c.status = ControlStatus(request.form.get("status"))
@@ -87,11 +102,28 @@ def update(control_id):
     c.implementation = (request.form.get("implementation") or "").strip() or None
     owner_id = request.form.get("owner_id", type=int)
     c.owner_id = owner_id or None
+    if c.framework.kind == "common":
+        fw_svc.propagate(c)
     db.session.commit()
     flash(f"Mesure {c.annex_ref} mise à jour.", "success")
     nxt = request.form.get("next")
     if nxt:
         return redirect(nxt)
+    return redirect(url_for("soa.detail", control_id=c.id))
+
+
+@bp.route("/<int:control_id>/socle", methods=["POST"])
+@editor_required
+def socle(control_id):
+    """Rattache une exigence à l'évaluation du socle commun, ou l'en détache."""
+    c = db.session.get(Control, control_id) or abort(404)
+    from app.services import frameworks as fw_svc
+    if not c.common_id:
+        abort(400)
+    on = request.form.get("action") == "heriter"
+    fw_svc.set_inherit(c, on)
+    db.session.commit()
+    flash(f"Exigence {c.annex_ref} : " + ("évaluée dans le socle commun." if on else "évaluée séparément dans la norme."), "success")
     return redirect(url_for("soa.detail", control_id=c.id))
 
 

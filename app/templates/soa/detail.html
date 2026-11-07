@@ -7,8 +7,54 @@
 {% block content %}
 <div class="detail-grid">
   <div class="stack">
+    {% if c.framework.kind == 'common' %}
+    <div class="panel socle-note"><div class="panel__body">
+      <b>Exigence commune du système de management intégré.</b> Évaluée une seule fois ici, elle vaut pour toutes les normes actives{% if heirs %} : {% for h in heirs %}{{ h.framework.short_name }} §{{ h.ref }}{{ ', ' if not loop.last }}{% endfor %}{% endif %}. Le statut, l'applicabilité et le responsable sont recopiés dans les exigences qui en héritent ; les preuves rattachées ici leur sont communes.
+    </div></div>
+    {% elif rel %}
+    {% set s = c.common %}
+    <div class="panel socle-note"><div class="panel__body">
+      {% if c.inherited %}
+        <b>Exigence commune : évaluée dans le socle commun.</b> Elle reprend l'évaluation du <a href="{{ url_for('soa.detail', control_id=s.id) }}">socle §{{ s.ref }} - {{ s.title }}</a> : pas de double saisie.
+      {% elif rel[1] == 'complement' %}
+        <b>Socle + complément.</b> La partie commune est évaluée dans le <a href="{{ url_for('soa.detail', control_id=s.id) }}">socle §{{ s.ref }}</a> ({{ s.status.label|lower }}) ; évaluez ici uniquement ce que la {{ c.framework.short_name }} ajoute.
+      {% else %}
+        <b>Exigence commune évaluée séparément.</b> Elle relève du <a href="{{ url_for('soa.detail', control_id=s.id) }}">socle §{{ s.ref }}</a> ({{ s.status.label|lower }}) mais garde ici sa propre évaluation.
+      {% endif %}
+      {% if current_user.can_edit and rel[1] == 'commune' %}
+      <form method="post" action="{{ url_for('soa.socle', control_id=c.id) }}" style="margin-top:10px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        {% if c.inherited %}<input type="hidden" name="action" value="separer"><button class="btn btn--ghost btn--sm" type="submit" onclick="return confirm('Évaluer cette exigence séparément du socle commun ?')">Évaluer séparément</button>
+        {% else %}<input type="hidden" name="action" value="heriter"><button class="btn btn--subtle btn--sm" type="submit">Évaluer via le socle commun</button>
+        <span class="muted" style="font-size:11.5px;">{{ "le socle n'étant pas encore évalué, cette évaluation y sera reprise" if s.status.value == 'NON_DEMARRE' and not s.implementation and c.status.value != 'NON_DEMARRE' else "l'évaluation du socle remplacera celle-ci" }}</span>{% endif %}
+      </form>
+      {% endif %}
+    </div></div>
+    {% endif %}
+    {% if c.inherited %}
+    {% set s = c.common %}
     <div class="panel">
-      <div class="panel__head"><h2>Déclaration d'applicabilité</h2></div>
+      <div class="panel__head"><h2>Évaluation (socle §{{ s.ref }})</h2></div>
+      <div class="panel__body">
+        <div class="meta-list">
+          <div><span>Applicabilité</span><b>{{ applicability(s) }}</b></div>
+          <div><span>Statut</span><b>{{ control_status(s.status) }}</b></div>
+          <div><span>Mise en œuvre</span><b style="white-space:pre-line;">{{ s.implementation or '-' }}</b></div>
+          <div><span>Responsable</span><b>{{ s.owner.name if s.owner else '-' }}</b></div>
+        </div>
+        {% if current_user.can_edit %}
+        <form method="post" action="{{ url_for('soa.update', control_id=c.id) }}" class="stack" style="margin-top:14px;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="field"><label>Précision propre à la {{ c.framework.short_name }} (facultatif)</label>
+            <textarea name="implementation" rows="2" placeholder="Ce qui est propre à cette norme, sans répéter le socle…">{{ c.implementation or '' }}</textarea></div>
+          <div><button class="btn btn--primary btn--sm" type="submit">Enregistrer</button></div>
+        </form>
+        {% elif c.implementation %}<div class="meta-list" style="margin-top:10px;"><div><span>Précision {{ c.framework.short_name }}</span><b style="white-space:pre-line;">{{ c.implementation }}</b></div></div>{% endif %}
+      </div>
+    </div>
+    {% else %}
+    <div class="panel">
+      <div class="panel__head"><h2>{{ "Déclaration d'applicabilité" if c.framework.kind == 'controls' else 'Évaluation' }}</h2></div>
       <div class="panel__body">
         {% if current_user.can_edit %}
         <form method="post" action="{{ url_for('soa.update', control_id=c.id) }}" class="stack">
@@ -47,8 +93,8 @@
         </form>
         {% else %}
           <div class="meta-list">
-            <div><span>Applicabilité</span>{{ applicability(c) }}</div>
-            <div><span>Statut</span>{{ control_status(c.status) }}</div>
+            <div><span>Applicabilité</span><b>{{ applicability(c) }}</b></div>
+            <div><span>Statut</span><b>{{ control_status(c.status) }}</b></div>
             <div><span>Justification</span><b style="white-space:pre-line;">{{ c.justification or '-' }}</b></div>
             <div><span>Mise en œuvre</span><b style="white-space:pre-line;">{{ c.implementation or '-' }}</b></div>
             <div><span>Responsable</span><b>{{ c.owner.name if c.owner else '-' }}</b></div>
@@ -56,15 +102,17 @@
         {% endif %}
       </div>
     </div>
+    {% endif %}
 
+    {% set evs = c.all_evidences %}
     <div class="panel">
-      <div class="panel__head"><h2>Preuves rattachées</h2><span class="rail__badge">{{ c.evidences|length }}</span></div>
+      <div class="panel__head"><h2>Preuves rattachées</h2><span class="rail__badge">{{ evs|length }}</span></div>
       <div class="panel__body--flush">
-        {% if c.evidences %}
+        {% if evs %}
         <div class="table-wrap"><table class="grid"><tbody>
-          {% for e in c.evidences %}
+          {% for e in evs %}
           <tr class="row-link" onclick="window.location='{{ url_for('evidence.edit', ev_id=e.id) }}'">
-            <td class="ref">{{ e.ref }}</td><td class="subj">{{ e.title }}</td><td class="muted">{{ e.collected_at|d }}</td>
+            <td class="ref">{{ e.ref }}</td><td class="subj">{{ e.title }}{% if e not in c.evidences %} <span class="tag-socle">Socle</span>{% endif %}</td><td class="muted">{{ e.collected_at|d }}</td>
           </tr>
           {% endfor %}
         </tbody></table></div>
@@ -85,19 +133,32 @@
         </div>
       </div>
     </div>
+    {% if heirs %}
+    <div class="panel">
+      <div class="panel__head"><h2>Exigences des normes</h2><span class="rail__badge">{{ heirs|length }}</span></div>
+      <div class="panel__body--flush"><div class="table-wrap"><table class="grid"><tbody>
+        {% for h in heirs %}
+        <tr class="row-link" onclick="window.location='{{ url_for('soa.detail', control_id=h.id) }}'">
+          <td class="ref" style="width:96px;white-space:nowrap;">{{ h.framework.short_name }} §{{ h.ref }}</td><td class="subj">{{ h.title }}<div style="margin-top:2px;">{% if h.inherited %}<span class="tag-socle">hérite</span>{% elif h.socle_rel and h.socle_rel[1] == 'complement' %}<span class="tag-socle tag-socle--plus">socle + complément</span>{% else %}<span class="tag-socle tag-socle--off">évaluée séparément</span>{% endif %}</div></td><td>{{ control_status(h.status) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody></table></div></div>
+    </div>
+    {% endif %}
     {% if corresp %}
     <div class="panel">
       <div class="panel__head"><h2>Correspondances</h2><span class="rail__badge">{{ corresp|length }}</span></div>
       <div class="panel__body--flush"><div class="table-wrap"><table class="grid"><tbody>
         {% for x in corresp %}
         <tr class="row-link" onclick="window.location='{{ url_for('soa.detail', control_id=x.id) }}'">
-          <td class="ref" style="width:110px;">{{ x.framework.short_name }} {{ x.annex_ref }}</td><td class="subj">{{ x.title }}</td><td>{{ control_status(x.status) }}</td>
+          <td class="ref" style="width:96px;white-space:nowrap;">{{ x.framework.short_name }} {{ x.annex_ref }}</td><td class="subj">{{ x.title }}</td><td>{{ control_status(x.status) }}</td>
         </tr>
         {% endfor %}
       </tbody></table></div>
       <div class="panel__body" style="font-size:11.5px;padding-top:8px;"><span class="muted">Correspondances proposées entre normes (partielles) : une preuve ou une mise en œuvre peut servir aux deux, à vérifier.</span></div></div>
     </div>
     {% endif %}
+    {% if c.framework.kind != 'common' %}
     <div class="panel">
       <div class="panel__head"><h2>Risques traités</h2><span class="rail__badge">{{ c.risks|length }}</span></div>
       <div class="panel__body--flush">
@@ -112,6 +173,7 @@
         {% else %}<div class="empty" style="padding:22px;"><p>Cette mesure ne traite aucun risque enregistré.</p></div>{% endif %}
       </div>
     </div>
+    {% endif %}
   </div>
 </div>
 <div style="margin-top:16px;">{{ history_panel(c) }}</div>

@@ -160,6 +160,10 @@ UPGRADE_DDL = [
     "ALTER TABLE nonconformities ADD COLUMN IF NOT EXISTS nc_kind VARCHAR(12) NULL",
     "ALTER TABLE nonconformities ADD COLUMN IF NOT EXISTS product VARCHAR(300) NULL",
     "ALTER TABLE nonconformities ADD COLUMN IF NOT EXISTS disposition VARCHAR(16) NULL",
+    # Socle commun SMI (3.4) : exigences communes évaluées une seule fois
+    "ALTER TABLE controls ADD COLUMN IF NOT EXISTS common_id INTEGER NULL REFERENCES controls(id) ON DELETE SET NULL",
+    "ALTER TABLE controls ADD COLUMN IF NOT EXISTS inherit BOOLEAN NOT NULL DEFAULT false",
+    "CREATE INDEX IF NOT EXISTS ix_controls_common_id ON controls (common_id)",
 ]
 
 # Tables rattachées à une organisation (voir TenantMixin)

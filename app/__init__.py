@@ -136,7 +136,8 @@ def _register_jinja(app):
             """Normes disponibles sur la plateforme (page de connexion)."""
             from app.models import Framework
             try:
-                return Framework.query.filter_by(available=True).order_by(Framework.sort_order).all()
+                return (Framework.query.filter_by(available=True).filter(Framework.kind != "common")
+                        .order_by(Framework.sort_order).all())
             except Exception:  # noqa: BLE001 - base pas encore initialisée
                 db.session.rollback()
                 return []

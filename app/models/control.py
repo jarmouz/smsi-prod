@@ -43,12 +43,32 @@ class Control(TenantMixin, db.Model):
     implementation = db.Column(db.Text, nullable=True)       # comment c'est mis en œuvre
     owner_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
 
+    # Socle commun SMI (structure harmonisée) : exigence de la norme rattachée à une
+    # exigence du socle. inherit = True : évaluée une seule fois dans le socle (statut,
+    # applicabilité et responsable recopiés) ; False : évaluée séparément dans la norme.
+    common_id = db.Column(db.Integer, db.ForeignKey("controls.id", ondelete="SET NULL"), nullable=True, index=True)
+    inherit = db.Column(db.Boolean, nullable=False, default=False)
+
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     owner = db.relationship("User")
     framework = db.relationship("Framework")
     risks = db.relationship("Risk", secondary=risk_controls, back_populates="controls")
     evidences = db.relationship("Evidence", secondary=evidence_controls, back_populates="controls")
+    common = db.relationship("Control", remote_side=[id], foreign_keys=[common_id])
+
+    @property
+    def inherited(self):
+        """Exigence évaluée dans le socle commun (pas de saisie propre)."""
+        return bool(self.inherit and self.common_id)
+
+    @property
+    def all_evidences(self):
+        """Preuves propres + preuves du socle commun pour une exigence qui en hérite."""
+        if self.inherited and self.common:
+            seen = {e.id for e in self.evidences}
+            return list(self.evidences) + [e for e in self.common.evidences if e.id not in seen]
+        return list(self.evidences)
 
     @classmethod
     def of(cls, code=ISO27001):

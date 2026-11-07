@@ -11,6 +11,9 @@ from app.models import (Framework, FrameworkItem, OrgFramework, FrameworkLink, C
 
 # Référentiel toujours actif tant que l'application est construite autour de lui
 CORE = ISO27001
+# Socle commun SMI (structure harmonisée ISO) : présent pour toute organisation,
+# ce n'est pas une norme activable (pas d'OrgFramework, pas de rattachement d'éléments)
+SOCLE = "SMI"
 
 
 def _iso27001_items():
@@ -39,6 +42,8 @@ def _catalogue(name, kind="control"):
 
 # code -> définition. "items" est une fonction (évaluée à la synchronisation).
 CATALOGUES = {
+    SOCLE: {"name": "Socle commun SMI", "short_name": "Socle", "domain": "Exigences communes (structure harmonisée ISO)",
+            "kind": "common", "sort_order": 1, "items": lambda: _catalogue("SOCLE", "clause")},
     ISO27001: {"name": "ISO/IEC 27001:2022", "short_name": "27001", "domain": "Sécurité de l'information",
                "kind": "controls", "sort_order": 10, "items": _iso27001_items},
     "ISO27701": {"name": "ISO/IEC 27701:2019", "short_name": "27701", "domain": "Protection de la vie privée",
@@ -80,6 +85,123 @@ def sync_catalogues():
     db.session.commit()
 
 
+def _common_map(code):
+    from app.services.catalogue_data import COMMON
+    return COMMON.get(code, {})
+
+
+def common_relation(control):
+    """(réf. socle, relation) d'une exigence de norme, ou None si elle est propre à la norme."""
+    if control.framework is None:
+        return None
+    return _common_map(control.framework.code).get(control.ref)
+
+
+def socle_framework():
+    return get(SOCLE)
+
+
+def ensure_common():
+    """Crée le socle commun de l'organisation courante et y rattache les exigences
+    des normes déjà activées. Idempotent ; ne modifie jamais une évaluation existante :
+    une exigence déjà évaluée dans sa norme reste « évaluée séparément »."""
+    fw = get(SOCLE)
+    if fw is None:
+        sync_catalogues()
+        fw = get(SOCLE)
+    socle = {c.ref: c for c in Control.query.filter_by(framework_id=fw.id)}
+    for it in FrameworkItem.query.filter_by(framework_id=fw.id, kind="clause").order_by(FrameworkItem.sort_order):
+        if it.ref not in socle:
+            c = Control(framework_id=fw.id, ref=it.ref, theme=it.group, title=it.title,
+                        applicable=True, status=ControlStatus.NON_DEMARRE)
+            db.session.add(c)
+            socle[it.ref] = c
+    db.session.flush()
+    for f in Framework.query.filter(Framework.kind == "requirements").all():
+        cmap = _common_map(f.code)
+        if not cmap:
+            continue
+        for c in Control.query.filter_by(framework_id=f.id).filter(Control.common_id.is_(None)):
+            rel = cmap.get(c.ref)
+            if rel is None:
+                continue
+            c.common_id = socle[rel[0]].id
+            if rel[1] == "commune" and _untouched(c):
+                c.inherit = True
+                _copy_from(c, socle[rel[0]])
+    db.session.flush()
+    return fw
+
+
+def _untouched(c):
+    return (c.status == ControlStatus.NON_DEMARRE and c.applicable and not c.implementation
+            and not c.justification and not c.owner_id and not c.evidences)
+
+
+def _copy_from(c, s):
+    c.applicable, c.status, c.owner_id = s.applicable, s.status, s.owner_id
+    if not s.applicable and not c.justification:
+        c.justification = s.justification
+
+
+def propagate(socle_control):
+    """Recopie l'évaluation d'une exigence du socle dans les exigences qui en héritent."""
+    for c in Control.query.filter_by(common_id=socle_control.id, inherit=True):
+        _copy_from(c, socle_control)
+        c.justification = socle_control.justification if not socle_control.applicable else None
+
+
+def heirs(socle_control):
+    """Exigences des normes actives rattachées à une exigence du socle."""
+    active_ids = {f.id for f in active()}
+    rows = Control.query.filter_by(common_id=socle_control.id).all()
+    for c in rows:
+        c.socle_rel = common_relation(c)
+    return sorted([c for c in rows if c.framework_id in active_ids], key=lambda c: (c.framework.sort_order, c.id))
+
+
+def set_inherit(control, on):
+    """Rattache (on) ou détache une exigence de l'évaluation du socle.
+    Au rattachement, si le socle n'est pas encore évalué, l'évaluation de l'exigence
+    y est reprise (rien n'est perdu) ; sinon c'est celle du socle qui s'applique."""
+    if not control.common_id:
+        return
+    if on:
+        s = control.common
+        if s.status == ControlStatus.NON_DEMARRE and not s.implementation and control.status != ControlStatus.NON_DEMARRE:
+            s.applicable, s.status, s.owner_id = control.applicable, control.status, control.owner_id
+            s.justification = s.justification or control.justification
+            s.implementation = control.implementation
+            for e in control.evidences:
+                if e not in s.evidences:
+                    s.evidences.append(e)
+            control.implementation = None
+            propagate(s)
+        control.inherit = True
+        _copy_from(control, s)
+    else:
+        control.inherit = False
+    db.session.flush()
+
+
+def socle_stats():
+    """Effet du socle pour l'organisation courante : exigences des normes actives
+    couvertes par le socle (héritées / à compléter / évaluées séparément)."""
+    active_ids = {f.id for f in active()}
+    rows = [c for c in Control.query.filter(Control.common_id.isnot(None)).all() if c.framework_id in active_ids]
+    out = {"heritees": 0, "complements": 0, "separees": 0}
+    for c in rows:
+        rel = common_relation(c)
+        if c.inherited:
+            out["heritees"] += 1
+        elif rel and rel[1] == "complement":
+            out["complements"] += 1
+        else:
+            out["separees"] += 1
+    out["total"] = len(rows)
+    return out
+
+
 def _sync_mappings():
     from app.models import ItemMapping
     from app.services.catalogue_data import MAPPINGS
@@ -109,14 +231,19 @@ def correspondences(control):
     for it in FrameworkItem.query.filter(FrameworkItem.id.in_(other_ids)).all():
         if it.framework_id in active_ids:
             c = Control.query.filter_by(framework_id=it.framework_id, ref=it.ref).first()
-            if c:
+            # deux exigences rattachées au même élément du socle : le lien passe déjà par le socle
+            if c and not (control.common_id and c.common_id == control.common_id):
                 out.append(c)
     return sorted(out, key=lambda c: (c.framework.sort_order, c.id))
 
 
 def controls_frameworks():
-    """Normes actives évaluées élément par élément : mesures (DdA) ou exigences (conformité)."""
-    return [f for f in active() if f.kind in ("controls", "requirements")]
+    """Socle commun puis normes actives évaluées élément par élément : mesures (DdA) ou exigences (conformité)."""
+    socle = get(SOCLE)
+    fws = [f for f in active() if f.kind in ("controls", "requirements")]
+    if socle is not None and Control.query.filter_by(framework_id=socle.id).first() is not None:
+        fws.insert(0, socle)
+    return fws
 
 
 def get(code):
@@ -124,7 +251,8 @@ def get(code):
 
 
 def all_frameworks():
-    return Framework.query.order_by(Framework.sort_order, Framework.id).all()
+    """Normes activables (le socle commun n'en est pas une)."""
+    return Framework.query.filter(Framework.kind != "common").order_by(Framework.sort_order, Framework.id).all()
 
 
 # --------------------------------------------------------------------------
@@ -148,7 +276,7 @@ def enable(code):
     if fw is None:
         sync_catalogues()
         fw = get(code)
-    if fw is None or not fw.available:
+    if fw is None or not fw.available or fw.kind == "common":
         raise ValueError(f"Référentiel indisponible : {code}")
     of = OrgFramework.query.filter_by(framework_id=fw.id).first()
     if of is None:
@@ -163,6 +291,7 @@ def enable(code):
                 db.session.add(Control(framework_id=fw.id, ref=it.ref, theme=it.group, title=it.title,
                                        applicable=True, status=ControlStatus.NON_DEMARRE))
     db.session.flush()
+    ensure_common()
     return fw
 
 
@@ -243,4 +372,11 @@ def migrate():
             "SELECT o.id, :f, true, now() FROM organizations o "
             "WHERE NOT EXISTS (SELECT 1 FROM org_frameworks x WHERE x.organization_id = o.id AND x.framework_id = :f)"),
             {"f": fid})
+    # Socle commun SMI (3.4) pour chaque organisation
+    from app.models import Organization
+    from app.services.tenancy import tenant_scope
+    for org in Organization.query.all():
+        with tenant_scope(org.id):
+            ensure_common()
+    db.session.commit()
     return fid

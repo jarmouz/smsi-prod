@@ -439,3 +439,88 @@ MAPPINGS += [
     ("ISO9001", "8.5.6", "ISO20000", "8.5.1"),
     ("ISO9001", "9.1.2", "ISO20000", "8.3.2"),
 ]
+
+
+# ---------------------------------------------------------------------------
+# Socle commun du système de management intégré (SMI)
+# Structure harmonisée des normes ISO de systèmes de management (Directives
+# ISO/IEC, partie 1, annexe SL, appendice 2) : chapitres 4 à 10 communs à
+# l'ISO 9001, l'ISO 22301, l'ISO/IEC 20000-1, l'ISO/IEC 27001, l'ISO/IEC 27701
+# et l'ISO/IEC 42001. Une exigence commune est évaluée UNE fois ici ; les normes
+# en héritent au lieu de la réévaluer chacune.
+# ---------------------------------------------------------------------------
+SOCLE = _by_chapter([
+    ("4.1", "Compréhension de l'organisation et de son contexte"),
+    ("4.2", "Besoins et attentes des parties intéressées"),
+    ("4.3", "Domaine d'application du système de management"),
+    ("4.4", "Système de management et ses processus"),
+    ("5.1", "Leadership et engagement"),
+    ("5.2", "Politique (établissement et communication)"),
+    ("5.3", "Rôles, responsabilités et autorités"),
+    ("6.1", "Actions face aux risques et opportunités"),
+    ("6.2", "Objectifs et planification des actions pour les atteindre"),
+    ("6.3", "Planification des modifications"),
+    ("7.1", "Ressources"),
+    ("7.2", "Compétences"),
+    ("7.3", "Sensibilisation"),
+    ("7.4", "Communication"),
+    ("7.5.1", "Informations documentées : généralités"),
+    ("7.5.2", "Création et mise à jour des informations documentées"),
+    ("7.5.3", "Maîtrise des informations documentées"),
+    ("8.1", "Planification et maîtrise opérationnelles"),
+    ("9.1", "Surveillance, mesure, analyse et évaluation"),
+    ("9.2.1", "Audit interne : généralités"),
+    ("9.2.2", "Programme d'audit interne"),
+    ("9.3.1", "Revue de direction : généralités"),
+    ("9.3.2", "Éléments d'entrée de la revue de direction"),
+    ("9.3.3", "Éléments de sortie de la revue de direction"),
+    ("10.1", "Amélioration continue"),
+    ("10.2", "Non-conformité et action corrective"),
+])
+
+# Rattachement des exigences de chaque norme au socle : réf. norme -> (réf. socle, relation)
+#   "commune"    : texte de la structure harmonisée, entièrement couvert par le socle ;
+#                  l'exigence hérite de son évaluation (statut, applicabilité, responsable, preuves).
+#   "complement" : le socle couvre la partie commune ; la norme ajoute des exigences propres,
+#                  évaluées dans la norme (le socle sert de base).
+# Les exigences absentes sont propres à la norme (chapitre 8 métier, orientation client...).
+C, P = "commune", "complement"
+COMMON = {
+    "ISO9001": {
+        "4.1": ("4.1", C), "4.2": ("4.2", C), "4.3": ("4.3", P), "4.4.1": ("4.4", P), "4.4.2": ("4.4", P),
+        "5.1.1": ("5.1", C), "5.2.1": ("5.2", C), "5.2.2": ("5.2", C), "5.3": ("5.3", C),
+        "6.1.1": ("6.1", C), "6.1.2": ("6.1", C), "6.2.1": ("6.2", C), "6.2.2": ("6.2", C), "6.3": ("6.3", C),
+        "7.1.1": ("7.1", C), "7.2": ("7.2", C), "7.3": ("7.3", C), "7.4": ("7.4", C),
+        "7.5.1": ("7.5.1", C), "7.5.2": ("7.5.2", C), "7.5.3": ("7.5.3", C),
+        "8.1": ("8.1", P),
+        "9.1.1": ("9.1", C), "9.2.1": ("9.2.1", C), "9.2.2": ("9.2.2", C),
+        "9.3.1": ("9.3.1", C), "9.3.2": ("9.3.2", P), "9.3.3": ("9.3.3", C),
+        "10.1": ("10.1", P), "10.2.1": ("10.2", C), "10.2.2": ("10.2", C), "10.3": ("10.1", C),
+    },
+    "ISO22301": {
+        "4.1": ("4.1", C), "4.2.1": ("4.2", C), "4.3.1": ("4.3", C), "4.3.2": ("4.3", P), "4.4": ("4.4", C),
+        "5.1": ("5.1", C), "5.2.1": ("5.2", P), "5.2.2": ("5.2", C), "5.3": ("5.3", C),
+        "6.1.1": ("6.1", C), "6.1.2": ("6.1", C), "6.2.1": ("6.2", C), "6.2.2": ("6.2", C), "6.3": ("6.3", C),
+        "7.1": ("7.1", C), "7.2": ("7.2", C), "7.3": ("7.3", P), "7.4": ("7.4", C),
+        "7.5.1": ("7.5.1", C), "7.5.2": ("7.5.2", C), "7.5.3": ("7.5.3", P),
+        "8.1": ("8.1", P),
+        "9.1": ("9.1", C), "9.2.1": ("9.2.1", C), "9.2.2": ("9.2.2", C),
+        "9.3.1": ("9.3.1", C), "9.3.2": ("9.3.2", P), "9.3.3": ("9.3.3", P),
+        "10.1": ("10.2", C), "10.2": ("10.1", C),
+    },
+    "ISO20000": {
+        "4.1": ("4.1", C), "4.2": ("4.2", C), "4.3": ("4.3", P), "4.4": ("4.4", C),
+        "5.1": ("5.1", P), "5.2": ("5.2", P), "5.3": ("5.3", C),
+        "6.1": ("6.1", P), "6.2": ("6.2", C),
+        "7.1": ("7.1", C), "7.2": ("7.2", C), "7.3": ("7.3", C), "7.4": ("7.4", C), "7.5": ("7.5.1", P),
+        "8.1": ("8.1", P),
+        "9.1": ("9.1", C), "9.2": ("9.2.2", C), "9.3": ("9.3.2", P),
+        "10.1": ("10.2", C), "10.2": ("10.1", C),
+    },
+}
+del C, P
+
+# Normes dont les chapitres 4 à 10 suivent la structure harmonisée mais ne sont pas
+# catalogués exigence par exigence dans l'application (seule l'annexe de mesures l'est) :
+# le socle commun tient lieu de leurs exigences communes.
+SOCLE_ONLY = ("ISO27001", "ISO27701", "ISO42001")

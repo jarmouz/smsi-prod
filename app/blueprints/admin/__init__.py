@@ -449,7 +449,7 @@ def frameworks_page():
     if request.method == "POST":
         code, action = request.form.get("code", ""), request.form.get("action")
         fw = fw_svc.get(code)
-        if fw is None or not fw.available:
+        if fw is None or not fw.available or fw.kind == "common":
             abort(404)
         try:
             if action == "enable":

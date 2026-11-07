@@ -1,19 +1,27 @@
 {% extends 'base.html' %}
 {% from 'partials/macros.html' import control_status, applicability, export_menu with context %}
 {% block title %}Déclaration d'applicabilité - {{ APP_NAME }}{% endblock %}
-{% block heading %}{{ "Déclaration d'applicabilité (DdA)" if fw.kind == 'controls' else 'Conformité aux exigences - ' ~ fw.name }}{% endblock %}
+{% block heading %}{{ "Déclaration d'applicabilité (DdA)" if fw.kind == 'controls' else ('Socle commun du système de management intégré' if fw.kind == 'common' else 'Conformité aux exigences - ' ~ fw.name) }}{% endblock %}
 {% block topactions %}{% if not norme %}{{ export_menu([('dda', "Déclaration d'applicabilité")]) }}{% if current_user.can_edit %} <a href="{{ url_for('imports.upload', kind='dda') }}" class="btn btn--subtle btn--sm">Importer</a>{% endif %}{% endif %}{% endblock %}
 
 {% block content %}
 {% set can_edit = current_user.can_edit %}
-{% if fws|length > 1 %}<div class="fw-tabs">{% for f in fws %}<a href="{{ url_for('soa.index', norme=None if loop.first and f.code == 'ISO27001' else f.code) }}" class="fw-tab {{ 'is-active' if f.id == fw.id }}">{{ f.name }}</a>{% endfor %}</div>{% endif %}
+{% if fws|length > 1 %}<div class="fw-tabs">{% for f in fws %}<a href="{{ url_for('soa.index', norme=None if f.code == 'ISO27001' else f.code) }}" class="fw-tab {{ 'is-active' if f.id == fw.id }}{{ ' fw-tab--socle' if f.kind == 'common' }}">{{ f.name }}</a>{% endfor %}</div>{% endif %}
 <div class="kpis" style="grid-template-columns:repeat(4,1fr);margin-bottom:18px;">
-  <div class="kpi kpi--total"><div class="kpi__label">Catalogue</div><div class="kpi__value">{{ stats.total }}</div><div class="kpi__sub">{{ 'mesures Annexe A:2022' if not norme else ('mesures ' if fw.kind == 'controls' else 'exigences ') ~ fw.short_name }}</div></div>
+  <div class="kpi kpi--total"><div class="kpi__label">Catalogue</div><div class="kpi__value">{{ stats.total }}</div><div class="kpi__sub">{{ 'mesures Annexe A:2022' if not norme else ('exigences communes' if fw.kind == 'common' else ('mesures ' if fw.kind == 'controls' else 'exigences ') ~ fw.short_name) }}{% if stats.heritees %} - {{ stats.heritees }} via le socle{% endif %}</div></div>
   <div class="kpi kpi--sla"><div class="kpi__label">Retenues</div><div class="kpi__value">{{ stats.applicable }}</div><div class="kpi__sub">applicables</div></div>
   <div class="kpi kpi--ouvert"><div class="kpi__label">{{ 'Implémentées' if fw.kind == 'controls' else 'Satisfaites' }}</div><div class="kpi__value">{{ stats.implementees }}</div><div class="kpi__sub">{{ 'mesures en place' if fw.kind == 'controls' else 'exigences satisfaites' }}</div></div>
   <div class="kpi kpi--bientot"><div class="kpi__label">Exclues</div><div class="kpi__value">{{ stats.exclues }}</div><div class="kpi__sub">avec justification</div></div>
 </div>
 
+{% if fw.kind == 'common' %}{% set so = stats.socle %}
+<div class="panel socle-note"><div class="panel__body">
+  <b>Une exigence commune s'évalue une seule fois.</b> Les chapitres 4 à 10 des normes ISO de systèmes de management suivent la même structure harmonisée (annexe SL) : contexte, politique, rôles, risques et opportunités, objectifs, compétences, documentation, audit interne, revue de direction, non-conformités, amélioration. Évaluez-les ici : l'ISO 9001, l'ISO 22301 et l'ISO/IEC 20000-1 en héritent ; pour l'ISO/IEC 27001, 27701 et 42001, le socle tient lieu de leurs chapitres 4 à 10.
+  <div class="socle-stats"><span><b>{{ so.heritees }}</b> exigence(s) des normes actives héritée(s)</span><span><b>{{ so.complements }}</b> à compléter dans leur norme</span><span><b>{{ so.separees }}</b> évaluée(s) séparément</span></div>
+</div></div>
+{% elif fw.kind == 'requirements' and rels %}
+<p class="muted" style="font-size:12.5px;margin:0 2px 12px;"><span class="tag-socle">Socle</span> exigence commune, évaluée une fois dans le <a href="{{ url_for('soa.index', norme='SMI') }}">socle commun</a> ; <span class="tag-socle tag-socle--plus">Socle + complément</span> le socle couvre la partie commune, évaluez ici ce que la norme ajoute.</p>
+{% endif %}
 <form class="toolbar" method="get">
   {% if norme %}<input type="hidden" name="norme" value="{{ norme }}">{% endif %}
   <input type="text" name="q" class="search" placeholder="Rechercher (réf. ou intitulé)…" value="{{ search or '' }}">
@@ -50,13 +58,24 @@
             {% if c.risks %}<span class="muted" style="font-size:11px;"> - {{ c.risks|length }} risque(s)</span>{% endif %}
             {% if c.evidences %}<span class="muted" style="font-size:11px;"> - {{ c.evidences|length }} preuve(s)</span>{% endif %}
             {% if c.justification %}<div class="muted" style="font-size:11px;">{{ c.justification|truncate(90) }}</div>{% endif %}
+            {%- set rel = rels.get(c.id) %}
+            {%- if rel %}<div style="margin-top:3px;">{% if c.inherited %}<span class="tag-socle" title="Évaluée dans le socle commun">Socle §{{ rel[0] }}</span>{% elif rel[1] == 'complement' %}<span class="tag-socle tag-socle--plus" title="Partie commune évaluée dans le socle">Socle §{{ rel[0] }} + complément</span>{% else %}<span class="tag-socle tag-socle--off" title="Exigence commune évaluée séparément">Commune §{{ rel[0] }}, évaluée séparément</span>{% endif %}</div>{% endif %}
+            {%- if heirs.get(c.id) %}<div style="margin-top:3px;">{% for h in heirs[c.id] %}<span class="tag-heir{{ ' tag-heir--off' if not h.inherited }}" title="{{ h.framework.name }} - {{ 'hérite de cette évaluation' if h.inherited else ('socle + complément propre à la norme' if h.socle_rel and h.socle_rel[1] == 'complement' else 'évaluée séparément') }}">{{ h.framework.short_name }} §{{ h.ref }}</span> {% endfor %}</div>{% endif %}
           </td>
           <td>{{ applicability(c) }}</td>
           <td>{{ control_status(c.status) }}</td>
           <td class="muted">{{ c.owner.name if c.owner else '-' }}</td>
           {% if can_edit %}<td style="text-align:right;"><a href="{{ url_for('soa.detail', control_id=c.id) }}" class="muted" style="font-size:11px;" onclick="event.stopPropagation()">Détail</a></td>{% endif %}
         </tr>
-        {% if can_edit %}
+        {% if can_edit and c.inherited %}
+        <tr id="edit-c{{ c.id }}" class="edit-row" style="display:none;">
+          <td colspan="6" style="background:var(--paper);font-size:12.5px;">
+            Exigence commune : son évaluation est tenue dans le socle commun (§{{ c.common.ref }}).
+            <a href="{{ url_for('soa.detail', control_id=c.common_id) }}" class="btn btn--subtle btn--sm">Ouvrir le socle §{{ c.common.ref }}</a>
+            <a href="{{ url_for('soa.detail', control_id=c.id) }}" class="btn btn--ghost btn--sm">Détail</a>
+          </td>
+        </tr>
+        {% elif can_edit %}
         <tr id="edit-c{{ c.id }}" class="edit-row" style="display:none;">
           <td colspan="6" style="background:var(--paper);">
             <form method="post" action="{{ url_for('soa.update', control_id=c.id) }}" class="soa-edit">

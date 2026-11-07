@@ -188,5 +188,7 @@ def frameworks():
                  .execution_options(all_tenants=True).filter(OrgFramework.enabled.is_(True))
                  .group_by(OrgFramework.framework_id).all())
     fws = Framework.query.order_by(Framework.sort_order, Framework.id).all()
+    from app.services.catalogue_data import COMMON
     return render_template("platform/frameworks.html", fws=fws, counts=counts, users=users,
-                           mappings=ItemMapping.query.count())
+                           mappings=ItemMapping.query.count(),
+                           common={k: (len(v), sum(r == "commune" for _, r in v.values())) for k, v in COMMON.items()})
