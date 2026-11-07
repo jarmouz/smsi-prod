@@ -66,8 +66,9 @@ Normes disponibles (3.2) :
 | ISO/IEC 42001:2023 | 38 mesures (Annexe A) | Intelligence artificielle : systèmes d'IA, études d'impact |
 | ISO 22301:2019 | 46 exigences (chapitres 4 à 10) | Plans de continuité (en plus de la BIA et des exercices) |
 | ISO/IEC 20000-1:2018 | 45 exigences (chapitres 4 à 10) | Services IT : catalogue et niveaux de service, mesures mensuelles, problèmes, mises en production |
+| ISO 9001:2015 | 63 exigences (chapitres 4 à 10) | Qualité : cartographie des processus, satisfaction client, réclamations ; risques qualité et opportunités, produits non conformes (dans les registres communs) |
 
-Catalogues et correspondances (70) : `app/services/catalogue_data.py`.
+Catalogues et correspondances (96) : `app/services/catalogue_data.py`.
 Une base neuve s'initialise avec `flask init-platform` (organisation + RSSI) ;
 `flask init-db` est réservé au développement (il efface tout).
 

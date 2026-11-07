@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% from 'partials/macros.html' import attachments_panel, history_panel with context %}
+{% block title %}{{ p.ref }} - {{ APP_NAME }}{% endblock %}
+{% block heading %}{{ p.ref }} - {{ p.name }}{% endblock %}
+{% block topactions %}<a href="{{ url_for('quality.index') }}" class="btn btn--ghost btn--sm">Retour</a>{% if current_user.can_edit %}<a href="{{ url_for('quality.process_edit', pid=p.id) }}" class="btn btn--primary btn--sm">Modifier</a>{% endif %}{% endblock %}
+{% block content %}
+{% if p.gaps %}<div class="flash flash--warning" style="margin:0 0 14px;">Points à traiter : {{ p.gaps|join(', ') }}.</div>{% endif %}
+<div class="detail-grid">
+  <div class="stack">
+    <div class="panel"><div class="panel__head"><h2>Fiche processus</h2></div><div class="panel__body"><div class="meta-list">
+      <div><span>Type</span><b>{{ p.process_type.label }}</b></div>
+      <div><span>Finalité</span><b style="white-space:pre-line;">{{ p.purpose or '-' }}</b></div>
+      <div><span>Pilote</span><b>{{ p.pilot.name if p.pilot else '-' }}</b></div>
+      <div><span>Éléments d'entrée</span><b style="white-space:pre-line;">{{ p.inputs or '-' }}</b></div>
+      <div><span>Principales activités</span><b style="white-space:pre-line;">{{ p.activities or '-' }}</b></div>
+      <div><span>Éléments de sortie</span><b style="white-space:pre-line;">{{ p.outputs or '-' }}</b></div>
+      <div><span>Bénéficiaires</span><b style="white-space:pre-line;">{{ p.beneficiaries or '-' }}</b></div>
+      <div><span>Ressources</span><b style="white-space:pre-line;">{{ p.resources or '-' }}</b></div>
+      {% if p.notes %}<div><span>Notes</span><b style="white-space:pre-line;">{{ p.notes }}</b></div>{% endif %}
+    </div></div></div>
+    <div class="panel"><div class="panel__head"><h2>Interactions</h2></div><div class="panel__body"><div class="meta-list">
+      <div><span>Reçoit de</span><b>{% for x in upstream %}<a href="{{ url_for('quality.process_detail', pid=x.id) }}">{{ x.ref }} {{ x.name }}</a>{{ ', ' if not loop.last }}{% else %}-{% endfor %}</b></div>
+      <div><span>Alimente</span><b>{% for x in p.next_processes %}<a href="{{ url_for('quality.process_detail', pid=x.id) }}">{{ x.ref }} {{ x.name }}</a>{{ ', ' if not loop.last }}{% else %}-{% endfor %}</b></div>
+    </div></div></div>
+    {{ attachments_panel('qmsprocess', p.id, attachments, current_user.can_edit) }}
+  </div>
+  <div class="stack">
+    <div class="panel"><div class="panel__head"><h2>Suivi</h2></div><div class="panel__body"><div class="meta-list">
+      <div><span>Statut</span><b>{{ p.status.label }}</b></div>
+      <div><span>Dernière revue</span><b>{{ p.last_review|d }}</b></div>
+      <div><span>Prochaine revue</span><b class="{{ 'due-cell' if p.next_review and p.next_review < today }}">{{ p.next_review|d }}</b></div>
+    </div></div></div>
+    <div class="panel"><div class="panel__head"><h2>Indicateurs</h2><span class="rail__badge">{{ p.indicators|length }}</span></div><div class="panel__body--flush">
+      {% if p.indicators %}<div class="table-wrap"><table class="grid"><tbody>{% for k in p.indicators %}<tr class="row-link" onclick="window.location='{{ url_for('objectives.indicator', ind_id=k.id) }}'"><td class="ref nowrap">{{ k.ref }}</td><td class="subj">{{ k.name }}</td></tr>{% endfor %}</tbody></table></div>
+      {% else %}<div class="empty" style="padding:18px;"><p>Aucun indicateur : rattachez ceux qui mesurent la performance du processus.</p></div>{% endif %}</div></div>
+    <div class="panel"><div class="panel__head"><h2>Risques et opportunités</h2><span class="rail__badge">{{ p.risks|length }}</span></div><div class="panel__body--flush">
+      {% if p.risks %}<div class="table-wrap"><table class="grid"><tbody>{% for r in p.risks %}<tr class="row-link" onclick="window.location='{{ url_for('risks.detail', risk_id=r.id) }}'"><td class="ref nowrap">{{ r.ref }}</td><td class="subj">{{ r.title }}{% if r.nature == 'OPPORTUNITE' %} <span class="tag-opp">Opportunité</span>{% endif %}</td></tr>{% endfor %}</tbody></table></div>
+      {% else %}<div class="empty" style="padding:18px;"><p>Aucun risque ni opportunité identifié (§6.1).</p></div>{% endif %}</div></div>
+    <div class="panel"><div class="panel__head"><h2>Documents</h2><span class="rail__badge">{{ p.documents|length }}</span></div><div class="panel__body--flush">
+      {% if p.documents %}<div class="table-wrap"><table class="grid"><tbody>{% for d in p.documents %}<tr class="row-link" onclick="window.location='{{ url_for('documents.detail', doc_id=d.id) }}'"><td class="ref nowrap">{{ d.ref }}</td><td class="subj">{{ d.title }}</td></tr>{% endfor %}</tbody></table></div>
+      {% else %}<div class="empty" style="padding:18px;"><p>Aucun document (procédure, mode opératoire...).</p></div>{% endif %}</div></div>
+    {{ history_panel(p) }}
+  </div>
+</div>
+{% endblock %}

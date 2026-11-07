@@ -48,6 +48,15 @@ def import_template():
     return redirect(url_for("imports.template", kind="risques"))
 
 
+def _quality_fields(r):
+    """ISO 9001 : domaine et nature, seulement si le formulaire les présente (norme active)."""
+    from app.models.quality import RISK_DOMAINS, RISK_NATURES
+    if request.form.get("q_present"):
+        d, n = request.form.get("risk_domain") or None, request.form.get("nature") or None
+        r.risk_domain = d if d in RISK_DOMAINS else None
+        r.nature = n if n in RISK_NATURES else None
+
+
 @bp.route("/")
 @login_required
 def index():
@@ -56,6 +65,13 @@ def index():
     q = Risk.query
     if f_status in [s.value for s in RiskStatus]:
         q = q.filter(Risk.status == RiskStatus(f_status))
+    f_domain = request.args.get("domaine")                    # ISO 9001 : qualité / sécurité / opportunités
+    if f_domain == "QUALITE":
+        q = q.filter(Risk.risk_domain == "QUALITE")
+    elif f_domain == "SECURITE":
+        q = q.filter(Risk.risk_domain.is_(None))
+    elif f_domain == "OPPORTUNITE":
+        q = q.filter(Risk.nature == "OPPORTUNITE")
     risks = q.all()
     if f_level:
         risks = [r for r in risks if r.residual_level == f_level]
@@ -65,7 +81,8 @@ def index():
     elif f_acc == "acceptes":
         risks = [r for r in risks if r.acceptance_state == "valid"]
     risks.sort(key=lambda r: r.effective_score, reverse=True)
-    return render_template("risks/index.html", risks=risks, f_status=f_status, f_level=f_level, f_acc=f_acc)
+    return render_template("risks/index.html", risks=risks, f_status=f_status, f_level=f_level, f_acc=f_acc,
+                           f_domain=f_domain)
 
 
 @bp.route("/nouveau", methods=["GET", "POST"])
@@ -98,6 +115,7 @@ def create():
             r.controls = Control.query.filter(Control.id.in_(ctrl_ids)).all()
             asset_ids = request.form.getlist("assets", type=int)
             r.assets = Asset.query.filter(Asset.id.in_(asset_ids)).all() if asset_ids else []
+            _quality_fields(r)
             db.session.add(r)
             db.session.commit()
             flash(f"Risque {r.ref} créé.", "success")
@@ -138,6 +156,7 @@ def edit(risk_id):
         r.controls = Control.query.filter(Control.id.in_(ctrl_ids)).all()
         asset_ids = request.form.getlist("assets", type=int)
         r.assets = Asset.query.filter(Asset.id.in_(asset_ids)).all() if asset_ids else []
+        _quality_fields(r)
         db.session.commit()
         flash(f"Risque {r.ref} mis à jour.", "success")
         return redirect(url_for("risks.detail", risk_id=r.id))

@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% from 'partials/macros.html' import history_panel with context %}
+{% block title %}Satisfaction client - {{ APP_NAME }}{% endblock %}
+{% block heading %}{{ s.ref + ' - ' + s.title if s else 'Nouvelle mesure de satisfaction' }}{% endblock %}
+{% block topactions %}<a href="{{ url_for('quality.surveys') }}" class="btn btn--ghost btn--sm">Retour</a>{% endblock %}
+{% block content %}
+<div class="detail-grid">
+<form method="post" class="stack">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="panel"><div class="panel__head"><h2>Mesure</h2></div><div class="panel__body stack">
+    <div class="field"><label>Intitulé *</label><input type="text" name="title" required maxlength="300" value="{{ s.title if s else '' }}" placeholder="Ex. Enquête annuelle 2026"></div>
+    <div class="form-grid">
+      <div class="field"><label>Méthode</label><select name="method">{% for x in SurveyMethod %}<option value="{{ x.value }}" {{ 'selected' if s and s.method==x }}>{{ x.label }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Date</label><input type="date" name="conducted_on" value="{{ s.conducted_on.isoformat() if s and s.conducted_on else '' }}"></div>
+    </div>
+    <div class="field"><label>Périmètre</label><textarea name="scope" rows="2" placeholder="Clients, produits ou services, période couverts">{{ s.scope or '' if s else '' }}</textarea></div>
+    <div class="form-grid">
+      <div class="field"><label>Résultat (sur 100)</label><input type="text" name="score" inputmode="decimal" value="{{ s.score if s and s.score is not none else '' }}"></div>
+      <div class="field"><label>Objectif (sur 100)</label><input type="text" name="target" inputmode="decimal" value="{{ s.target if s and s.target is not none else '' }}"></div>
+    </div>
+    <div class="field"><label>Nombre de répondants</label><input type="number" name="respondents" min="0" value="{{ s.respondents if s and s.respondents is not none else '' }}"></div>
+  </div></div>
+  <div class="panel"><div class="panel__head"><h2>Analyse et suites</h2></div><div class="panel__body stack">
+    <div class="field"><label>Points forts</label><textarea name="strengths" rows="2">{{ s.strengths or '' if s else '' }}</textarea></div>
+    <div class="field"><label>Axes d'amélioration</label><textarea name="improvements" rows="2">{{ s.improvements or '' if s else '' }}</textarea></div>
+    <div class="field"><label>Actions décidées</label><textarea name="actions" rows="2">{{ s.actions or '' if s else '' }}</textarea></div>
+    <div class="field"><label>Responsable</label><select name="owner_id"><option value="">-</option>{% for u in users %}<option value="{{ u.id }}" {{ 'selected' if s and s.owner_id==u.id }}>{{ u.name }}</option>{% endfor %}</select></div>
+    <div><button class="btn btn--primary" type="submit">Enregistrer</button></div>
+  </div></div>
+</form>
+{% if s %}<div class="stack">{{ history_panel(s) }}</div>{% endif %}
+</div>
+{% endblock %}

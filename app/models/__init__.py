@@ -25,6 +25,8 @@ from app.models.governance import (
 )
 from app.models.privacy import ProcessingActivity, SubjectRequest, processing_assets, processing_suppliers
 from app.models.ai_system import AiSystem, AiImpactAssessment, ai_system_assets
+from app.models.quality import (QmsProcess, CustomerSurvey, Complaint, qms_process_indicators, qms_process_risks,
+                                qms_process_documents, qms_process_links)
 from app.models.service_mgmt import (ContinuityPlan, plan_processes, plan_tests, ItService, ServiceMeasure,
                                      service_assets, service_suppliers, Problem, problem_incidents, Release,
                                      release_changes)
@@ -50,6 +52,8 @@ __all__ = [
     "AuditPlanItem", "CompetenceRequirement", "CompetenceRecord", "BusinessProcess", "ContinuityTest", "ChangeRequest",
     "ProcessingActivity", "SubjectRequest", "processing_assets", "processing_suppliers",
     "AiSystem", "AiImpactAssessment", "ai_system_assets",
+    "QmsProcess", "CustomerSurvey", "Complaint", "qms_process_indicators", "qms_process_risks",
+    "qms_process_documents", "qms_process_links",
     "ContinuityPlan", "plan_processes", "plan_tests", "ItService", "ServiceMeasure", "service_assets",
     "service_suppliers", "Problem", "problem_incidents", "Release", "release_changes",
     "asset_risks", "process_assets", "test_processes", "change_assets", "competence_users", "AUDIT_DOMAINS",

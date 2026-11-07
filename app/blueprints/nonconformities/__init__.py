@@ -109,6 +109,12 @@ def _prefill():
         nc.title = f"Exercice {t.ref} {t.result.label.lower()} : {t.title}"[:300]
         nc.description, nc.detected_at = t.findings, t.test_date or date.today()
         nc.control_id = (Control.of().filter_by(ref="5.30").first() or Control()).id
+    elif (rid := request.args.get("reclamation", type=int)):
+        from app.models.quality import Complaint
+        if (cp := db.session.get(Complaint, rid)):
+            nc.source, nc.nc_kind, nc.product = NcSource.RECLAMATION, "PRODUIT", cp.product
+            nc.title = f"Réclamation {cp.ref} : {cp.product or cp.customer}"[:300]
+            nc.description, nc.detected_at, nc.detected_by = cp.description, cp.received_on, cp.customer
     return nc
 
 
@@ -143,9 +149,20 @@ def _form(nc):
             nc.isms_changes = request.form.get("isms_changes")
             nc.effectiveness_due = _date(request.form.get("effectiveness_due"))
             db.session.flush()
+            if request.form.get("q_present"):            # ISO 9001 : élément de sortie non conforme (8.7)
+                from app.models.quality import NC_KINDS, NC_DISPOSITIONS
+                k, d = request.form.get("nc_kind") or None, request.form.get("disposition") or None
+                nc.nc_kind = k if k in NC_KINDS else None
+                nc.product = ((request.form.get("product") or "").strip()[:300] or None) if nc.nc_kind else None
+                nc.disposition = (d if d in NC_DISPOSITIONS else None) if nc.nc_kind else None
             _refresh_status(nc)
             fw_svc.links_from_form(nc, request.form)
             db.session.commit()
+            if creating and (rid := request.form.get("complaint_id", type=int)):
+                from app.models.quality import Complaint
+                if (cp := db.session.get(Complaint, rid)) and cp.nonconformity_id is None:
+                    cp.nonconformity_id = nc.id
+                    db.session.commit()
             flash(f"Non-conformité {nc.ref} enregistrée.", "success")
             return redirect(url_for("nonconformities.detail", nc_id=nc.id))
     return render_template("nonconformities/form.html", nc=nc, draft=draft, users=users, controls=controls,

@@ -766,3 +766,26 @@ table.grid tbody tr.imp-row--error td { background: #fdf6f4; }
   .topbar .spacer { display: none; }
   .topbar > .btn, .topbar > a.btn, .topbar > form, .topbar > .export-menu, .topbar > details { flex: 0 0 auto; }
 }
+.tag-opp, .tag-q { display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; padding: 1px 6px; vertical-align: 2px; margin-left: 4px; }
+.tag-opp { color: #20653E; background: #E3F2EA; }
+.tag-q { color: #6E4700; background: #FBF1DC; }
+.rail__group[data-group="qualite"]   { --g: #56701C; --g-dark: #435716; --g-soft: #EEF3E2; }
+/* Cartographie des processus (ISO 9001 §4.4) */
+.pmap { display: flex; flex-direction: column; gap: 14px; }
+.pmap__band { border: 1px solid var(--line-strong); border-left: 4px solid var(--teal-600); background: var(--surface); padding: 14px 16px 16px; }
+.pmap__band--management { border-left-color: var(--teal-600); }
+.pmap__band--realisation { border-left-color: var(--kicker); background: var(--sable); }
+.pmap__band--support { border-left-color: var(--ink-500); }
+.pmap__band h2 { font-family: var(--font-display); font-size: 12px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-700); margin: 0 0 12px; }
+.pmap__cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; flex: 1; min-width: 0; }
+.pmap__flow { display: flex; align-items: stretch; gap: 12px; }
+.pmap__edge { flex: 0 0 120px; display: flex; align-items: center; justify-content: center; text-align: center; padding: 10px; font-size: 12px; font-weight: 700; color: var(--kicker); border: 1px dashed var(--kicker); background: var(--surface); }
+.pmap__card { display: flex; flex-direction: column; gap: 3px; padding: 10px 12px; background: var(--surface); border: 1px solid var(--line-strong); border-top: 3px solid var(--teal-600); color: inherit; text-decoration: none; min-width: 0; }
+.pmap__card:hover { border-color: var(--teal-600); }
+.pmap__card.has-gaps { border-top-color: #E8B04A; }
+.pmap__card b { font-size: 13.5px; line-height: 1.3; }
+.pmap__ref { font-size: 11px; font-weight: 700; color: var(--ink-500); }
+.pmap__meta { font-size: 11.5px; color: var(--ink-500); }
+.pmap__gaps { font-size: 11px; font-weight: 600; color: #8A5A00; }
+.pmap__empty { font-size: 12.5px; padding: 6px 0; }
+@media (max-width: 720px) { .pmap__flow { flex-direction: column; } .pmap__edge { flex-basis: auto; } }

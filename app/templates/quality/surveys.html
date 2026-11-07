@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}Satisfaction client - {{ APP_NAME }}{% endblock %}
+{% block heading %}Satisfaction client{% endblock %}
+{% block topactions %}<a href="{{ url_for('quality.complaints') }}" class="btn btn--ghost btn--sm">Réclamations</a>{% if current_user.can_edit %} <a href="{{ url_for('quality.survey_create') }}" class="btn btn--primary btn--sm">+ Mesure de satisfaction</a>{% endif %}{% endblock %}
+{% block content %}
+<div class="kpis" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px;">
+  <div class="kpi kpi--total"><div class="kpi__label">Dernier résultat</div><div class="kpi__value">{{ (stats.last.score|round(1)) ~ '' if stats.last else '-' }}<span style="font-size:14px;">{{ ' /100' if stats.last }}</span></div><div class="kpi__sub">{{ stats.last.conducted_on|d if stats.last else 'aucune mesure' }}</div></div>
+  <div class="kpi kpi--sla"><div class="kpi__label">Évolution</div><div class="kpi__value">{{ ('%+.1f'|format(stats.trend)) if stats.trend is not none else '-' }}</div><div class="kpi__sub">par rapport à la mesure précédente</div></div>
+  <div class="kpi kpi--retard"><div class="kpi__label">Sous l'objectif</div><div class="kpi__value">{{ stats.below }}</div></div>
+  <div class="kpi kpi--bientot"><div class="kpi__label">Mesures</div><div class="kpi__value">{{ stats.count }}</div></div>
+</div>
+<div class="panel"><div class="panel__body--flush"><div class="table-wrap">
+  <table class="grid">
+    <thead><tr><th style="width:110px;">Réf.</th><th>Mesure</th><th style="width:110px;">Date</th><th style="width:120px;">Résultat</th><th style="width:110px;">Répondants</th></tr></thead>
+    <tbody>
+    {% for s in items %}
+      <tr {% if current_user.can_edit %}class="row-link" onclick="window.location='{{ url_for('quality.survey_edit', sid=s.id) }}'"{% endif %}>
+        <td class="ref nowrap">{{ s.ref }}</td>
+        <td class="subj">{{ s.title }}<div class="muted" style="font-size:11px;">{{ s.method.label }}{{ ' - ' + s.improvements|truncate(80) if s.improvements }}</div></td>
+        <td class="muted">{{ s.conducted_on|d }}</td>
+        <td class="{{ 'due-cell' if s.below_target else '' }}">{{ s.score|round(1) if s.score is not none else '-' }}{{ ' / objectif ' ~ (s.target|round(1)) if s.target is not none }}</td>
+        <td class="num">{{ s.respondents if s.respondents is not none else '-' }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="5"><div class="empty" style="padding:30px;"><h3>Aucune mesure</h3><p>Surveillez la perception des clients : questionnaires, entretiens, recommandation, analyse des retours (ISO 9001 §9.1.2). Les résultats sont notés sur 100.</p></div></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div></div></div>
+{% endblock %}

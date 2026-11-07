@@ -6,6 +6,9 @@
 
 {% block content %}
 <form class="toolbar" method="get">
+  {%- if 'ISO9001' in fw_active()|map(attribute='code')|list %}
+  <select name="domaine" onchange="this.form.submit()"><option value="">Tous domaines</option><option value="SECURITE" {{ 'selected' if f_domain=='SECURITE' }}>Sécurité de l'information</option><option value="QUALITE" {{ 'selected' if f_domain=='QUALITE' }}>Qualité</option><option value="OPPORTUNITE" {{ 'selected' if f_domain=='OPPORTUNITE' }}>Opportunités</option></select>
+  {%- endif %}
   <select name="statut" onchange="this.form.submit()">
     <option value="">Tous statuts</option>
     {% for s in RiskStatus %}<option value="{{ s.value }}" {{ 'selected' if f_status==s.value }}>{{ s.label }}</option>{% endfor %}
@@ -35,7 +38,7 @@
         {% for r in risks %}
         <tr class="row-link" onclick="window.location='{{ url_for('risks.detail', risk_id=r.id) }}'">
           <td class="ref">{{ r.ref }}</td>
-          <td class="subj">{{ r.title }}
+          <td class="subj">{{ r.title }}{% if r.nature == 'OPPORTUNITE' %} <span class="tag-opp">Opportunité</span>{% endif %}{% if r.risk_domain == 'QUALITE' %} <span class="tag-q">Qualité</span>{% endif %}
             {% if r.controls %}<span class="muted" style="font-size:11px;"> - {{ r.controls|length }} mesure(s)</span>{% endif %}
             <div class="muted" style="font-size:11.5px;">{{ r.asset or '' }}</div>
           </td>

@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block title %}Processus - {{ APP_NAME }}{% endblock %}
+{% block heading %}{{ 'Modifier ' + p.ref if p else 'Nouveau processus' }}{% endblock %}
+{% block topactions %}<a href="{{ url_for('quality.process_detail', pid=p.id) if p else url_for('quality.index') }}" class="btn btn--ghost btn--sm">Retour</a>{% endblock %}
+{% block content %}
+{% set sel_k = p.indicators|map(attribute='id')|list if p else [] %}{% set sel_r = p.risks|map(attribute='id')|list if p else [] %}
+{% set sel_d = p.documents|map(attribute='id')|list if p else [] %}{% set sel_n = p.next_processes|map(attribute='id')|list if p else [] %}
+<form method="post" style="max-width:860px;">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="panel"><div class="panel__head"><h2>Processus</h2></div><div class="panel__body stack">
+    <div class="field"><label>Nom *</label><input type="text" name="name" required maxlength="300" value="{{ p.name if p else '' }}" placeholder="Ex. Vente, Réalisation des prestations, Achats"></div>
+    <div class="form-grid">
+      <div class="field"><label>Type</label><select name="process_type">{% for x in ProcessType %}<option value="{{ x.value }}" {{ 'selected' if (p and p.process_type==x) or (not p and x.value=='REALISATION') }}>{{ x.label }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Pilote</label><select name="pilot_id"><option value="">-</option>{% for u in users %}<option value="{{ u.id }}" {{ 'selected' if p and p.pilot_id==u.id }}>{{ u.name }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="field"><label>Finalité</label><textarea name="purpose" rows="2">{{ p.purpose or '' if p else '' }}</textarea></div>
+    <div class="form-grid">
+      <div class="field"><label>Éléments d'entrée</label><textarea name="inputs" rows="3">{{ p.inputs or '' if p else '' }}</textarea></div>
+      <div class="field"><label>Éléments de sortie</label><textarea name="outputs" rows="3">{{ p.outputs or '' if p else '' }}</textarea></div>
+    </div>
+    <div class="field"><label>Principales activités</label><textarea name="activities" rows="3">{{ p.activities or '' if p else '' }}</textarea></div>
+    <div class="form-grid">
+      <div class="field"><label>Bénéficiaires (clients du processus)</label><textarea name="beneficiaries" rows="2">{{ p.beneficiaries or '' if p else '' }}</textarea></div>
+      <div class="field"><label>Ressources</label><textarea name="resources" rows="2" placeholder="Personnes, compétences, outils, infrastructure">{{ p.resources or '' if p else '' }}</textarea></div>
+    </div>
+  </div></div>
+  <div class="panel" style="margin-top:16px;"><div class="panel__head"><h2>Liens</h2></div><div class="panel__body stack">
+    <div class="field"><label>Processus alimentés (en aval)</label><select name="next_ids" multiple size="4">{% for x in others %}<option value="{{ x.id }}" {{ 'selected' if x.id in sel_n }}>{{ x.ref }} - {{ x.name }}</option>{% endfor %}</select><div class="hint">Ctrl + clic pour en sélectionner plusieurs.</div></div>
+    <div class="field"><label>Indicateurs de performance</label><select name="indicator_ids" multiple size="4">{% for k in indicators %}<option value="{{ k.id }}" {{ 'selected' if k.id in sel_k }}>{{ k.ref }} - {{ k.name }}</option>{% endfor %}</select></div>
+    <div class="field"><label>Risques et opportunités</label><select name="risk_ids" multiple size="4">{% for r in risks %}<option value="{{ r.id }}" {{ 'selected' if r.id in sel_r }}>{{ r.ref }} - {{ r.title }}{{ ' (opportunité)' if r.nature == 'OPPORTUNITE' }}</option>{% endfor %}</select></div>
+    <div class="field"><label>Documents</label><select name="document_ids" multiple size="4">{% for d in documents %}<option value="{{ d.id }}" {{ 'selected' if d.id in sel_d }}>{{ d.ref }} - {{ d.title }}</option>{% endfor %}</select></div>
+  </div></div>
+  <div class="panel" style="margin-top:16px;"><div class="panel__head"><h2>Suivi</h2></div><div class="panel__body stack">
+    <div class="form-grid">
+      <div class="field"><label>Statut</label><select name="status">{% for x in QmsProcessStatus %}<option value="{{ x.value }}" {{ 'selected' if (p and p.status==x) or (not p and x.value=='ACTIF') }}>{{ x.label }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Ordre d'affichage</label><input type="number" name="sort_order" value="{{ p.sort_order if p else 0 }}"></div>
+    </div>
+    <div class="form-grid">
+      <div class="field"><label>Dernière revue</label><input type="date" name="last_review" value="{{ p.last_review.isoformat() if p and p.last_review else '' }}"></div>
+      <div class="field"><label>Prochaine revue</label><input type="date" name="next_review" value="{{ p.next_review.isoformat() if p and p.next_review else '' }}"><div class="hint">Vide : un an après la dernière revue.</div></div>
+    </div>
+    <div class="field"><label>Notes</label><textarea name="notes" rows="2">{{ p.notes or '' if p else '' }}</textarea></div>
+    <div><button class="btn btn--primary" type="submit">Enregistrer</button></div>
+  </div></div>
+</form>
+{% endblock %}

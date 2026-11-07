@@ -12,6 +12,8 @@
   <div class="stack">
     <div class="panel"><div class="panel__head"><h2>Constat</h2>{% if nc.severity.value == 'MAJEURE' %}<span class="appl appl--out">Majeure</span>{% else %}<span class="muted" style="font-size:12px;">Mineure</span>{% endif %}</div><div class="panel__body"><div class="meta-list">
       <div><span>Description</span><b style="white-space:pre-wrap;">{{ nc.description or '-' }}</b></div>
+      {% if nc.nc_kind %}<div><span>Type</span><b>{{ NC_KINDS.get(nc.nc_kind, nc.nc_kind) }}{{ ' - ' + nc.product if nc.product }}</b></div>
+      <div><span>Traitement de l'élément</span><b>{{ NC_DISPOSITIONS.get(nc.disposition, '-') if nc.disposition else '-' }}</b></div>{% endif %}
       <div><span>Origine</span><b>{{ nc.source.label }}{% if nc.finding %} - <a href="{{ url_for('audits.detail', audit_id=nc.finding.audit_id) }}">{{ nc.finding.audit.ref }} / {{ nc.finding.ref }}</a>{% endif %}{% if nc.incident %} - <a href="{{ url_for('incidents.detail', incident_id=nc.incident.id) }}">{{ nc.incident.ref }}</a>{% endif %}</b></div>
       <div><span>Détectée</span><b>{{ nc.detected_at|d }}{{ ' par ' + nc.detected_by if nc.detected_by }}</b></div>
       <div><span>Référence</span><b>{% if nc.clause %}Clause {{ nc.clause }} {% endif %}{% if nc.control %}<a href="{{ url_for('soa.detail', control_id=nc.control.id) }}">{{ nc.control.annex_ref }}</a> {{ nc.control.title }}{% endif %}{% if not nc.clause and not nc.control %}-{% endif %}</b></div>

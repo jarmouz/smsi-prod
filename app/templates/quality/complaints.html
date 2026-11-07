@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}Réclamations clients - {{ APP_NAME }}{% endblock %}
+{% block heading %}Réclamations clients{% endblock %}
+{% block topactions %}{% if current_user.can_edit %}<a href="{{ url_for('quality.complaint_create') }}" class="btn btn--primary btn--sm">+ Réclamation</a>{% endif %}{% endblock %}
+{% block content %}
+<div class="kpis" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px;">
+  <div class="kpi kpi--total"><div class="kpi__label">En cours</div><div class="kpi__value">{{ stats.open }}</div></div>
+  <div class="kpi kpi--retard"><div class="kpi__label">En retard</div><div class="kpi__value">{{ stats.overdue }}</div><div class="kpi__sub">échéance de réponse dépassée</div></div>
+  <div class="kpi kpi--sla"><div class="kpi__label">Reçues cette année</div><div class="kpi__value">{{ stats.year }}</div></div>
+  <div class="kpi kpi--bientot"><div class="kpi__label">Fondées</div><div class="kpi__value">{{ stats.justified }}</div><div class="kpi__sub">sur {{ stats.closed }} clôturée(s)</div></div>
+</div>
+<form class="toolbar" method="get"><select name="ouvertes" onchange="this.form.submit()"><option value="1" {{ 'selected' if f_open=='1' }}>Réclamations en cours</option><option value="0" {{ 'selected' if f_open=='0' }}>Toutes les réclamations</option></select></form>
+<div class="panel" style="margin-top:16px;"><div class="panel__body--flush"><div class="table-wrap">
+  <table class="grid">
+    <thead><tr><th style="width:120px;">Réf.</th><th>Réclamation</th><th style="width:100px;">Gravité</th><th style="width:110px;">Échéance</th><th style="width:170px;">Statut</th></tr></thead>
+    <tbody>
+    {% for c in items %}
+      <tr {% if current_user.can_edit %}class="row-link" onclick="window.location='{{ url_for('quality.complaint_edit', cid=c.id) }}'"{% endif %}>
+        <td class="ref nowrap">{{ c.ref }}</td>
+        <td class="subj">{{ c.customer }}{{ ' - ' + c.product if c.product }}<div class="muted" style="font-size:11px;">reçue le {{ c.received_on|d }}{{ ' - ' + c.nonconformity.ref if c.nonconformity }}</div></td>
+        <td>{% if c.severity.value != 'MINEURE' %}<span class="appl appl--out">{{ c.severity.label }}</span>{% else %}<span class="muted">{{ c.severity.label }}</span>{% endif %}</td>
+        <td class="{{ 'due-cell' if c.overdue else 'muted' }}">{{ c.due_on|d }}</td>
+        <td class="muted">{{ c.status.label }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="5"><div class="empty" style="padding:30px;"><h3>Aucune réclamation {{ 'en cours' if f_open=='1' }}</h3><p>Enregistrez chaque réclamation client : analyse, réponse dans le délai, non-conformité si elle est fondée (ISO 9001 §9.1.2 et §10.2).</p></div></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div></div></div>
+{% endblock %}

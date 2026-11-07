@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% from 'partials/macros.html' import risk_chip, score_badge, control_chip, history_panel, acceptance_chip with context %}
 {% block title %}{{ r.ref }} - {{ APP_NAME }}{% endblock %}
-{% block heading %}{{ r.ref }} - {{ r.title }}{% endblock %}
+{% block heading %}{{ r.ref }} - {{ r.title }}{% if r.nature == 'OPPORTUNITE' %} <span class="tag-opp">Opportunité</span>{% endif %}{% if r.risk_domain == 'QUALITE' %} <span class="tag-q">Qualité</span>{% endif %}{% endblock %}
 {% block topactions %}
   <a href="{{ url_for('risks.index') }}" class="btn btn--ghost btn--sm">Retour</a>
   {% if current_user.can_edit %}<a href="{{ url_for('risks.edit', risk_id=r.id) }}" class="btn btn--primary btn--sm">Modifier</a>{% endif %}

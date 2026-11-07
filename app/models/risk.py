@@ -22,6 +22,9 @@ class Risk(TenantMixin, db.Model):
     asset = db.Column(db.String(255), nullable=True)          # actif / périmètre concerné
     threat = db.Column(db.String(255), nullable=True)         # menace
     vulnerability = db.Column(db.String(255), nullable=True)  # vulnérabilité
+    # ISO 9001 (6.1) : domaine (NULL = sécurité de l'information, QUALITE) et nature (NULL = risque, OPPORTUNITE)
+    risk_domain = db.Column(db.String(16), nullable=True, index=True)
+    nature = db.Column(db.String(12), nullable=True)
 
     # Risque inhérent (échelles de l'organisation : 3 à 6 niveaux, voir risk_criteria)
     likelihood = db.Column(db.Integer, default=3, nullable=False)

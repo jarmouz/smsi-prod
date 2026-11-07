@@ -12,6 +12,13 @@
       <div class="panel__head"><h2>Description du risque</h2></div>
       <div class="panel__body stack">
         <div class="field"><label>Intitulé *</label><input type="text" name="title" required value="{{ risk.title if risk else '' }}" placeholder="Ex. Compromission de comptes à privilèges"></div>
+        {%- if 'ISO9001' in fw_active()|map(attribute='code')|list %}
+        <input type="hidden" name="q_present" value="1">
+        <div class="form-grid">
+          <div class="field"><label>Domaine</label><select name="risk_domain"><option value="">Sécurité de l'information</option>{% for k, l in RISK_DOMAINS.items() %}<option value="{{ k }}" {{ 'selected' if risk and risk.risk_domain == k }}>{{ l }}</option>{% endfor %}</select></div>
+          <div class="field"><label>Nature</label><select name="nature"><option value="">Risque (menace)</option>{% for k, l in RISK_NATURES.items() %}<option value="{{ k }}" {{ 'selected' if risk and risk.nature == k }}>{{ l }} (effet positif à saisir)</option>{% endfor %}</select><div class="hint">Pour une opportunité, l'impact mesure le bénéfice attendu.</div></div>
+        </div>
+        {%- endif %}
         <div class="field"><label>Description</label><textarea name="description" rows="2">{{ risk.description if risk else '' }}</textarea></div>
         <div class="form-grid">
           <div class="field"><label>Actif / périmètre</label><input type="text" name="asset" value="{{ risk.asset if risk else '' }}"></div>

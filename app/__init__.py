@@ -101,6 +101,7 @@ def _register_blueprints(app):
     from app.blueprints.aisystems import bp as aisystems_bp
     from app.blueprints.bcplans import bp as bcplans_bp
     from app.blueprints.itsm import bp as itsm_bp
+    from app.blueprints.quality import bp as quality_bp
     from app.blueprints.requirements import bp as requirements_bp
     from app.blueprints.competences import bp as competences_bp
     from app.blueprints.continuity import bp as continuity_bp
@@ -110,7 +111,7 @@ def _register_blueprints(app):
     for b in (auth_bp, dash_bp, soa_bp, risks_bp, audits_bp,
               reviews_bp, documents_bp, evidence_bp, admin_bp, attachments_bp, docs_bp, onlyoffice_bp,
               assets_bp, incidents_bp, awareness_bp, platform_bp, account_bp, context_bp, objectives_bp,
-              nonconformities_bp, suppliers_bp, requirements_bp, competences_bp, continuity_bp, changes_bp, imports_bp, privacy_bp, aisystems_bp, bcplans_bp, itsm_bp):
+              nonconformities_bp, suppliers_bp, requirements_bp, competences_bp, continuity_bp, changes_bp, imports_bp, privacy_bp, aisystems_bp, bcplans_bp, itsm_bp, quality_bp):
         app.register_blueprint(b)
 
 
@@ -145,7 +146,8 @@ def _register_jinja(app):
 
     # Modules qui ont plusieurs entrées dans le menu : page -> entrée de menu (préfixe d'endpoint)
     nav_sections = [("itsm.problem", "itsm.problems"), ("itsm.release", "itsm.releases"),
-                    ("privacy.request", "privacy.requests_index")]
+                    ("privacy.request", "privacy.requests_index"),
+                    ("quality.survey", "quality.surveys"), ("quality.complaint", "quality.complaints")]
 
     @app.template_global()
     def nav_section(endpoint):
@@ -155,7 +157,10 @@ def _register_jinja(app):
                 return target
         return endpoint.split(".")[0] + ".index"
 
-    app.jinja_env.globals["NAV_MULTI"] = {"itsm", "privacy"}
+    app.jinja_env.globals["NAV_MULTI"] = {"itsm", "privacy", "quality"}
+    from app.models.quality import RISK_DOMAINS, RISK_NATURES, NC_KINDS, NC_DISPOSITIONS
+    app.jinja_env.globals.update(RISK_DOMAINS=RISK_DOMAINS, RISK_NATURES=RISK_NATURES, NC_KINDS=NC_KINDS,
+                                 NC_DISPOSITIONS=NC_DISPOSITIONS)
 
     @app.template_filter("grp")
     def _grp(value):

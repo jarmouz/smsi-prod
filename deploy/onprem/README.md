@@ -90,7 +90,9 @@ section « Sauvegardes » ci-dessous.
   qu'elle n'est pas activée. Également disponibles : l'**ISO 22301**
   (continuité : plans de continuité et de reprise) et l'**ISO/IEC 20000-1**
   (services informatiques : catalogue et niveaux de service, problèmes, mises
-  en production), évaluées exigence par exigence.
+  en production) et l'**ISO 9001** (qualité : cartographie des processus,
+  satisfaction client, réclamations, risques et opportunités, produits non
+  conformes), évaluées exigence par exigence.
 - **Assistant IA** : facultatif, il n'est utilisable que si la VM peut joindre
   `api.anthropic.com` ; il reste désactivé tant que la clé d'API n'est pas
   renseignée (Plateforme) puis activée par le RSSI.

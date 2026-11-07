@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}Cartographie des processus - {{ APP_NAME }}{% endblock %}
+{% block heading %}Cartographie des processus{% endblock %}
+{% block topactions %}{% if current_user.can_edit %}<a href="{{ url_for('quality.process_create') }}" class="btn btn--primary btn--sm">+ Processus</a>{% endif %}{% endblock %}
+{% block content %}
+<div class="kpis" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px;">
+  <div class="kpi kpi--total"><div class="kpi__label">Processus</div><div class="kpi__value">{{ stats.live }}</div><div class="kpi__sub">en vigueur ou en définition</div></div>
+  <div class="kpi kpi--retard"><div class="kpi__label">Sans pilote</div><div class="kpi__value">{{ stats.no_pilot }}</div></div>
+  <div class="kpi kpi--bientot"><div class="kpi__label">Sans indicateur</div><div class="kpi__value">{{ stats.no_kpi }}</div></div>
+  <div class="kpi kpi--sla"><div class="kpi__label">Avec points à traiter</div><div class="kpi__value">{{ stats.gaps }}</div></div>
+</div>
+{% macro card(p) -%}
+<a class="pmap__card{{ ' has-gaps' if p.gaps }}" href="{{ url_for('quality.process_detail', pid=p.id) }}">
+  <span class="pmap__ref">{{ p.ref }}</span><b>{{ p.name }}</b>
+  <span class="pmap__meta">{{ p.pilot.name if p.pilot else 'sans pilote' }}{{ ' - ' ~ p.indicators|length ~ ' indicateur(s)' if p.indicators }}</span>
+  {% if p.gaps %}<span class="pmap__gaps">{{ p.gaps|length }} point(s) à traiter</span>{% endif %}
+</a>
+{%- endmacro %}
+<div class="pmap" aria-label="Cartographie des processus">
+  {% for t in ProcessType %}
+  <section class="pmap__band pmap__band--{{ t.value|lower }}">
+    <h2>{{ t.label }}</h2>
+    {% if t.value == 'REALISATION' %}<div class="pmap__flow"><span class="pmap__edge">Exigences et attentes des clients</span>
+      <div class="pmap__cards">{% for p in bands[t] %}{{ card(p) }}{% else %}<span class="muted pmap__empty">Aucun processus de réalisation</span>{% endfor %}</div>
+      <span class="pmap__edge">Satisfaction des clients</span></div>
+    {% else %}
+    <div class="pmap__cards">{% for p in bands[t] %}{{ card(p) }}{% else %}<span class="muted pmap__empty">Aucun {{ t.label|lower }}</span>{% endfor %}</div>
+    {% endif %}
+  </section>
+  {% endfor %}
+</div>
+{% set retired = procs|selectattr('status.value', 'equalto', 'RETIRE')|list %}
+{% if retired %}<p class="muted" style="font-size:12px;margin-top:10px;">Processus retirés : {% for p in retired %}<a href="{{ url_for('quality.process_detail', pid=p.id) }}">{{ p.ref }} {{ p.name }}</a>{{ ', ' if not loop.last }}{% endfor %}.</p>{% endif %}
+{% if not procs %}<div class="empty" style="margin-top:14px;"><h3>Aucun processus</h3><p>Décrivez les processus du système de management de la qualité : finalité, pilote, entrées et sorties, ressources, indicateurs, risques et interactions (ISO 9001 §4.4).</p></div>{% endif %}
+{% endblock %}

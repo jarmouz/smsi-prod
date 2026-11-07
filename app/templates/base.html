@@ -125,6 +125,13 @@
         ('aisystems.index', 'spark', "Systèmes d'IA"),
       ]) }}
       {%- endif %}
+      {%- if 'ISO9001' in _fw_codes %}
+      {{ nav_group('qualite', 'Qualité', [
+        ('quality.index', 'layers', 'Cartographie des processus'),
+        ('quality.surveys', 'people', 'Satisfaction client'),
+        ('quality.complaints', 'alert', 'Réclamations clients'),
+      ]) }}
+      {%- endif %}
       {%- if 'ISO20000' in _fw_codes %}
       {{ nav_group('services', 'Services IT', [
         ('itsm.index', 'layers', 'Catalogue de services'),

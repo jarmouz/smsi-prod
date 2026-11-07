@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% from 'partials/macros.html' import history_panel with context %}
+{% block title %}Réclamation - {{ APP_NAME }}{% endblock %}
+{% block heading %}{{ c.ref + ' - ' + c.customer if c else 'Nouvelle réclamation' }}{% endblock %}
+{% block topactions %}<a href="{{ url_for('quality.complaints') }}" class="btn btn--ghost btn--sm">Retour</a>{% if c and not c.nonconformity_id and current_user.can_edit %} <a href="{{ url_for('nonconformities.create', reclamation=c.id) }}" class="btn btn--subtle btn--sm">Ouvrir une non-conformité</a>{% endif %}{% endblock %}
+{% block content %}
+<div class="detail-grid">
+<form method="post" class="stack">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="panel"><div class="panel__head"><h2>Réclamation</h2></div><div class="panel__body stack">
+    <div class="form-grid">
+      <div class="field"><label>Client *</label><input type="text" name="customer" required maxlength="200" value="{{ c.customer if c else '' }}"></div>
+      <div class="field"><label>Canal</label><input type="text" name="channel" maxlength="120" value="{{ c.channel or '' if c else '' }}" placeholder="Courriel, téléphone, visite..."></div>
+    </div>
+    <div class="field"><label>Produit ou service concerné</label><input type="text" name="product" maxlength="300" value="{{ c.product or '' if c else '' }}"></div>
+    <div class="field"><label>Description</label><textarea name="description" rows="3">{{ c.description or '' if c else '' }}</textarea></div>
+    <div class="form-grid">
+      <div class="field"><label>Reçue le</label><input type="date" name="received_on" value="{{ c.received_on.isoformat() if c and c.received_on else '' }}"></div>
+      <div class="field"><label>Réponse attendue avant le</label><input type="date" name="due_on" value="{{ c.due_on.isoformat() if c and c.due_on else '' }}"><div class="hint">Vide : {{ days }} jours après la réception.</div></div>
+    </div>
+    <div class="field"><label>Gravité</label><select name="severity">{% for x in ComplaintSeverity %}<option value="{{ x.value }}" {{ 'selected' if c and c.severity==x }}>{{ x.label }}</option>{% endfor %}</select></div>
+  </div></div>
+  <div class="panel"><div class="panel__head"><h2>Traitement</h2></div><div class="panel__body stack">
+    <div class="field"><label>Analyse et cause</label><textarea name="analysis" rows="2">{{ c.analysis or '' if c else '' }}</textarea></div>
+    <div class="field"><label>Réponse apportée au client</label><textarea name="response" rows="2">{{ c.response or '' if c else '' }}</textarea></div>
+    <div class="form-grid">
+      <div class="field"><label>Réclamation fondée ?</label><select name="justified"><option value="">À déterminer</option><option value="oui" {{ 'selected' if c and c.justified is sameas true }}>Oui</option><option value="non" {{ 'selected' if c and c.justified is sameas false }}>Non</option></select></div>
+      <div class="field"><label>Client satisfait de la réponse ?</label><select name="customer_satisfied"><option value="">Inconnu</option><option value="oui" {{ 'selected' if c and c.customer_satisfied is sameas true }}>Oui</option><option value="non" {{ 'selected' if c and c.customer_satisfied is sameas false }}>Non</option></select></div>
+    </div>
+    <div class="field"><label>Non-conformité liée</label><select name="nonconformity_id"><option value="">-</option>{% for n in ncs %}<option value="{{ n.id }}" {{ 'selected' if c and c.nonconformity_id==n.id }}>{{ n.ref }} - {{ n.title }}</option>{% endfor %}</select></div>
+    <div class="form-grid">
+      <div class="field"><label>Statut</label><select name="status">{% for x in ComplaintStatus %}<option value="{{ x.value }}" {{ 'selected' if c and c.status==x }}>{{ x.label }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Responsable</label><select name="owner_id"><option value="">-</option>{% for u in users %}<option value="{{ u.id }}" {{ 'selected' if c and c.owner_id==u.id }}>{{ u.name }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="field"><label>Clôturée le</label><input type="date" name="closed_on" value="{{ c.closed_on.isoformat() if c and c.closed_on else '' }}"><div class="hint">Renseignée automatiquement à la clôture.</div></div>
+    <div><button class="btn btn--primary" type="submit">Enregistrer</button></div>
+  </div></div>
+</form>
+{% if c %}<div class="stack">{{ history_panel(c) }}</div>{% endif %}
+</div>
+{% endblock %}

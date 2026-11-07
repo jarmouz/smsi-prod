@@ -9,6 +9,14 @@
   {% if not nc %}<input type="hidden" name="finding_id" value="{{ d.finding_id or '' }}"><input type="hidden" name="incident_id" value="{{ d.incident_id or '' }}">{% endif %}
   <div class="panel"><div class="panel__head"><h2>Constat</h2></div><div class="panel__body stack">
     <div class="field"><label>Intitulé *</label><input type="text" name="title" required value="{{ d.title or '' }}"></div>
+    {%- if 'ISO9001' in fw_active()|map(attribute='code')|list %}
+    <input type="hidden" name="q_present" value="1">{% if request.args.get('reclamation') %}<input type="hidden" name="complaint_id" value="{{ request.args.get('reclamation') }}">{% endif %}
+    <div class="form-grid">
+      <div class="field"><label>Type de non-conformité</label><select name="nc_kind"><option value="">Non-conformité du système de management</option>{% for k, l in NC_KINDS.items() %}<option value="{{ k }}" {{ 'selected' if d.nc_kind == k }}>{{ l }} (8.7)</option>{% endfor %}</select></div>
+      <div class="field"><label>Traitement de l'élément non conforme</label><select name="disposition"><option value="">-</option>{% for k, l in NC_DISPOSITIONS.items() %}<option value="{{ k }}" {{ 'selected' if d.disposition == k }}>{{ l }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="field"><label>Produit ou service concerné</label><input type="text" name="product" maxlength="300" value="{{ d.product or '' }}" placeholder="Seulement pour un produit ou service non conforme"></div>
+    {%- endif %}
     <div class="field"><label>Description (exigence non satisfaite, preuves)</label><textarea name="description" rows="3">{{ d.description or '' }}</textarea></div>
     <div class="form-grid">
       <div class="field"><label>Origine</label><select name="source">{% for x in NcSource %}<option value="{{ x.value }}" {{ 'selected' if d.source==x }}>{{ x.label }}</option>{% endfor %}</select></div>

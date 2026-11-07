@@ -50,6 +50,8 @@ CATALOGUES = {
                  "kind": "requirements", "sort_order": 40, "items": lambda: _catalogue("ISO22301", "clause")},
     "ISO20000": {"name": "ISO/IEC 20000-1:2018", "short_name": "20000-1", "domain": "Management des services informatiques",
                  "kind": "requirements", "sort_order": 50, "items": lambda: _catalogue("ISO20000", "clause")},
+    "ISO9001": {"name": "ISO 9001:2015", "short_name": "9001", "domain": "Management de la qualité",
+                "kind": "requirements", "sort_order": 60, "items": lambda: _catalogue("ISO9001", "clause")},
 }
 
 

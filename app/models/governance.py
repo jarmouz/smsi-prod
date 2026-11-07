@@ -222,6 +222,10 @@ class NonConformity(TenantMixin, db.Model):
     root_cause = db.Column(db.Text, nullable=True)            # 10.2 b) causes
     extent = db.Column(db.Text, nullable=True)                # 10.2 b) NC similaires existantes ou potentielles
     isms_changes = db.Column(db.Text, nullable=True)          # 10.2 e) modifications du SMSI
+    # ISO 9001 (8.7) : élément de sortie non conforme (NULL = non-conformité du système)
+    nc_kind = db.Column(db.String(12), nullable=True)
+    product = db.Column(db.String(300), nullable=True)        # produit ou service concerné
+    disposition = db.Column(db.String(16), nullable=True)     # traitement : correction, dérogation, rebut...
     effectiveness_due = db.Column(db.Date, nullable=True)
     effectiveness_at = db.Column(db.DateTime, nullable=True)  # 10.2 d) revue d'efficacité
     effectiveness_by_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)

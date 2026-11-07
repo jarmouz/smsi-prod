@@ -153,6 +153,13 @@ UPGRADE_DDL = [
     # P3 : récapitulatif des échéances par e-mail
     "ALTER TABLE users ADD COLUMN IF NOT EXISTS digest_frequency VARCHAR(12) NOT NULL DEFAULT 'HEBDO'",
     "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_digest_at TIMESTAMP NULL",
+    # ISO 9001 (3.3) : risques qualité et opportunités, produits et services non conformes
+    "ALTER TABLE risks ADD COLUMN IF NOT EXISTS risk_domain VARCHAR(16) NULL",
+    "ALTER TABLE risks ADD COLUMN IF NOT EXISTS nature VARCHAR(12) NULL",
+    "CREATE INDEX IF NOT EXISTS ix_risks_risk_domain ON risks (risk_domain)",
+    "ALTER TABLE nonconformities ADD COLUMN IF NOT EXISTS nc_kind VARCHAR(12) NULL",
+    "ALTER TABLE nonconformities ADD COLUMN IF NOT EXISTS product VARCHAR(300) NULL",
+    "ALTER TABLE nonconformities ADD COLUMN IF NOT EXISTS disposition VARCHAR(16) NULL",
 ]
 
 # Tables rattachées à une organisation (voir TenantMixin)

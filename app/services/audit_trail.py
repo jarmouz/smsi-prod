@@ -41,6 +41,7 @@ ENTITY_LABELS = {
     "AiSystem": "Système d'IA", "AiImpactAssessment": "Étude d'impact IA",
     "ContinuityPlan": "Plan de continuité", "ItService": "Service", "ServiceMeasure": "Mesure de service",
     "Problem": "Problème", "Release": "Mise en production",
+    "QmsProcess": "Processus", "CustomerSurvey": "Mesure de satisfaction", "Complaint": "Réclamation client",
 }
 FIELD_LABELS = {
     "title": "Titre", "name": "Nom", "description": "Description", "status": "Statut", "owner_id": "Propriétaire",
@@ -97,6 +98,15 @@ FIELD_LABELS = {
     "workaround": "Contournement", "resolution": "Résolution", "change_id": "Changement correctif",
     "opened_on": "Ouvert le", "resolved_on": "Résolu le", "planned_on": "Prévue le", "deployed_on": "Déployée le",
     "content": "Contenu", "rollback_plan": "Plan de retour arrière", "changes": "Changements",
+    # Qualité (ISO 9001)
+    "risk_domain": "Domaine", "nature": "Nature", "nc_kind": "Type de non-conformité", "product": "Produit ou service",
+    "disposition": "Traitement de l'élément", "process_type": "Type de processus", "pilot_id": "Pilote",
+    "inputs": "Éléments d'entrée", "outputs": "Éléments de sortie", "beneficiaries": "Bénéficiaires",
+    "activities": "Activités", "indicators": "Indicateurs", "documents": "Documents", "next_processes": "Processus en aval",
+    "sort_order": "Ordre", "method": "Méthode", "conducted_on": "Date", "respondents": "Répondants", "score": "Résultat",
+    "strengths": "Points forts", "improvements": "Axes d'amélioration", "actions": "Actions", "customer": "Client",
+    "analysis": "Analyse", "justified": "Fondée", "customer_satisfied": "Client satisfait",
+    "nonconformity_id": "Non-conformité",
 }
 
 
@@ -145,7 +155,7 @@ def _fmt(sess, key, value):
     if key.endswith("_id") and isinstance(value, int) and key in ("owner_id", "assignee_id", "lead_auditor_id", "accepted_by_id",
                                                                     "uploaded_by_id", "approved_by_id", "recorded_by_id",
                                                                     "effectiveness_by_id", "auditor_id", "user_id",
-                                                                    "requested_by_id", "handled_by_id", "assessor_id"):
+                                                                    "requested_by_id", "handled_by_id", "assessor_id", "pilot_id"):
         u = sess.get(User, value)
         return u.name if u else f"#{value}"
     if isinstance(value, enum.Enum):

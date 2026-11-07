@@ -22,7 +22,7 @@
     {% for n in ncs %}
       <tr class="row-link" onclick="window.location='{{ url_for('nonconformities.detail', nc_id=n.id) }}'">
         <td class="ref">{{ n.ref }}</td>
-        <td class="subj">{{ n.title }}<div class="muted" style="font-size:11px;">{{ n.detected_at|d }}{{ ' - ' + n.owner.name if n.owner }}{% if n.control %} - {{ n.control.annex_ref }}{% elif n.clause %} - clause {{ n.clause }}{% endif %}</div></td>
+        <td class="subj">{{ n.title }}{% if n.nc_kind %} <span class="tag-q">Produit / service</span>{% endif %}<div class="muted" style="font-size:11px;">{{ n.detected_at|d }}{{ ' - ' + n.owner.name if n.owner }}{% if n.control %} - {{ n.control.annex_ref }}{% elif n.clause %} - clause {{ n.clause }}{% endif %}</div></td>
         <td class="muted">{{ n.source.label }}</td>
         <td>{% if n.severity.value == 'MAJEURE' %}<span class="appl appl--out">Majeure</span>{% else %}<span class="muted">Mineure</span>{% endif %}</td>
         <td class="mono">{{ n.actions|selectattr('status.value', 'in', ['REALISEE', 'VERIFIEE'])|list|length }}/{{ n.actions|length }}{% if n.is_overdue and n.status.value != 'CLOTUREE' %} <span class="due-cell">retard</span>{% endif %}</td>
