@@ -22,10 +22,29 @@ def _iso27001_items():
             yield {"kind": "control", "ref": ref, "group": theme.value, "title": title, "sort_order": order}
 
 
+def _items_from(groups):
+    def gen():
+        order = 0
+        for group, items in groups:
+            for ref, title in items:
+                order += 1
+                yield {"kind": "control", "ref": ref, "group": group, "title": title, "sort_order": order}
+    return gen
+
+
+def _catalogue(name):
+    from app.services import catalogue_data
+    return _items_from(getattr(catalogue_data, name))()
+
+
 # code -> définition. "items" est une fonction (évaluée à la synchronisation).
 CATALOGUES = {
     ISO27001: {"name": "ISO/IEC 27001:2022", "short_name": "27001", "domain": "Sécurité de l'information",
                "kind": "controls", "sort_order": 10, "items": _iso27001_items},
+    "ISO27701": {"name": "ISO/IEC 27701:2019", "short_name": "27701", "domain": "Protection de la vie privée",
+                 "kind": "controls", "sort_order": 20, "items": lambda: _catalogue("ISO27701")},
+    "ISO42001": {"name": "ISO/IEC 42001:2023", "short_name": "42001", "domain": "Intelligence artificielle",
+                 "kind": "controls", "sort_order": 30, "items": lambda: _catalogue("ISO42001")},
 }
 
 
@@ -49,7 +68,48 @@ def sync_catalogues():
                 row = FrameworkItem(framework_id=fw.id, kind=it["kind"], ref=it["ref"])
                 db.session.add(row)
             row.group, row.title, row.sort_order = it["group"], it["title"], it["sort_order"]
+    db.session.flush()
+    _sync_mappings()
     db.session.commit()
+
+
+def _sync_mappings():
+    from app.models import ItemMapping
+    from app.services.catalogue_data import MAPPINGS
+    ids = {(f.code, i.ref): i.id for f in Framework.query.all() for i in f.items if i.kind == "control"}
+    have = {(m.source_id, m.target_id) for m in ItemMapping.query.all()}
+    for sc, sr, tc, tr in MAPPINGS:
+        a, b = ids.get((sc, sr)), ids.get((tc, tr))
+        if a and b and (a, b) not in have:
+            db.session.add(ItemMapping(source_id=a, target_id=b, relation="partielle"))
+            have.add((a, b))
+
+
+def correspondences(control):
+    """Mesures des AUTRES normes actives de l'organisation qui correspondent à cette mesure
+    (correspondances proposées, dans les deux sens)."""
+    from app.models import ItemMapping
+    item = (FrameworkItem.query.filter_by(framework_id=control.framework_id, kind="control", ref=control.ref)
+            .first())
+    if item is None:
+        return []
+    pairs = ItemMapping.query.filter(db.or_(ItemMapping.source_id == item.id, ItemMapping.target_id == item.id)).all()
+    other_ids = {m.target_id if m.source_id == item.id else m.source_id for m in pairs}
+    if not other_ids:
+        return []
+    active_ids = {f.id for f in active()}
+    out = []
+    for it in FrameworkItem.query.filter(FrameworkItem.id.in_(other_ids)).all():
+        if it.framework_id in active_ids:
+            c = Control.query.filter_by(framework_id=it.framework_id, ref=it.ref).first()
+            if c:
+                out.append(c)
+    return sorted(out, key=lambda c: (c.framework.sort_order, c.id))
+
+
+def controls_frameworks():
+    """Normes actives qui ont un catalogue de mesures (une DdA chacune)."""
+    return [f for f in active() if f.kind == "controls"]
 
 
 def get(code):
@@ -154,6 +214,8 @@ def delete_links(entity):
 def migrate():
     """Rattache les mesures existantes à l'ISO 27001 et l'active pour chaque organisation.
     Appelée par flask upgrade-db après db.create_all()."""
+    with db.engine.begin() as conn:     # colonnes élargies avant d'y écrire les groupes longs
+        conn.execute(text("ALTER TABLE framework_items ALTER COLUMN \"group\" TYPE VARCHAR(80)"))
     sync_catalogues()
     fid = get(ISO27001).id
     cols = {c["name"] for c in inspect(db.engine).get_columns("controls")}
@@ -162,7 +224,8 @@ def migrate():
             conn.execute(text("ALTER TABLE controls ADD COLUMN framework_id INTEGER REFERENCES frameworks(id)"))
         conn.execute(text("UPDATE controls SET framework_id = :f WHERE framework_id IS NULL"), {"f": fid})
         conn.execute(text("ALTER TABLE controls ALTER COLUMN framework_id SET NOT NULL"))
-        conn.execute(text("ALTER TABLE controls ALTER COLUMN theme TYPE VARCHAR(40)"))
+        conn.execute(text("ALTER TABLE controls ALTER COLUMN theme TYPE VARCHAR(80)"))
+        conn.execute(text("ALTER TABLE framework_items ALTER COLUMN \"group\" TYPE VARCHAR(80)"))
         conn.execute(text("CREATE INDEX IF NOT EXISTS ix_controls_framework_id ON controls (framework_id)"))
         conn.execute(text("ALTER TABLE controls DROP CONSTRAINT IF EXISTS uq_controls_org_ref"))
         conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uq_controls_org_fw_ref "

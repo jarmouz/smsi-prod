@@ -27,7 +27,7 @@ class GroupType(TypeDecorator):
     """Groupe d'une mesure : un Theme pour l'ISO 27001 (comportement historique :
     .label, .annex), une simple chaîne pour les autres référentiels."""
 
-    impl = String(40)
+    impl = String(80)
     cache_ok = True
 
     def process_bind_param(self, value, dialect):
@@ -72,7 +72,7 @@ class FrameworkItem(db.Model):
     framework_id = db.Column(db.Integer, db.ForeignKey("frameworks.id", ondelete="CASCADE"), nullable=False, index=True)
     kind = db.Column(db.String(16), nullable=False, default="control")    # "clause" | "control"
     ref = db.Column(db.String(24), nullable=False)
-    group = db.Column(db.String(40), nullable=True)                       # thème / chapitre
+    group = db.Column(db.String(80), nullable=True)                       # thème / chapitre
     title = db.Column(db.String(300), nullable=False)
     sort_order = db.Column(db.Integer, nullable=False, default=0)
 

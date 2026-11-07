@@ -2,7 +2,7 @@
 {% from 'partials/macros.html' import control_status, applicability, risk_chip, history_panel with context %}
 {% block title %}{{ c.annex_ref }} - {{ APP_NAME }}{% endblock %}
 {% block heading %}{{ c.annex_ref }} - {{ c.title }}{% endblock %}
-{% block topactions %}<a href="{{ url_for('soa.index') }}" class="btn btn--ghost btn--sm">Retour</a>{% endblock %}
+{% block topactions %}<a href="{{ url_for('soa.index', norme=norme) }}" class="btn btn--ghost btn--sm">Retour</a>{% endblock %}
 
 {% block content %}
 <div class="detail-grid">
@@ -78,12 +78,26 @@
       <div class="panel__head"><h2>Repères</h2></div>
       <div class="panel__body">
         <div class="meta-list">
-          <div><span>Thème</span><b>{{ c.theme.annex }} - {{ c.theme.label }}</b></div>
+          {% if norme %}<div><span>Norme</span><b>{{ c.framework.name }}</b></div>{% endif %}
+          <div><span>Thème</span><b>{{ c.theme|grp }}</b></div>
           <div><span>Référence</span><b class="mono">{{ c.annex_ref }}</b></div>
           <div><span>Dernière modif.</span><b>{{ c.updated_at|d }}</b></div>
         </div>
       </div>
     </div>
+    {% if corresp %}
+    <div class="panel">
+      <div class="panel__head"><h2>Correspondances</h2><span class="rail__badge">{{ corresp|length }}</span></div>
+      <div class="panel__body--flush"><div class="table-wrap"><table class="grid"><tbody>
+        {% for x in corresp %}
+        <tr class="row-link" onclick="window.location='{{ url_for('soa.detail', control_id=x.id) }}'">
+          <td class="ref" style="width:110px;">{{ x.framework.short_name }} {{ x.annex_ref }}</td><td class="subj">{{ x.title }}</td><td>{{ control_status(x.status) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody></table></div>
+      <div class="panel__body" style="font-size:11.5px;padding-top:8px;"><span class="muted">Correspondances proposées entre normes (partielles) : une preuve ou une mise en œuvre peut servir aux deux, à vérifier.</span></div></div>
+    </div>
+    {% endif %}
     <div class="panel">
       <div class="panel__head"><h2>Risques traités</h2><span class="rail__badge">{{ c.risks|length }}</span></div>
       <div class="panel__body--flush">

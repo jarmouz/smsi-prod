@@ -2,22 +2,24 @@
 {% from 'partials/macros.html' import control_status, applicability, export_menu with context %}
 {% block title %}Déclaration d'applicabilité - {{ APP_NAME }}{% endblock %}
 {% block heading %}Déclaration d'applicabilité (DdA){% endblock %}
-{% block topactions %}{{ export_menu([('dda', "Déclaration d'applicabilité")]) }}{% if current_user.can_edit %} <a href="{{ url_for('imports.upload', kind='dda') }}" class="btn btn--subtle btn--sm">Importer</a>{% endif %}{% endblock %}
+{% block topactions %}{% if not norme %}{{ export_menu([('dda', "Déclaration d'applicabilité")]) }}{% if current_user.can_edit %} <a href="{{ url_for('imports.upload', kind='dda') }}" class="btn btn--subtle btn--sm">Importer</a>{% endif %}{% endif %}{% endblock %}
 
 {% block content %}
 {% set can_edit = current_user.can_edit %}
+{% if fws|length > 1 %}<div class="fw-tabs">{% for f in fws %}<a href="{{ url_for('soa.index', norme=None if loop.first and f.code == 'ISO27001' else f.code) }}" class="fw-tab {{ 'is-active' if f.id == fw.id }}">{{ f.name }}</a>{% endfor %}</div>{% endif %}
 <div class="kpis" style="grid-template-columns:repeat(4,1fr);margin-bottom:18px;">
-  <div class="kpi kpi--total"><div class="kpi__label">Catalogue</div><div class="kpi__value">{{ stats.total }}</div><div class="kpi__sub">mesures Annexe A:2022</div></div>
+  <div class="kpi kpi--total"><div class="kpi__label">Catalogue</div><div class="kpi__value">{{ stats.total }}</div><div class="kpi__sub">{{ 'mesures Annexe A:2022' if not norme else 'mesures ' ~ fw.short_name }}</div></div>
   <div class="kpi kpi--sla"><div class="kpi__label">Retenues</div><div class="kpi__value">{{ stats.applicable }}</div><div class="kpi__sub">applicables</div></div>
   <div class="kpi kpi--ouvert"><div class="kpi__label">Implémentées</div><div class="kpi__value">{{ stats.implementees }}</div><div class="kpi__sub">mesures en place</div></div>
   <div class="kpi kpi--bientot"><div class="kpi__label">Exclues</div><div class="kpi__value">{{ stats.exclues }}</div><div class="kpi__sub">avec justification</div></div>
 </div>
 
 <form class="toolbar" method="get">
+  {% if norme %}<input type="hidden" name="norme" value="{{ norme }}">{% endif %}
   <input type="text" name="q" class="search" placeholder="Rechercher (réf. ou intitulé)…" value="{{ search or '' }}">
   <select name="theme" onchange="this.form.submit()">
     <option value="">Tous les thèmes</option>
-    {% for t in Theme %}<option value="{{ t.value }}" {{ 'selected' if f_theme==t.value }}>{{ t.annex }} - {{ t.label }}</option>{% endfor %}
+    {% for v, lbl in groups %}<option value="{{ v }}" {{ 'selected' if f_theme==v }}>{{ lbl }}</option>{% endfor %}
   </select>
   <select name="statut" onchange="this.form.submit()">
     <option value="">Tous statuts</option>
@@ -29,14 +31,14 @@
     <option value="non" {{ 'selected' if f_appl=='non' }}>Exclues</option>
   </select>
   <button class="btn btn--subtle btn--sm" type="submit">Filtrer</button>
-  {% if search or f_theme or f_status or f_appl %}<a href="{{ url_for('soa.index') }}" class="btn btn--ghost btn--sm">Réinitialiser</a>{% endif %}
+  {% if search or f_theme or f_status or f_appl %}<a href="{{ url_for('soa.index', norme=norme) }}" class="btn btn--ghost btn--sm">Réinitialiser</a>{% endif %}
 </form>
 
 {% if can_edit %}<p class="muted" style="font-size:12.5px;margin:12px 2px 0;">Cliquez sur une ligne pour modifier l'applicabilité, le statut et la justification directement ici.</p>{% endif %}
 
 {% for theme, controls in grouped.items() %}
 <div class="panel" style="margin-top:14px;">
-  <div class="panel__head"><h2>{{ theme.annex }} - {{ theme.label }}</h2><span class="rail__badge">{{ controls|length }}</span></div>
+  <div class="panel__head"><h2>{{ theme|grp }}</h2><span class="rail__badge">{{ controls|length }}</span></div>
   <div class="panel__body--flush"><div class="table-wrap">
     <table class="grid">
       <thead><tr><th style="width:70px;">Réf.</th><th>Intitulé</th><th style="width:90px;">Applicab.</th><th style="width:130px;">Statut</th><th style="width:130px;">Responsable</th>{% if can_edit %}<th style="width:80px;"></th>{% endif %}</tr></thead>
@@ -59,7 +61,7 @@
           <td colspan="6" style="background:var(--paper);">
             <form method="post" action="{{ url_for('soa.update', control_id=c.id) }}" class="soa-edit">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <input type="hidden" name="next" value="{{ url_for('soa.index', theme=f_theme, statut=f_status, applicable=f_appl, q=search) }}#c{{ c.id }}">
+              <input type="hidden" name="next" value="{{ url_for('soa.index', norme=norme, theme=f_theme, statut=f_status, applicable=f_appl, q=search) }}#c{{ c.id }}">
               <div class="form-grid" style="margin-bottom:10px;">
                 <div class="field"><label>Applicabilité</label>
                   <select name="applicable">

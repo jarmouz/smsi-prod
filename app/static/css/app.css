@@ -720,3 +720,7 @@ table.grid tbody tr.imp-row--error td { background: #fdf6f4; }
 .fw-picker__opts label { display: inline-flex; align-items: center; gap: 6px; font-weight: 500; margin: 0; }
 .fw-picker__opts input { width: auto; }
 .fw-tags { display: inline-flex; gap: 4px; flex-wrap: wrap; }
+.fw-tabs { display: flex; gap: 4px; flex-wrap: wrap; margin: 0 0 16px; border-bottom: 2px solid var(--line); }
+.fw-tabs .fw-tab { padding: 8px 14px; font-size: 13px; font-weight: 600; color: var(--ink-700); text-decoration: none; border-bottom: 3px solid transparent; margin-bottom: -2px; }
+.fw-tabs .fw-tab:hover { color: var(--teal-600); }
+.fw-tabs .fw-tab.is-active { color: var(--teal-600); border-bottom-color: var(--teal-600); }

@@ -129,6 +129,11 @@ def _register_jinja(app):
 
         return {"fw_active": fw_active, "fw_codes_of": fw_codes_of, "fw_of": fw_svc.frameworks_of}
 
+    @app.template_filter("grp")
+    def _grp(value):
+        """Groupe d'une mesure : « A.5 - Mesures organisationnelles » (ISO 27001) ou libellé libre."""
+        return f"{value.annex} - {value.label}" if isinstance(value, Theme) else (value or "")
+
     @app.template_filter("dt")
     def _dt(value, fmt="%d/%m/%Y %H:%M"):
         return value.strftime(fmt) if value else "-"

@@ -16,9 +16,20 @@ def index():
     f_appl = request.args.get("applicable")
     search = (request.args.get("q") or "").strip()
 
-    q = Control.of()
-    if f_theme in [t.value for t in Theme]:
-        q = q.filter(Control.theme == Theme(f_theme))
+    from app.services import frameworks as fw_svc
+    fws = fw_svc.controls_frameworks()
+    norme = request.args.get("norme")
+    fw = next((f for f in fws if f.code == norme), None) or fw_svc.get(fw_svc.CORE)
+    norme = None if fw.code == fw_svc.CORE else fw.code      # URL inchangée pour l'ISO 27001
+
+    q = Control.of(fw.code)
+    if fw.code == fw_svc.CORE:
+        groups = [(t.value, f"{t.annex} - {t.label}") for t in Theme]
+    else:
+        groups = [(g, g) for (g,) in db.session.query(Control.theme).filter(Control.framework_id == fw.id)
+                  .distinct().order_by(Control.theme)]
+    if f_theme in [v for v, _ in groups]:
+        q = q.filter(Control.theme == f_theme)
     if f_status in [s.value for s in ControlStatus]:
         q = q.filter(Control.status == ControlStatus(f_status))
     if f_appl == "oui":
@@ -29,7 +40,7 @@ def index():
         like = f"%{search}%"
         q = q.filter(db.or_(Control.title.ilike(like), Control.ref.ilike(like)))
 
-    controls = q.order_by(Control.theme, Control.id).all()
+    controls = q.order_by(Control.theme, Control.id).all() if fw.code == fw_svc.CORE else q.order_by(Control.id).all()
 
     # Regrouper par thème pour l'affichage
     grouped = {}
@@ -37,7 +48,7 @@ def index():
         grouped.setdefault(c.theme, []).append(c)
 
     # Statistiques globales (indépendantes des filtres)
-    allc = Control.of().all()
+    allc = Control.of(fw.code).all()
     appl = [c for c in allc if c.applicable]
     stats = {
         "total": len(allc),
@@ -47,7 +58,8 @@ def index():
     }
     users = User.query.filter_by(is_active_flag=True).order_by(User.name).all()
     return render_template("soa/index.html", grouped=grouped, stats=stats, users=users,
-                           f_theme=f_theme, f_status=f_status, f_appl=f_appl, search=search)
+                           f_theme=f_theme, f_status=f_status, f_appl=f_appl, search=search,
+                           fw=fw, fws=fws, norme=norme, groups=groups)
 
 
 @bp.route("/<int:control_id>")
@@ -55,7 +67,9 @@ def index():
 def detail(control_id):
     c = db.session.get(Control, control_id) or abort(404)
     users = User.query.filter_by(is_active_flag=True).order_by(User.name).all()
-    return render_template("soa/detail.html", c=c, users=users)
+    from app.services import frameworks as fw_svc
+    return render_template("soa/detail.html", c=c, users=users, corresp=fw_svc.correspondences(c),
+                           norme=None if c.framework.code == fw_svc.CORE else c.framework.code)
 
 
 @bp.route("/<int:control_id>/modifier", methods=["POST"])
