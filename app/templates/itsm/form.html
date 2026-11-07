@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block title %}Service - {{ APP_NAME }}{% endblock %}
+{% block heading %}{{ 'Modifier ' + s.ref if s else 'Nouveau service' }}{% endblock %}
+{% block topactions %}<a href="{{ url_for('itsm.detail', sid=s.id) if s else url_for('itsm.index') }}" class="btn btn--ghost btn--sm">Retour</a>{% endblock %}
+{% block content %}
+{% set sel_a = s.assets|map(attribute='id')|list if s else [] %}{% set sel_s = s.suppliers|map(attribute='id')|list if s else [] %}
+<form method="post" style="max-width:860px;">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="panel"><div class="panel__head"><h2>Service</h2></div><div class="panel__body stack">
+    <div class="field"><label>Nom *</label><input type="text" name="name" required maxlength="300" value="{{ s.name if s else '' }}" placeholder="Ex. Messagerie, ERP, support utilisateurs"></div>
+    <div class="field"><label>Description</label><textarea name="description" rows="2">{{ s.description or '' if s else '' }}</textarea></div>
+    <div class="field"><label>Clients et utilisateurs</label><textarea name="customers" rows="2">{{ s.customers or '' if s else '' }}</textarea></div>
+    <div class="form-grid">
+      <div class="field"><label>Statut</label><select name="status">{% for x in ServiceStatus %}<option value="{{ x.value }}" {{ 'selected' if (s and s.status==x) or (not s and x.value=='ACTIF') }}>{{ x.label }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Criticité</label><select name="criticality">{% for n, l in [(1, '1 - faible'), (2, '2 - moyenne'), (3, '3 - forte'), (4, '4 - vitale')] %}<option value="{{ n }}" {{ 'selected' if (s and s.criticality==n) or (not s and n==2) }}>{{ l }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="field"><label>Responsable du service</label><select name="owner_id"><option value="">-</option>{% for u in users %}<option value="{{ u.id }}" {{ 'selected' if s and s.owner_id==u.id }}>{{ u.name }}</option>{% endfor %}</select></div>
+  </div></div>
+  <div class="panel" style="margin-top:16px;"><div class="panel__head"><h2>Niveau de service</h2></div><div class="panel__body stack">
+    <div class="form-grid">
+      <div class="field"><label>Plage de service</label><input type="text" name="support_hours" maxlength="200" value="{{ s.support_hours or '' if s else '' }}" placeholder="Ex. lun-ven 8h-18h"></div>
+      <div class="field"><label>Disponibilité visée (%)</label><input type="text" name="availability_target" inputmode="decimal" value="{{ s.availability_target if s and s.availability_target is not none else '' }}" placeholder="99,5"></div>
+    </div>
+    <div class="form-grid">
+      <div class="field"><label>Délais de prise en charge</label><input type="text" name="response_time" maxlength="200" value="{{ s.response_time or '' if s else '' }}" placeholder="Ex. P1 : 30 min, P2 : 2 h"></div>
+      <div class="field"><label>Délais de résolution</label><input type="text" name="resolution_time" maxlength="200" value="{{ s.resolution_time or '' if s else '' }}" placeholder="Ex. P1 : 4 h, P2 : 1 j"></div>
+    </div>
+    <div class="form-grid">
+      <div class="field"><label>Accord de référence</label><input type="text" name="sla_reference" maxlength="200" value="{{ s.sla_reference or '' if s else '' }}" placeholder="Contrat, convention de service..."></div>
+      <div class="field"><label>Prochaine revue de l'accord</label><input type="date" name="sla_review" value="{{ s.sla_review.isoformat() if s and s.sla_review else '' }}"></div>
+    </div>
+  </div></div>
+  <div class="panel" style="margin-top:16px;"><div class="panel__head"><h2>Composants</h2></div><div class="panel__body stack">
+    <div class="field"><label>Actifs et éléments de configuration</label><select name="asset_ids" multiple size="5">{% for a in assets %}<option value="{{ a.id }}" {{ 'selected' if a.id in sel_a }}>{{ a.ref }} - {{ a.name }}</option>{% endfor %}</select><div class="hint">Ctrl + clic pour en sélectionner plusieurs.</div></div>
+    <div class="field"><label>Fournisseurs</label><select name="supplier_ids" multiple size="4">{% for x in suppliers %}<option value="{{ x.id }}" {{ 'selected' if x.id in sel_s }}>{{ x.ref }} - {{ x.name }}</option>{% endfor %}</select></div>
+    <div class="field"><label>Notes</label><textarea name="notes" rows="2">{{ s.notes or '' if s else '' }}</textarea></div>
+    <div><button class="btn btn--primary" type="submit">Enregistrer</button></div>
+  </div></div>
+</form>
+{% endblock %}

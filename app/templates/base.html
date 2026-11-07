@@ -122,11 +122,18 @@
         ('aisystems.index', 'spark', "Systèmes d'IA"),
       ]) }}
       {%- endif %}
+      {%- if 'ISO20000' in _fw_codes %}
+      {{ nav_group('services', 'Services IT', [
+        ('itsm.index', 'layers', 'Catalogue de services'),
+        ('itsm.problems', 'tool', 'Problèmes'),
+        ('itsm.releases', 'shuffle', 'Mises en production'),
+      ]) }}
+      {%- endif %}
       {{ nav_group('operations', 'Opérations', [
         ('incidents.index', 'incident', 'Incidents'),
         ('changes.index', 'shuffle', 'Changements'),
         ('continuity.index', 'refresh', "Continuité d'activité"),
-      ]) }}
+      ] + ([('bcplans.index', 'file', 'Plans de continuité')] if 'ISO22301' in _fw_codes else [])) }}
       {%- set support = [
         ('documents.index', 'file', 'Gestion documentaire'),
         ('evidence.index', 'check', 'Gestion des preuves'),

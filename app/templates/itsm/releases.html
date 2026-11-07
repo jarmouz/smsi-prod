@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}Mises en production - {{ APP_NAME }}{% endblock %}
+{% block heading %}Mises en production et déploiements{% endblock %}
+{% block topactions %}{% if current_user.can_edit %}<a href="{{ url_for('itsm.release_create') }}" class="btn btn--primary btn--sm">+ Mise en production</a>{% endif %}{% endblock %}
+{% block content %}
+<div class="panel"><div class="panel__body--flush"><div class="table-wrap">
+  <table class="grid">
+    <thead><tr><th style="width:120px;">Réf.</th><th>Mise en production</th><th style="width:150px;">Statut</th><th style="width:120px;">Date</th><th style="width:240px;">Points à traiter</th></tr></thead>
+    <tbody>
+    {% for r in items %}
+      <tr {% if current_user.can_edit %}class="row-link" onclick="window.location='{{ url_for('itsm.release_edit', rid=r.id) }}'"{% endif %}>
+        <td class="ref">{{ r.ref }}</td>
+        <td class="subj">{{ r.title }}<div class="muted" style="font-size:11px;">{{ r.service.name if r.service else 'service non précisé' }} - {{ r.changes|length }} changement(s)</div></td>
+        <td class="muted">{{ r.status.label }}</td>
+        <td class="muted">{{ (r.deployed_on or r.planned_on)|d }}</td>
+        <td style="font-size:11.5px;">{% for g in r.gaps %}<div class="due-cell">• {{ g }}</div>{% else %}<span class="muted">-</span>{% endfor %}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="5"><div class="empty" style="padding:30px;"><h3>Aucune mise en production</h3><p>Planifiez chaque mise en production : changements approuvés, tests, plan de retour arrière, résultat (ISO/IEC 20000-1 §8.5.3).</p></div></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div></div></div>
+{% endblock %}

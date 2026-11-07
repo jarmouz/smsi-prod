@@ -57,10 +57,17 @@ communs (audits, revues, documents, objectifs, non-conformités) peuvent être
 rattachés à une ou plusieurs normes. Les écrans historiques restent limités à
 l'ISO 27001 (`Control.of()`).
 
-Normes disponibles (3.1) : ISO/IEC 27001:2022 (socle), ISO/IEC 27701:2019
-(module « Vie privée » : registre des traitements, demandes des personnes) et
-ISO/IEC 42001:2023 (module « Intelligence artificielle » : systèmes d'IA,
-études d'impact). Catalogues et correspondances : `app/services/catalogue_data.py`.
+Normes disponibles (3.2) :
+
+| Norme | Type | Module propre |
+|---|---|---|
+| ISO/IEC 27001:2022 (socle) | 93 mesures (Annexe A) + DdA | toute l'application historique |
+| ISO/IEC 27701:2019 | 49 mesures (Annexes A et B) | Vie privée : registre des traitements, demandes des personnes |
+| ISO/IEC 42001:2023 | 38 mesures (Annexe A) | Intelligence artificielle : systèmes d'IA, études d'impact |
+| ISO 22301:2019 | 46 exigences (chapitres 4 à 10) | Plans de continuité (en plus de la BIA et des exercices) |
+| ISO/IEC 20000-1:2018 | 45 exigences (chapitres 4 à 10) | Services IT : catalogue et niveaux de service, mesures mensuelles, problèmes, mises en production |
+
+Catalogues et correspondances (70) : `app/services/catalogue_data.py`.
 Une base neuve s'initialise avec `flask init-platform` (organisation + RSSI) ;
 `flask init-db` est réservé au développement (il efface tout).
 

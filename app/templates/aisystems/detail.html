@@ -31,7 +31,7 @@
     </div></div></div>
     <div class="panel"><div class="panel__head"><h2>Études d'impact</h2><span class="rail__badge">{{ s.assessments|length }}</span><div class="spacer"></div>{% if current_user.can_edit %}<a class="btn btn--subtle btn--sm" href="{{ url_for('aisystems.assessment_create', sid=s.id) }}">+ Étude d'impact</a>{% endif %}</div>
       <div class="panel__body--flush">{% if s.assessments %}<div class="table-wrap"><table class="grid"><tbody>
-        {% for a in s.assessments %}<tr {% if current_user.can_edit %}class="row-link" onclick="window.location='{{ url_for('aisystems.assessment_edit', aid=a.id) }}'"{% endif %}><td class="ref">{{ a.ref }}</td><td class="subj">{{ a.decision.label }}<div class="muted" style="font-size:11px;">impact {{ a.impact_level.label|lower }} - {{ a.assessed_on|d }}</div></td><td class="{{ 'due-cell' if a.review_overdue else 'muted' }}" style="font-size:12px;">revue {{ a.next_review|d }}</td></tr>{% endfor %}
+        {% for a in s.assessments %}<tr {% if current_user.can_edit %}class="row-link" onclick="window.location='{{ url_for('aisystems.assessment_edit', aid=a.id) }}'"{% endif %}><td class="ref nowrap">{{ a.ref }}</td><td class="subj">{{ a.decision.label }}<div class="muted" style="font-size:11px;">impact {{ a.impact_level.label|lower }} - {{ a.assessed_on|d }}</div></td><td class="{{ 'due-cell' if a.review_overdue else 'muted' }}" style="font-size:12px;">revue {{ a.next_review|d }}</td></tr>{% endfor %}
       </tbody></table></div>{% else %}<div class="empty" style="padding:18px;"><p>Aucune étude d'impact : évaluez les effets du système sur les personnes, les groupes et la société avant sa mise en service (A.5).</p></div>{% endif %}</div>
     </div>
     {{ history_panel(s) }}

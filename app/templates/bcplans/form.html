@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}Plan de continuité - {{ APP_NAME }}{% endblock %}
+{% block heading %}{{ 'Modifier ' + p.ref if p else 'Nouveau plan' }}{% endblock %}
+{% block topactions %}<a href="{{ url_for('bcplans.detail', pid=p.id) if p else url_for('bcplans.index') }}" class="btn btn--ghost btn--sm">Retour</a>{% endblock %}
+{% block content %}
+{% set sel_proc = p.processes|map(attribute='id')|list if p else [] %}
+{% set sel_tests = p.tests|map(attribute='id')|list if p else [] %}
+<form method="post" style="max-width:860px;">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="panel"><div class="panel__head"><h2>Plan</h2></div><div class="panel__body stack">
+    <div class="field"><label>Titre *</label><input type="text" name="title" required maxlength="300" value="{{ p.title if p else '' }}" placeholder="Ex. PCA - indisponibilité du siège"></div>
+    <div class="form-grid">
+      <div class="field"><label>Type</label><select name="plan_type">{% for x in PlanType %}<option value="{{ x.value }}" {{ 'selected' if p and p.plan_type==x }}>{{ x.label }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Version</label><input type="text" name="version" maxlength="16" value="{{ p.version or '' if p else '' }}"></div>
+    </div>
+    <div class="field"><label>Périmètre et scénarios couverts</label><textarea name="scope" rows="2" placeholder="Sites, activités, scénarios (perte de site, du SI, de personnel, d'un fournisseur...)">{{ p.scope or '' if p else '' }}</textarea></div>
+    <div class="field"><label>Critères et autorité de déclenchement</label><textarea name="activation" rows="2">{{ p.activation or '' if p else '' }}</textarea></div>
+    <div class="field"><label>Structure de réponse (cellule de crise, suppléants)</label><textarea name="response_team" rows="2">{{ p.response_team or '' if p else '' }}</textarea></div>
+    <div class="field"><label>Alerte et communication</label><textarea name="alerting" rows="2" placeholder="Qui prévenir, comment, messages types, parties intéressées">{{ p.alerting or '' if p else '' }}</textarea></div>
+    <div class="field"><label>Procédures de continuité et de reprise</label><textarea name="procedures" rows="4">{{ p.procedures or '' if p else '' }}</textarea></div>
+    <div class="field"><label>Ressources nécessaires</label><textarea name="resources" rows="2" placeholder="Personnes, locaux de repli, matériel, données, fournisseurs">{{ p.resources or '' if p else '' }}</textarea></div>
+  </div></div>
+  <div class="panel" style="margin-top:16px;"><div class="panel__head"><h2>Liens</h2></div><div class="panel__body stack">
+    <div class="field"><label>Activités couvertes (analyse d'impact)</label><select name="process_ids" multiple size="5">{% for pr in processes %}<option value="{{ pr.id }}" {{ 'selected' if pr.id in sel_proc }}>{{ pr.ref }} - {{ pr.name }}</option>{% endfor %}</select><div class="hint">Ctrl + clic pour en sélectionner plusieurs.</div></div>
+    <div class="field"><label>Exercices réalisés sur ce plan</label><select name="test_ids" multiple size="4">{% for t in tests %}<option value="{{ t.id }}" {{ 'selected' if t.id in sel_tests }}>{{ t.ref }} - {{ t.title }}{{ ' (' ~ (t.test_date|d) ~ ')' if t.test_date }}</option>{% endfor %}</select></div>
+    <div class="field"><label>Document de référence</label><select name="document_id"><option value="">-</option>{% for d in documents %}<option value="{{ d.id }}" {{ 'selected' if p and p.document_id==d.id }}>{{ d.ref }} - {{ d.title }}</option>{% endfor %}</select></div>
+  </div></div>
+  <div class="panel" style="margin-top:16px;"><div class="panel__head"><h2>Suivi</h2></div><div class="panel__body stack">
+    <div class="form-grid">
+      <div class="field"><label>Statut</label><select name="status">{% for x in PlanStatus %}<option value="{{ x.value }}" {{ 'selected' if p and p.status==x }}>{{ x.label }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Responsable</label><select name="owner_id"><option value="">-</option>{% for u in users %}<option value="{{ u.id }}" {{ 'selected' if p and p.owner_id==u.id }}>{{ u.name }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="form-grid">
+      <div class="field"><label>Dernière revue</label><input type="date" name="last_review" value="{{ p.last_review.isoformat() if p and p.last_review else '' }}"></div>
+      <div class="field"><label>Prochaine revue</label><input type="date" name="next_review" value="{{ p.next_review.isoformat() if p and p.next_review else '' }}"><div class="hint">Vide : un an après la dernière revue.</div></div>
+    </div>
+    <div class="field"><label>Notes</label><textarea name="notes" rows="2">{{ p.notes or '' if p else '' }}</textarea></div>
+    <div><button class="btn btn--primary" type="submit">Enregistrer</button></div>
+  </div></div>
+</form>
+{% endblock %}

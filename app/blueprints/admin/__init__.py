@@ -480,5 +480,5 @@ def frameworks_page():
             continue
         of = states.get(fw.id)
         rows.append({"fw": fw, "of": of, "on": bool(of and of.enabled), "core": fw.code == fw_svc.CORE,
-                     "n_items": len([i for i in fw.items if i.kind == "control"])})
+                     "n_items": len([i for i in fw.items if i.kind in ("control", "clause")])})
     return render_template("admin/frameworks.html", rows=rows)

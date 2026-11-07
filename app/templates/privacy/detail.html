@@ -37,7 +37,7 @@
     </div></div></div>
     <div class="panel"><div class="panel__head"><h2>Demandes des personnes</h2><span class="rail__badge">{{ requests_|length }}</span></div>
       <div class="panel__body--flush">{% if requests_ %}<div class="table-wrap"><table class="grid"><tbody>
-        {% for r in requests_ %}<tr class="row-link" onclick="window.location='{{ url_for('privacy.request_edit', rid=r.id) }}'"><td class="ref">{{ r.ref }}</td><td class="subj">{{ r.request_type.label }}</td><td class="muted">{{ r.status.label }}</td></tr>{% endfor %}
+        {% for r in requests_ %}<tr class="row-link" onclick="window.location='{{ url_for('privacy.request_edit', rid=r.id) }}'"><td class="ref nowrap">{{ r.ref }}</td><td class="subj">{{ r.request_type.label }}</td><td class="muted">{{ r.status.label }}</td></tr>{% endfor %}
       </tbody></table></div>{% else %}<div class="empty" style="padding:18px;"><p>Aucune demande liée à ce traitement.</p></div>{% endif %}</div>
     </div>
     {{ history_panel(p) }}

@@ -5,7 +5,7 @@
 <p class="muted" style="font-size:12.5px;margin:0 0 14px;max-width:860px;">Normes de systèmes de management pilotées par l'organisation. Activer une norme ajoute son catalogue (mesures ou exigences) ; la désactiver masque ses écrans sans rien supprimer. Les éléments communs (audits, revues de direction, documents, objectifs, non-conformités) peuvent être rattachés à une ou plusieurs normes dès que plusieurs sont actives.</p>
 {% for r in rows %}
 <div class="panel" style="margin-bottom:16px;">
-  <div class="panel__head"><h2>{{ r.fw.name }}</h2><span class="muted" style="font-size:12px;margin-left:8px;">{{ r.fw.domain }} - {{ r.n_items }} {{ 'mesures' if r.fw.kind == 'controls' else 'exigences' }}</span><div class="spacer"></div>
+  <div class="panel__head"><h2>{{ r.fw.name }}</h2><span class="muted" style="font-size:12px;margin-left:8px;">{{ r.fw.domain }} - {{ r.n_items }} {{ 'mesures' if r.fw.kind == 'controls' else 'exigences (chapitres 4 à 10)' }}</span><div class="spacer"></div>
     {% if r.on %}<span class="appl appl--in">Active</span>{% else %}<span class="appl appl--out">Inactive</span>{% endif %}</div>
   <div class="panel__body">
     {% if r.on %}

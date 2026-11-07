@@ -16,7 +16,7 @@ ALLOWED_EXT = {
     "zip", "7z", "rar", "msg", "eml",
 }
 
-ENTITIES = {"audit", "finding", "review", "document", "evidence", "incident", "awareness", "supplier", "competence", "continuity", "change", "processing", "aisystem"}
+ENTITIES = {"audit", "finding", "review", "document", "evidence", "incident", "awareness", "supplier", "competence", "continuity", "change", "processing", "aisystem", "bcplan", "itservice"}
 
 
 def allowed(filename):

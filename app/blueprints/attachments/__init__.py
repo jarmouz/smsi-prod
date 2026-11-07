@@ -22,6 +22,8 @@ def _back(entity_type, entity_id):
         "change": lambda: url_for("changes.detail", change_id=entity_id),
         "processing": lambda: url_for("privacy.detail", pid=entity_id),
         "aisystem": lambda: url_for("aisystems.detail", sid=entity_id),
+        "bcplan": lambda: url_for("bcplans.detail", pid=entity_id),
+        "itservice": lambda: url_for("itsm.detail", sid=entity_id),
     }.get(entity_type, lambda: url_for("dashboard.home"))()
 
 

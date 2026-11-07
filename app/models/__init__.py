@@ -25,6 +25,9 @@ from app.models.governance import (
 )
 from app.models.privacy import ProcessingActivity, SubjectRequest, processing_assets, processing_suppliers
 from app.models.ai_system import AiSystem, AiImpactAssessment, ai_system_assets
+from app.models.service_mgmt import (ContinuityPlan, plan_processes, plan_tests, ItService, ServiceMeasure,
+                                     service_assets, service_suppliers, Problem, problem_incidents, Release,
+                                     release_changes)
 from app.models.operations import (
     AuditPlanItem, CompetenceRequirement, CompetenceRecord, BusinessProcess, ContinuityTest, ChangeRequest,
     asset_risks, process_assets, test_processes, change_assets, competence_users, AUDIT_DOMAINS,
@@ -47,6 +50,8 @@ __all__ = [
     "AuditPlanItem", "CompetenceRequirement", "CompetenceRecord", "BusinessProcess", "ContinuityTest", "ChangeRequest",
     "ProcessingActivity", "SubjectRequest", "processing_assets", "processing_suppliers",
     "AiSystem", "AiImpactAssessment", "ai_system_assets",
+    "ContinuityPlan", "plan_processes", "plan_tests", "ItService", "ServiceMeasure", "service_assets",
+    "service_suppliers", "Problem", "problem_incidents", "Release", "release_changes",
     "asset_risks", "process_assets", "test_processes", "change_assets", "competence_users", "AUDIT_DOMAINS",
     "CompetenceType", "TestType", "TestResult", "ChangeKind", "ChangeRisk", "ChangeStatus", "DigestFrequency",
 ]

@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}Catalogue de services - {{ APP_NAME }}{% endblock %}
+{% block heading %}Catalogue de services{% endblock %}
+{% block topactions %}{% if current_user.can_edit %}<a href="{{ url_for('itsm.create') }}" class="btn btn--primary btn--sm">+ Service</a>{% endif %}{% endblock %}
+{% block content %}
+<div class="kpis" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px;">
+  <div class="kpi kpi--total"><div class="kpi__label">Services en service</div><div class="kpi__value">{{ stats.live }}</div></div>
+  <div class="kpi kpi--sla"><div class="kpi__label">Avec niveau de service</div><div class="kpi__value">{{ stats.sla }}</div><div class="kpi__sub">disponibilité ou délais</div></div>
+  <div class="kpi kpi--retard"><div class="kpi__label">Objectif non atteint</div><div class="kpi__value">{{ stats.breach }}</div><div class="kpi__sub">dernière période mesurée</div></div>
+  <div class="kpi kpi--bientot"><div class="kpi__label">Problèmes ouverts</div><div class="kpi__value">{{ stats.problems }}</div></div>
+</div>
+<div class="panel"><div class="panel__body--flush"><div class="table-wrap">
+  <table class="grid">
+    <thead><tr><th style="width:80px;">Réf.</th><th>Service</th><th style="width:150px;">Disponibilité</th><th style="width:150px;">Dernière mesure</th><th style="width:240px;">Points à traiter</th></tr></thead>
+    <tbody>
+    {% for s in services %}{% set m = s.last_measure %}
+      <tr class="row-link" onclick="window.location='{{ url_for('itsm.detail', sid=s.id) }}'" style="{{ 'opacity:.5' if s.status.value == 'RETIRE' }}">
+        <td class="ref">{{ s.ref }}</td>
+        <td class="subj">{{ s.name }}<div class="muted" style="font-size:11px;">{{ s.status.label }} - criticité {{ s.criticality }}/4{{ ' - ' + s.support_hours if s.support_hours }}</div></td>
+        <td class="muted">{{ 'objectif ' ~ s.availability_target ~ ' %' if s.availability_target is not none else '-' }}</td>
+        <td style="font-size:12px;" class="{{ 'due-cell' if m and m.breached else 'muted' }}">{% if m %}{{ m.period }}{{ ' : ' ~ m.availability ~ ' %' if m.availability is not none }}{% else %}-{% endif %}</td>
+        <td style="font-size:11.5px;">{% for g in s.gaps %}<div class="due-cell">• {{ g }}</div>{% else %}<span class="muted">-</span>{% endfor %}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="5"><div class="empty" style="padding:30px;"><h3>Aucun service</h3><p>Décrivez les services informatiques fournis, leurs clients et leurs niveaux de service (ISO/IEC 20000-1 §8.2.4 et §8.3.3), puis mesurez-les chaque mois (§9.4).</p></div></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div></div></div>
+{% endblock %}

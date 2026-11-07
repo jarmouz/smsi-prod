@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}Problèmes - {{ APP_NAME }}{% endblock %}
+{% block heading %}Gestion des problèmes{% endblock %}
+{% block topactions %}{% if current_user.can_edit %}<a href="{{ url_for('itsm.problem_create') }}" class="btn btn--primary btn--sm">+ Problème</a>{% endif %}{% endblock %}
+{% block content %}
+<form class="toolbar" method="get"><select name="ouverts" onchange="this.form.submit()"><option value="1" {{ 'selected' if f_open=='1' }}>Problèmes ouverts</option><option value="0" {{ 'selected' if f_open=='0' }}>Tous les problèmes</option></select></form>
+<div class="panel" style="margin-top:16px;"><div class="panel__body--flush"><div class="table-wrap">
+  <table class="grid">
+    <thead><tr><th style="width:120px;">Réf.</th><th>Problème</th><th style="width:120px;">Priorité</th><th style="width:200px;">Statut</th><th style="width:100px;">Incidents</th></tr></thead>
+    <tbody>
+    {% for p in items %}
+      <tr {% if current_user.can_edit %}class="row-link" onclick="window.location='{{ url_for('itsm.problem_edit', pid=p.id) }}'"{% endif %}>
+        <td class="ref">{{ p.ref }}</td>
+        <td class="subj">{{ p.title }}<div class="muted" style="font-size:11px;">{{ p.service.name if p.service else 'service non précisé' }} - ouvert le {{ p.opened_on|d }}{{ ' - contournement disponible' if p.workaround }}</div></td>
+        <td>{% if p.priority.value in ('P1', 'P2') %}<span class="appl appl--out">{{ p.priority.label }}</span>{% else %}<span class="muted">{{ p.priority.label }}</span>{% endif %}</td>
+        <td class="muted">{{ p.status.label }}</td>
+        <td class="num">{{ p.incidents|length }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="5"><div class="empty" style="padding:30px;"><h3>Aucun problème {{ 'ouvert' if f_open=='1' }}</h3><p>Un problème est la cause, inconnue au départ, d'un ou plusieurs incidents : analysez-la, documentez le contournement et la correction (ISO/IEC 20000-1 §8.6.3).</p></div></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div></div></div>
+{% endblock %}

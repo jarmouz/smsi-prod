@@ -61,7 +61,11 @@ class Control(TenantMixin, db.Model):
     def annex_ref(self):
         """« A.5.1 » pour l'ISO 27001 (références stockées sans préfixe), la référence telle
         quelle pour les autres référentiels (« A.2.2 », « B.8.2.1 »)."""
-        return self.ref if self.ref[:1].isalpha() else f"A.{self.ref}"
+        if self.ref[:1].isalpha():
+            return self.ref
+        from app.models.framework import Framework
+        fw = self.framework or (db.session.get(Framework, self.framework_id) if self.framework_id else None)
+        return f"A.{self.ref}" if fw is None or fw.code == ISO27001 else f"§{self.ref}"
 
     @property
     def coverage(self):

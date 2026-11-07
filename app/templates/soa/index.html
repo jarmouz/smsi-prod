@@ -1,16 +1,16 @@
 {% extends 'base.html' %}
 {% from 'partials/macros.html' import control_status, applicability, export_menu with context %}
 {% block title %}Déclaration d'applicabilité - {{ APP_NAME }}{% endblock %}
-{% block heading %}Déclaration d'applicabilité (DdA){% endblock %}
+{% block heading %}{{ "Déclaration d'applicabilité (DdA)" if fw.kind == 'controls' else 'Conformité aux exigences - ' ~ fw.name }}{% endblock %}
 {% block topactions %}{% if not norme %}{{ export_menu([('dda', "Déclaration d'applicabilité")]) }}{% if current_user.can_edit %} <a href="{{ url_for('imports.upload', kind='dda') }}" class="btn btn--subtle btn--sm">Importer</a>{% endif %}{% endif %}{% endblock %}
 
 {% block content %}
 {% set can_edit = current_user.can_edit %}
 {% if fws|length > 1 %}<div class="fw-tabs">{% for f in fws %}<a href="{{ url_for('soa.index', norme=None if loop.first and f.code == 'ISO27001' else f.code) }}" class="fw-tab {{ 'is-active' if f.id == fw.id }}">{{ f.name }}</a>{% endfor %}</div>{% endif %}
 <div class="kpis" style="grid-template-columns:repeat(4,1fr);margin-bottom:18px;">
-  <div class="kpi kpi--total"><div class="kpi__label">Catalogue</div><div class="kpi__value">{{ stats.total }}</div><div class="kpi__sub">{{ 'mesures Annexe A:2022' if not norme else 'mesures ' ~ fw.short_name }}</div></div>
+  <div class="kpi kpi--total"><div class="kpi__label">Catalogue</div><div class="kpi__value">{{ stats.total }}</div><div class="kpi__sub">{{ 'mesures Annexe A:2022' if not norme else ('mesures ' if fw.kind == 'controls' else 'exigences ') ~ fw.short_name }}</div></div>
   <div class="kpi kpi--sla"><div class="kpi__label">Retenues</div><div class="kpi__value">{{ stats.applicable }}</div><div class="kpi__sub">applicables</div></div>
-  <div class="kpi kpi--ouvert"><div class="kpi__label">Implémentées</div><div class="kpi__value">{{ stats.implementees }}</div><div class="kpi__sub">mesures en place</div></div>
+  <div class="kpi kpi--ouvert"><div class="kpi__label">{{ 'Implémentées' if fw.kind == 'controls' else 'Satisfaites' }}</div><div class="kpi__value">{{ stats.implementees }}</div><div class="kpi__sub">{{ 'mesures en place' if fw.kind == 'controls' else 'exigences satisfaites' }}</div></div>
   <div class="kpi kpi--bientot"><div class="kpi__label">Exclues</div><div class="kpi__value">{{ stats.exclues }}</div><div class="kpi__sub">avec justification</div></div>
 </div>
 

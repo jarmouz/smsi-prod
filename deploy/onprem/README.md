@@ -87,7 +87,10 @@ section « Sauvegardes » ci-dessous.
   l'**ISO/IEC 42001** (intelligence artificielle : inventaire des systèmes d'IA,
   études d'impact, annexe A) dans Administration › Référentiels. Chaque norme
   ajoute sa déclaration d'applicabilité et ses écrans ; rien ne change tant
-  qu'elle n'est pas activée.
+  qu'elle n'est pas activée. Également disponibles : l'**ISO 22301**
+  (continuité : plans de continuité et de reprise) et l'**ISO/IEC 20000-1**
+  (services informatiques : catalogue et niveaux de service, problèmes, mises
+  en production), évaluées exigence par exigence.
 - **Assistant IA** : facultatif, il n'est utilisable que si la VM peut joindre
   `api.anthropic.com` ; il reste désactivé tant que la clé d'API n'est pas
   renseignée (Plateforme) puis activée par le RSSI.

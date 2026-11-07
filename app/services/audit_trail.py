@@ -35,6 +35,12 @@ ENTITY_LABELS = {
     "AuditPlanItem": "Programme d'audit", "CompetenceRequirement": "Compétence requise",
     "CompetenceRecord": "Preuve de compétence", "BusinessProcess": "Activité (BIA)",
     "ContinuityTest": "Exercice de continuité", "ChangeRequest": "Changement",
+    # Référentiels et modules par norme (phases 0 à 2)
+    "OrgFramework": "Référentiel de l'organisation", "FrameworkLink": "Rattachement à une norme",
+    "ProcessingActivity": "Traitement de données", "SubjectRequest": "Demande d'une personne",
+    "AiSystem": "Système d'IA", "AiImpactAssessment": "Étude d'impact IA",
+    "ContinuityPlan": "Plan de continuité", "ItService": "Service", "ServiceMeasure": "Mesure de service",
+    "Problem": "Problème", "Release": "Mise en production",
 }
 FIELD_LABELS = {
     "title": "Titre", "name": "Nom", "description": "Description", "status": "Statut", "owner_id": "Propriétaire",
@@ -58,6 +64,39 @@ FIELD_LABELS = {
     "rpo_hours": "RPO (h)", "achieved_rto_hours": "RTO atteint (h)", "result": "Résultat", "assets": "Actifs",
     "security_impact": "Impact sécurité", "risk_level": "Risque", "rollback": "Retour arrière",
     "digest_frequency": "Récapitulatif e-mail",
+    # Référentiels
+    "framework_id": "Norme", "enabled": "Activée", "scope": "Périmètre", "target_date": "Certification visée",
+    "certifier": "Organisme de certification", "certified_on": "Certifiée le",
+    # Vie privée (ISO 27701)
+    "purpose": "Finalité", "legal_basis": "Base juridique", "legal_basis_detail": "Précisions (base juridique)",
+    "data_subjects": "Personnes concernées", "data_categories": "Catégories de données",
+    "sensitive_data": "Données sensibles", "sensitive_detail": "Précisions (données sensibles)",
+    "recipients": "Destinataires", "transfers": "Transferts hors du pays", "transfer_detail": "Pays et garanties",
+    "retention": "Conservation", "security_measures": "Mesures de sécurité", "dpia": "Analyse d'impact",
+    "dpia_date": "Date de l'analyse d'impact", "last_review": "Dernière revue", "suppliers": "Fournisseurs",
+    "request_type": "Type de demande", "requester": "Demandeur", "channel": "Canal", "received_on": "Reçue le",
+    "due_on": "Échéance", "processing_id": "Traitement", "identity_verified": "Identité vérifiée",
+    "handled_by_id": "Traitée par", "closed_on": "Clôturée le", "notes": "Notes",
+    # Intelligence artificielle (ISO 42001)
+    "intended_use": "Utilisation prévue", "ai_type": "Type de système", "provider": "Modèle / éditeur",
+    "supplier_id": "Fournisseur", "data_used": "Données utilisées", "personal_data": "Données personnelles",
+    "affected_parties": "Personnes concernées", "automated_decisions": "Décisions automatisées",
+    "human_oversight": "Supervision humaine", "lifecycle": "Cycle de vie", "assessed_on": "Date de l'étude",
+    "assessor_id": "Réalisée par", "impacts_individuals": "Impacts sur les personnes",
+    "impacts_society": "Impacts sur la société", "impact_level": "Niveau d'impact", "measures": "Mesures",
+    "residual": "Impact résiduel", "decision": "Décision",
+    # Continuité (ISO 22301)
+    "plan_type": "Type de plan", "activation": "Déclenchement", "response_team": "Structure de réponse",
+    "alerting": "Alerte et communication", "procedures": "Procédures", "resources": "Ressources",
+    "document_id": "Document", "processes": "Activités", "tests": "Exercices / tests",
+    # Services informatiques (ISO/IEC 20000-1)
+    "customers": "Clients", "support_hours": "Plage de service", "availability_target": "Disponibilité visée (%)",
+    "response_time": "Délais de prise en charge", "resolution_time": "Délais de résolution",
+    "sla_reference": "Accord de référence", "sla_review": "Revue de l'accord", "availability": "Disponibilité (%)",
+    "incidents": "Incidents", "sla_breaches": "Dépassements", "service_id": "Service", "priority": "Priorité",
+    "workaround": "Contournement", "resolution": "Résolution", "change_id": "Changement correctif",
+    "opened_on": "Ouvert le", "resolved_on": "Résolu le", "planned_on": "Prévue le", "deployed_on": "Déployée le",
+    "content": "Contenu", "rollback_plan": "Plan de retour arrière", "changes": "Changements",
 }
 
 
@@ -106,7 +145,7 @@ def _fmt(sess, key, value):
     if key.endswith("_id") and isinstance(value, int) and key in ("owner_id", "assignee_id", "lead_auditor_id", "accepted_by_id",
                                                                     "uploaded_by_id", "approved_by_id", "recorded_by_id",
                                                                     "effectiveness_by_id", "auditor_id", "user_id",
-                                                                    "requested_by_id"):
+                                                                    "requested_by_id", "handled_by_id", "assessor_id"):
         u = sess.get(User, value)
         return u.name if u else f"#{value}"
     if isinstance(value, enum.Enum):

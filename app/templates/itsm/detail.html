@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% from 'partials/macros.html' import attachments_panel, history_panel with context %}
+{% block title %}{{ s.ref }} - {{ APP_NAME }}{% endblock %}
+{% block heading %}{{ s.ref }} - {{ s.name }}{% endblock %}
+{% block topactions %}<a href="{{ url_for('itsm.index') }}" class="btn btn--ghost btn--sm">Retour</a>{% if current_user.can_edit %}<a href="{{ url_for('itsm.edit', sid=s.id) }}" class="btn btn--primary btn--sm">Modifier</a>{% endif %}{% endblock %}
+{% block content %}
+{% if s.gaps %}<div class="flash flash--warning" style="margin:0 0 14px;">Points à traiter : {{ s.gaps|join(', ') }}.</div>{% endif %}
+<div class="detail-grid">
+  <div class="stack">
+    <div class="panel"><div class="panel__head"><h2>Service</h2></div><div class="panel__body"><div class="meta-list">
+      <div><span>Description</span><b style="white-space:pre-line;">{{ s.description or '-' }}</b></div>
+      <div><span>Clients et utilisateurs</span><b style="white-space:pre-line;">{{ s.customers or '-' }}</b></div>
+      <div><span>Statut</span><b>{{ s.status.label }} - criticité {{ s.criticality }}/4</b></div>
+      <div><span>Responsable</span><b>{{ s.owner.name if s.owner else '-' }}</b></div>
+      <div><span>Actifs</span><b>{% for a in s.assets %}<a href="{{ url_for('assets.detail', asset_id=a.id) }}">{{ a.name }}</a>{{ ', ' if not loop.last }}{% else %}-{% endfor %}</b></div>
+      <div><span>Fournisseurs</span><b>{% for x in s.suppliers %}<a href="{{ url_for('suppliers.detail', sup_id=x.id) }}">{{ x.name }}</a>{{ ', ' if not loop.last }}{% else %}-{% endfor %}</b></div>
+      {% if s.notes %}<div><span>Notes</span><b style="white-space:pre-line;">{{ s.notes }}</b></div>{% endif %}
+    </div></div></div>
+    <div class="panel"><div class="panel__head"><h2>Niveau de service (§8.3.3)</h2></div><div class="panel__body"><div class="meta-list">
+      <div><span>Plage de service</span><b>{{ s.support_hours or '-' }}</b></div>
+      <div><span>Disponibilité visée</span><b>{{ s.availability_target ~ ' %' if s.availability_target is not none else '-' }}</b></div>
+      <div><span>Prise en charge</span><b>{{ s.response_time or '-' }}</b></div>
+      <div><span>Résolution</span><b>{{ s.resolution_time or '-' }}</b></div>
+      <div><span>Accord de référence</span><b>{{ s.sla_reference or '-' }}{{ ' - revue le ' ~ (s.sla_review|d) if s.sla_review }}</b></div>
+    </div></div></div>
+    <div class="panel"><div class="panel__head"><h2>Mesures mensuelles (§9.4)</h2><span class="rail__badge">{{ s.measures|length }}</span></div>
+      <div class="panel__body--flush">{% if s.measures %}<div class="table-wrap"><table class="grid">
+        <thead><tr><th>Période</th><th>Disponibilité</th><th>Incidents</th><th>Dépassements</th>{% if current_user.can_edit %}<th></th>{% endif %}</tr></thead><tbody>
+        {% for m in s.measures %}<tr><td class="ref nowrap">{{ m.period }}</td><td class="{{ 'due-cell' if m.breached }}">{{ m.availability ~ ' %' if m.availability is not none else '-' }}</td><td class="num">{{ m.incidents if m.incidents is not none else '-' }}</td><td class="num">{{ m.sla_breaches if m.sla_breaches is not none else '-' }}</td>
+          {% if current_user.can_edit %}<td style="text-align:right;"><form method="post" action="{{ url_for('itsm.delete_measure', mid=m.id) }}" onsubmit="return confirm('Supprimer cette mesure ?');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn--ghost btn--sm">Supprimer</button></form></td>{% endif %}</tr>{% endfor %}
+      </tbody></table></div>{% else %}<div class="empty" style="padding:18px;"><p>Aucune mesure : enregistrez la disponibilité et les dépassements de chaque mois.</p></div>{% endif %}
+      {% if current_user.can_edit %}<div class="panel__body" style="padding-top:10px;"><form method="post" action="{{ url_for('itsm.add_measure', sid=s.id) }}" class="measure-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="field" style="margin:0;"><label>Période</label><input type="month" name="period" value="{{ this_month }}" required></div>
+        <div class="field" style="margin:0;"><label>Disponibilité %</label><input type="text" name="availability" inputmode="decimal" placeholder="99,8"></div>
+        <div class="field" style="margin:0;"><label>Incidents</label><input type="number" name="incidents" min="0"></div>
+        <div class="field" style="margin:0;"><label>Dépassements</label><input type="number" name="sla_breaches" min="0"></div>
+        <div class="measure-form__go"><button class="btn btn--subtle btn--sm" type="submit">Ajouter la mesure</button></div>
+      </form></div>{% endif %}</div>
+    </div>
+    {{ attachments_panel('itservice', s.id, attachments, current_user.can_edit) }}
+  </div>
+  <div class="stack">
+    <div class="panel"><div class="panel__head"><h2>Problèmes</h2><span class="rail__badge">{{ problems|length }}</span></div><div class="panel__body--flush">
+      {% if problems %}<div class="table-wrap"><table class="grid"><tbody>{% for p in problems %}<tr {% if current_user.can_edit %}class="row-link" onclick="window.location='{{ url_for('itsm.problem_edit', pid=p.id) }}'"{% endif %}><td class="ref nowrap">{{ p.ref }}</td><td class="subj">{{ p.title }}<div class="muted" style="font-size:11px;">{{ p.status.label }}</div></td></tr>{% endfor %}</tbody></table></div>
+      {% else %}<div class="empty" style="padding:18px;"><p>Aucun problème enregistré pour ce service.</p></div>{% endif %}</div></div>
+    <div class="panel"><div class="panel__head"><h2>Mises en production</h2><span class="rail__badge">{{ releases|length }}</span></div><div class="panel__body--flush">
+      {% if releases %}<div class="table-wrap"><table class="grid"><tbody>{% for r in releases %}<tr {% if current_user.can_edit %}class="row-link" onclick="window.location='{{ url_for('itsm.release_edit', rid=r.id) }}'"{% endif %}><td class="ref nowrap">{{ r.ref }}</td><td class="subj">{{ r.title }}<div class="muted" style="font-size:11px;">{{ r.status.label }}</div></td></tr>{% endfor %}</tbody></table></div>
+      {% else %}<div class="empty" style="padding:18px;"><p>Aucune mise en production pour ce service.</p></div>{% endif %}</div></div>
+    {{ history_panel(s) }}
+  </div>
+</div>
+{% endblock %}

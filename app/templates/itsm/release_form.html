@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% from 'partials/macros.html' import history_panel with context %}
+{% block title %}Mise en production - {{ APP_NAME }}{% endblock %}
+{% block heading %}{{ r.ref + ' - ' + r.title if r else 'Nouvelle mise en production' }}{% endblock %}
+{% block topactions %}<a href="{{ url_for('itsm.releases') }}" class="btn btn--ghost btn--sm">Retour</a>{% endblock %}
+{% block content %}
+{% set sel_c = r.changes|map(attribute='id')|list if r else [] %}
+<div class="detail-grid">
+<form method="post" class="stack">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="panel"><div class="panel__head"><h2>Mise en production</h2></div><div class="panel__body stack">
+    <div class="field"><label>Intitulé *</label><input type="text" name="title" required maxlength="300" value="{{ r.title if r else '' }}" placeholder="Ex. Version 4.2 de l'ERP"></div>
+    <div class="form-grid">
+      <div class="field"><label>Service</label><select name="service_id"><option value="">-</option>{% for x in services %}<option value="{{ x.id }}" {{ 'selected' if r and r.service_id==x.id }}>{{ x.ref }} - {{ x.name }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Statut</label><select name="status">{% for x in ReleaseStatus %}<option value="{{ x.value }}" {{ 'selected' if r and r.status==x }}>{{ x.label }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="field"><label>Changements approuvés inclus</label><select name="change_ids" multiple size="4">{% for c in changes %}<option value="{{ c.id }}" {{ 'selected' if c.id in sel_c }}>{{ c.ref }} - {{ c.title }}</option>{% endfor %}</select><div class="hint">Ctrl + clic pour en sélectionner plusieurs.</div></div>
+    <div class="field"><label>Contenu</label><textarea name="content" rows="2">{{ r.content or '' if r else '' }}</textarea></div>
+    <div class="field"><label>Tests et critères d'acceptation</label><textarea name="tests" rows="2">{{ r.tests or '' if r else '' }}</textarea></div>
+    <div class="field"><label>Plan de retour arrière</label><textarea name="rollback_plan" rows="2">{{ r.rollback_plan or '' if r else '' }}</textarea></div>
+    <div class="form-grid">
+      <div class="field"><label>Prévue le</label><input type="date" name="planned_on" value="{{ r.planned_on.isoformat() if r and r.planned_on else '' }}"></div>
+      <div class="field"><label>Déployée le</label><input type="date" name="deployed_on" value="{{ r.deployed_on.isoformat() if r and r.deployed_on else '' }}"></div>
+    </div>
+    <div class="field"><label>Résultat</label><textarea name="result" rows="2" placeholder="Déroulement, incidents liés au déploiement">{{ r.result or '' if r else '' }}</textarea></div>
+    <div class="field"><label>Responsable</label><select name="owner_id"><option value="">-</option>{% for u in users %}<option value="{{ u.id }}" {{ 'selected' if r and r.owner_id==u.id }}>{{ u.name }}</option>{% endfor %}</select></div>
+    <div><button class="btn btn--primary" type="submit">Enregistrer</button></div>
+  </div></div>
+</form>
+{% if r %}<div class="stack">{{ history_panel(r) }}</div>{% endif %}
+</div>
+{% endblock %}

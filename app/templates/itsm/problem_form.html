@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% from 'partials/macros.html' import history_panel with context %}
+{% block title %}Problème - {{ APP_NAME }}{% endblock %}
+{% block heading %}{{ p.ref + ' - ' + p.title if p else 'Nouveau problème' }}{% endblock %}
+{% block topactions %}<a href="{{ url_for('itsm.problems') }}" class="btn btn--ghost btn--sm">Retour</a>{% endblock %}
+{% block content %}
+{% set sel_i = p.incidents|map(attribute='id')|list if p else [] %}
+<div class="detail-grid">
+<form method="post" class="stack">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="panel"><div class="panel__head"><h2>Problème</h2></div><div class="panel__body stack">
+    <div class="field"><label>Intitulé *</label><input type="text" name="title" required maxlength="300" value="{{ p.title if p else '' }}"></div>
+    <div class="field"><label>Description</label><textarea name="description" rows="2">{{ p.description or '' if p else '' }}</textarea></div>
+    <div class="form-grid">
+      <div class="field"><label>Service</label><select name="service_id"><option value="">-</option>{% for x in services %}<option value="{{ x.id }}" {{ 'selected' if p and p.service_id==x.id }}>{{ x.ref }} - {{ x.name }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Priorité</label><select name="priority">{% for x in Priority %}<option value="{{ x.value }}" {{ 'selected' if (p and p.priority==x) or (not p and x.value=='P3') }}>{{ x.label }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="field"><label>Incidents liés</label><select name="incident_ids" multiple size="4">{% for i in incidents %}<option value="{{ i.id }}" {{ 'selected' if i.id in sel_i }}>{{ i.ref }} - {{ i.title }}</option>{% endfor %}</select><div class="hint">Ctrl + clic pour en sélectionner plusieurs.</div></div>
+  </div></div>
+  <div class="panel"><div class="panel__head"><h2>Analyse et résolution</h2></div><div class="panel__body stack">
+    <div class="field"><label>Cause racine</label><textarea name="root_cause" rows="2">{{ p.root_cause or '' if p else '' }}</textarea></div>
+    <div class="field"><label>Contournement (erreur connue)</label><textarea name="workaround" rows="2">{{ p.workaround or '' if p else '' }}</textarea></div>
+    <div class="field"><label>Résolution</label><textarea name="resolution" rows="2">{{ p.resolution or '' if p else '' }}</textarea></div>
+    <div class="field"><label>Changement correctif</label><select name="change_id"><option value="">-</option>{% for c in changes %}<option value="{{ c.id }}" {{ 'selected' if p and p.change_id==c.id }}>{{ c.ref }} - {{ c.title }}</option>{% endfor %}</select></div>
+    <div class="form-grid">
+      <div class="field"><label>Statut</label><select name="status">{% for x in ProblemStatus %}<option value="{{ x.value }}" {{ 'selected' if p and p.status==x }}>{{ x.label }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Responsable</label><select name="owner_id"><option value="">-</option>{% for u in users %}<option value="{{ u.id }}" {{ 'selected' if p and p.owner_id==u.id }}>{{ u.name }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="form-grid">
+      <div class="field"><label>Ouvert le</label><input type="date" name="opened_on" value="{{ p.opened_on.isoformat() if p and p.opened_on else '' }}"></div>
+      <div class="field"><label>Résolu le</label><input type="date" name="resolved_on" value="{{ p.resolved_on.isoformat() if p and p.resolved_on else '' }}"><div class="hint">Renseigné automatiquement à la résolution.</div></div>
+    </div>
+    <div><button class="btn btn--primary" type="submit">Enregistrer</button></div>
+  </div></div>
+</form>
+{% if p %}<div class="stack">{{ history_panel(p) }}</div>{% endif %}
+</div>
+{% endblock %}

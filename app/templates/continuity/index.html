@@ -2,7 +2,7 @@
 {% from 'partials/macros.html' import export_menu with context %}
 {% block title %}Continuité d'activité - {{ APP_NAME }}{% endblock %}
 {% block heading %}Continuité d'activité{% endblock %}
-{% block topactions %}{{ export_menu([('continuite', "Analyse d'impact et exercices")]) }} {% if current_user.can_edit %}<a href="{{ url_for('continuity.create_test') }}" class="btn btn--subtle btn--sm">+ Exercice</a> <a href="{{ url_for('continuity.create_process') }}" class="btn btn--primary btn--sm">+ Activité</a>{% endif %}{% endblock %}
+{% block topactions %}{% if 'ISO22301' in fw_active()|map(attribute='code')|list %}<a href="{{ url_for('bcplans.index') }}" class="btn btn--ghost btn--sm">Plans de continuité</a> {% endif %}{{ export_menu([('continuite', "Analyse d'impact et exercices")]) }} {% if current_user.can_edit %}<a href="{{ url_for('continuity.create_test') }}" class="btn btn--subtle btn--sm">+ Exercice</a> <a href="{{ url_for('continuity.create_process') }}" class="btn btn--primary btn--sm">+ Activité</a>{% endif %}{% endblock %}
 {% macro h(v) %}{{ (('%g h'|format(v))|replace('.', ',')) if v is not none else '-' }}{% endmacro %}
 {% block content %}
 <div class="kpis" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px;">

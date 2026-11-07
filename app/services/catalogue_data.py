@@ -195,3 +195,149 @@ MAPPINGS = [
     ("ISO42001", "A.5.4", "ISO27701", "A.7.2.5"),
     ("ISO42001", "A.9.4", "ISO27701", "A.7.3.10"),
 ]
+
+
+# ---------------------------------------------------------------------------
+# Référentiels « exigences » (pas d'annexe de mesures) : chapitres 4 à 10.
+# Références = numéros de chapitre ; intitulés courts reformulés.
+# ---------------------------------------------------------------------------
+_HLS_GROUPS = {"4": "4 Contexte de l'organisation", "5": "5 Leadership", "6": "6 Planification", "7": "7 Support",
+               "8": "8 Fonctionnement", "9": "9 Évaluation des performances", "10": "10 Amélioration"}
+
+
+def _by_chapter(items):
+    groups = {}
+    for ref, title in items:
+        groups.setdefault(_HLS_GROUPS[ref.split(".")[0]], []).append((ref, title))
+    return list(groups.items())
+
+
+# ISO 22301:2019 - Système de management de la continuité d'activité
+ISO22301 = _by_chapter([
+    ("4.1", "Compréhension de l'organisation et de son contexte"),
+    ("4.2.1", "Besoins et attentes des parties intéressées"),
+    ("4.2.2", "Exigences légales et réglementaires"),
+    ("4.3.1", "Domaine d'application du SMCA : généralités"),
+    ("4.3.2", "Domaine d'application du SMCA : périmètre et exclusions"),
+    ("4.4", "Système de management de la continuité d'activité"),
+    ("5.1", "Leadership et engagement"),
+    ("5.2.1", "Établissement de la politique de continuité"),
+    ("5.2.2", "Communication de la politique de continuité"),
+    ("5.3", "Rôles, responsabilités et autorités"),
+    ("6.1.1", "Détermination des risques et opportunités"),
+    ("6.1.2", "Actions face aux risques et opportunités"),
+    ("6.2.1", "Établissement des objectifs de continuité"),
+    ("6.2.2", "Planification des actions pour atteindre les objectifs"),
+    ("6.3", "Planification des modifications du SMCA"),
+    ("7.1", "Ressources"),
+    ("7.2", "Compétences"),
+    ("7.3", "Sensibilisation"),
+    ("7.4", "Communication"),
+    ("7.5.1", "Informations documentées : généralités"),
+    ("7.5.2", "Création et mise à jour des informations documentées"),
+    ("7.5.3", "Maîtrise des informations documentées"),
+    ("8.1", "Planification et maîtrise opérationnelles"),
+    ("8.2.1", "Analyse d'impact et appréciation du risque : généralités"),
+    ("8.2.2", "Analyse d'impact sur l'activité (BIA)"),
+    ("8.2.3", "Appréciation du risque"),
+    ("8.3.1", "Stratégies et solutions : généralités"),
+    ("8.3.2", "Identification des stratégies et solutions"),
+    ("8.3.3", "Choix des stratégies et solutions"),
+    ("8.3.4", "Besoins en ressources"),
+    ("8.3.5", "Mise en œuvre des solutions"),
+    ("8.4.1", "Plans et procédures : généralités"),
+    ("8.4.2", "Structure de réponse"),
+    ("8.4.3", "Alerte et communication"),
+    ("8.4.4", "Plans de continuité d'activité"),
+    ("8.4.5", "Reprise"),
+    ("8.5", "Programme d'exercices"),
+    ("8.6", "Évaluation de la documentation et des capacités de continuité"),
+    ("9.1", "Surveillance, mesure, analyse et évaluation"),
+    ("9.2.1", "Audit interne : généralités"),
+    ("9.2.2", "Programme d'audit"),
+    ("9.3.1", "Revue de direction : généralités"),
+    ("9.3.2", "Éléments d'entrée de la revue de direction"),
+    ("9.3.3", "Éléments de sortie de la revue de direction"),
+    ("10.1", "Non-conformité et action corrective"),
+    ("10.2", "Amélioration continue"),
+])
+
+# ISO/IEC 20000-1:2018 - Système de management des services
+ISO20000 = _by_chapter([
+    ("4.1", "Compréhension de l'organisation et de son contexte"),
+    ("4.2", "Besoins et attentes des parties intéressées"),
+    ("4.3", "Domaine d'application du SMS"),
+    ("4.4", "Système de management des services"),
+    ("5.1", "Leadership et engagement"),
+    ("5.2", "Politique de management des services"),
+    ("5.3", "Rôles, responsabilités et autorités"),
+    ("6.1", "Actions face aux risques et opportunités"),
+    ("6.2", "Objectifs de management des services et planification"),
+    ("6.3", "Planification du SMS"),
+    ("7.1", "Ressources"),
+    ("7.2", "Compétences"),
+    ("7.3", "Sensibilisation"),
+    ("7.4", "Communication"),
+    ("7.5", "Informations documentées"),
+    ("7.6", "Connaissances"),
+    ("8.1", "Planification et maîtrise opérationnelles"),
+    ("8.2.1", "Fourniture des services"),
+    ("8.2.2", "Planification des services"),
+    ("8.2.3", "Maîtrise des parties intervenant dans le cycle de vie des services"),
+    ("8.2.4", "Gestion du catalogue de services"),
+    ("8.2.5", "Gestion des actifs"),
+    ("8.2.6", "Gestion de la configuration"),
+    ("8.3.1", "Relations et accords : généralités"),
+    ("8.3.2", "Gestion de la relation client"),
+    ("8.3.3", "Gestion des niveaux de service"),
+    ("8.3.4", "Gestion des fournisseurs"),
+    ("8.4.1", "Budgétisation et comptabilisation des services"),
+    ("8.4.2", "Gestion de la demande"),
+    ("8.4.3", "Gestion de la capacité"),
+    ("8.5.1", "Gestion des changements"),
+    ("8.5.2", "Conception et transition des services"),
+    ("8.5.3", "Gestion des mises en production et des déploiements"),
+    ("8.6.1", "Gestion des incidents"),
+    ("8.6.2", "Gestion des demandes de service"),
+    ("8.6.3", "Gestion des problèmes"),
+    ("8.7.1", "Gestion de la disponibilité des services"),
+    ("8.7.2", "Gestion de la continuité des services"),
+    ("8.7.3", "Gestion de la sécurité de l'information"),
+    ("9.1", "Surveillance, mesure, analyse et évaluation"),
+    ("9.2", "Audit interne"),
+    ("9.3", "Revue de direction"),
+    ("9.4", "Rapports sur les services"),
+    ("10.1", "Non-conformité et action corrective"),
+    ("10.2", "Amélioration continue"),
+])
+
+MAPPINGS += [
+    # ISO 22301 -> ISO 27001 (Annexe A)
+    ("ISO22301", "8.2.2", "ISO27001", "5.30"),
+    ("ISO22301", "8.3.2", "ISO27001", "5.30"),
+    ("ISO22301", "8.4.4", "ISO27001", "5.29"),
+    ("ISO22301", "8.4.4", "ISO27001", "5.30"),
+    ("ISO22301", "8.4.5", "ISO27001", "8.13"),
+    ("ISO22301", "8.5", "ISO27001", "5.30"),
+    ("ISO22301", "8.3.4", "ISO27001", "8.14"),
+    ("ISO22301", "8.4.3", "ISO27001", "5.24"),
+    # ISO/IEC 20000-1 -> ISO 27001 (Annexe A)
+    ("ISO20000", "8.2.5", "ISO27001", "5.9"),
+    ("ISO20000", "8.2.6", "ISO27001", "8.9"),
+    ("ISO20000", "8.3.4", "ISO27001", "5.19"),
+    ("ISO20000", "8.3.4", "ISO27001", "5.22"),
+    ("ISO20000", "8.4.3", "ISO27001", "8.6"),
+    ("ISO20000", "8.5.1", "ISO27001", "8.32"),
+    ("ISO20000", "8.5.3", "ISO27001", "8.32"),
+    ("ISO20000", "8.6.1", "ISO27001", "5.24"),
+    ("ISO20000", "8.6.1", "ISO27001", "5.26"),
+    ("ISO20000", "8.6.3", "ISO27001", "5.27"),
+    ("ISO20000", "8.7.1", "ISO27001", "8.14"),
+    ("ISO20000", "8.7.2", "ISO27001", "5.30"),
+    ("ISO20000", "8.7.3", "ISO27001", "5.1"),
+    ("ISO20000", "7.6", "ISO27001", "5.37"),
+    # ISO/IEC 20000-1 <-> ISO 22301
+    ("ISO20000", "8.7.2", "ISO22301", "8.4.4"),
+    ("ISO20000", "8.7.2", "ISO22301", "8.5"),
+    ("ISO20000", "8.7.1", "ISO22301", "8.3.2"),
+]

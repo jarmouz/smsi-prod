@@ -22,19 +22,19 @@ def _iso27001_items():
             yield {"kind": "control", "ref": ref, "group": theme.value, "title": title, "sort_order": order}
 
 
-def _items_from(groups):
+def _items_from(groups, kind="control"):
     def gen():
         order = 0
         for group, items in groups:
             for ref, title in items:
                 order += 1
-                yield {"kind": "control", "ref": ref, "group": group, "title": title, "sort_order": order}
+                yield {"kind": kind, "ref": ref, "group": group, "title": title, "sort_order": order}
     return gen
 
 
-def _catalogue(name):
+def _catalogue(name, kind="control"):
     from app.services import catalogue_data
-    return _items_from(getattr(catalogue_data, name))()
+    return _items_from(getattr(catalogue_data, name), kind)()
 
 
 # code -> définition. "items" est une fonction (évaluée à la synchronisation).
@@ -45,6 +45,11 @@ CATALOGUES = {
                  "kind": "controls", "sort_order": 20, "items": lambda: _catalogue("ISO27701")},
     "ISO42001": {"name": "ISO/IEC 42001:2023", "short_name": "42001", "domain": "Intelligence artificielle",
                  "kind": "controls", "sort_order": 30, "items": lambda: _catalogue("ISO42001")},
+    # Référentiels sans annexe de mesures : conformité évaluée exigence par exigence (chapitres 4 à 10)
+    "ISO22301": {"name": "ISO 22301:2019", "short_name": "22301", "domain": "Continuité d'activité",
+                 "kind": "requirements", "sort_order": 40, "items": lambda: _catalogue("ISO22301", "clause")},
+    "ISO20000": {"name": "ISO/IEC 20000-1:2018", "short_name": "20000-1", "domain": "Management des services informatiques",
+                 "kind": "requirements", "sort_order": 50, "items": lambda: _catalogue("ISO20000", "clause")},
 }
 
 
@@ -76,7 +81,7 @@ def sync_catalogues():
 def _sync_mappings():
     from app.models import ItemMapping
     from app.services.catalogue_data import MAPPINGS
-    ids = {(f.code, i.ref): i.id for f in Framework.query.all() for i in f.items if i.kind == "control"}
+    ids = {(f.code, i.ref): i.id for f in Framework.query.all() for i in f.items if i.kind in ("control", "clause")}
     have = {(m.source_id, m.target_id) for m in ItemMapping.query.all()}
     for sc, sr, tc, tr in MAPPINGS:
         a, b = ids.get((sc, sr)), ids.get((tc, tr))
@@ -89,8 +94,8 @@ def correspondences(control):
     """Mesures des AUTRES normes actives de l'organisation qui correspondent à cette mesure
     (correspondances proposées, dans les deux sens)."""
     from app.models import ItemMapping
-    item = (FrameworkItem.query.filter_by(framework_id=control.framework_id, kind="control", ref=control.ref)
-            .first())
+    item = (FrameworkItem.query.filter_by(framework_id=control.framework_id, ref=control.ref)
+            .filter(FrameworkItem.kind.in_(("control", "clause"))).first())
     if item is None:
         return []
     pairs = ItemMapping.query.filter(db.or_(ItemMapping.source_id == item.id, ItemMapping.target_id == item.id)).all()
@@ -108,8 +113,8 @@ def correspondences(control):
 
 
 def controls_frameworks():
-    """Normes actives qui ont un catalogue de mesures (une DdA chacune)."""
-    return [f for f in active() if f.kind == "controls"]
+    """Normes actives évaluées élément par élément : mesures (DdA) ou exigences (conformité)."""
+    return [f for f in active() if f.kind in ("controls", "requirements")]
 
 
 def get(code):
@@ -148,9 +153,10 @@ def enable(code):
         db.session.add(OrgFramework(framework_id=fw.id, enabled=True))
     else:
         of.enabled = True
-    if fw.kind == "controls":
+    if fw.kind in ("controls", "requirements"):        # mesures (DdA) ou exigences (conformité)
         have = {c.ref for c in Control.query.filter_by(framework_id=fw.id)}
-        for it in FrameworkItem.query.filter_by(framework_id=fw.id, kind="control").order_by(FrameworkItem.sort_order):
+        item_kind = "control" if fw.kind == "controls" else "clause"
+        for it in FrameworkItem.query.filter_by(framework_id=fw.id, kind=item_kind).order_by(FrameworkItem.sort_order):
             if it.ref not in have:
                 db.session.add(Control(framework_id=fw.id, ref=it.ref, theme=it.group, title=it.title,
                                        applicable=True, status=ControlStatus.NON_DEMARRE))

@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}Plans de continuité - {{ APP_NAME }}{% endblock %}
+{% block heading %}Plans de continuité et de reprise{% endblock %}
+{% block topactions %}<a href="{{ url_for('continuity.index') }}" class="btn btn--ghost btn--sm">Analyse d'impact et exercices</a>{% if current_user.can_edit %} <a href="{{ url_for('bcplans.create') }}" class="btn btn--primary btn--sm">+ Plan</a>{% endif %}{% endblock %}
+{% block content %}
+<div class="kpis" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px;">
+  <div class="kpi kpi--total"><div class="kpi__label">Plans en vigueur</div><div class="kpi__value">{{ stats.plans }}</div><div class="kpi__sub">dont {{ stats.valid }} validé(s)</div></div>
+  <div class="kpi kpi--retard"><div class="kpi__label">Activités critiques sans plan</div><div class="kpi__value">{{ stats.uncovered|length }}</div><div class="kpi__sub">criticité 3 ou 4 au BIA</div></div>
+  <div class="kpi kpi--bientot"><div class="kpi__label">Plans à exercer</div><div class="kpi__value">{{ stats.not_exercised }}</div><div class="kpi__sub">jamais ou il y a plus d'un an</div></div>
+  <div class="kpi kpi--sla"><div class="kpi__label">Exigence</div><div class="kpi__value" style="font-size:22px;">§8.4</div><div class="kpi__sub">ISO 22301</div></div>
+</div>
+{% if stats.uncovered %}<div class="flash flash--warning" style="margin:0 0 14px;">Activités critiques non couvertes par un plan : {% for pr in stats.uncovered %}{{ pr.ref }} {{ pr.name }}{{ ', ' if not loop.last }}{% endfor %}.</div>{% endif %}
+<div class="panel"><div class="panel__body--flush"><div class="table-wrap">
+  <table class="grid">
+    <thead><tr><th style="width:90px;">Réf.</th><th>Plan</th><th style="width:120px;">Statut</th><th style="width:150px;">Dernier exercice</th><th style="width:260px;">Points à traiter</th></tr></thead>
+    <tbody>
+    {% for p in plans %}{% set ex = p.last_exercise %}
+      <tr class="row-link" onclick="window.location='{{ url_for('bcplans.detail', pid=p.id) }}'" style="{{ 'opacity:.5' if p.status.value == 'OBSOLETE' }}">
+        <td class="ref">{{ p.ref }}</td>
+        <td class="subj">{{ p.title }}<div class="muted" style="font-size:11px;">{{ p.plan_type.label }}{{ ' - v' ~ p.version if p.version }} - {{ p.processes|length }} activité(s)</div></td>
+        <td class="muted">{{ p.status.label }}</td>
+        <td class="muted" style="font-size:12px;">{{ (ex.ref ~ ' - ' ~ (ex.test_date|d)) if ex else 'Aucun' }}</td>
+        <td style="font-size:11.5px;">{% for g in p.gaps %}<div class="due-cell">• {{ g }}</div>{% else %}<span class="muted">-</span>{% endfor %}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="5"><div class="empty" style="padding:30px;"><h3>Aucun plan</h3><p>Formalisez vos plans de continuité, de reprise informatique et de gestion de crise : déclenchement, structure de réponse, alerte, procédures, ressources (ISO 22301 §8.4).</p></div></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div></div></div>
+{% endblock %}

@@ -752,3 +752,17 @@ table.grid tbody tr.imp-row--error td { background: #fdf6f4; }
    les ombres en haut et en bas du menu signalent le contenu masqué. */
 .rail__nav { scrollbar-width: none; }
 .rail__nav::-webkit-scrollbar { display: none; width: 0; height: 0; }
+.rail__group[data-group="services"]  { --g: #1F6F8B; --g-dark: #17566C; --g-soft: #E4F1F6; }
+.nowrap { white-space: nowrap; }
+.measure-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px 10px; align-items: end; }
+.measure-form .field { margin: 0; }
+.measure-form__go { grid-column: 1 / -1; }
+/* Responsive : une colonne de fiche ne force jamais la page à s'élargir (tableaux larges = défilement interne) */
+.detail-grid > *, .two-col > *, .stack > * { min-width: 0; }
+@media (max-width: 720px) {
+  /* En-tête de page : titre puis boutons à la ligne au lieu de déborder de l'écran */
+  .topbar { height: auto; min-height: 60px; flex-wrap: wrap; row-gap: 8px; padding-top: 10px; padding-bottom: 10px; }
+  .topbar h1 { font-size: 17px; flex: 1 1 60%; min-width: 0; }
+  .topbar .spacer { display: none; }
+  .topbar > .btn, .topbar > a.btn, .topbar > form, .topbar > .export-menu, .topbar > details { flex: 0 0 auto; }
+}
