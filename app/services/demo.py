@@ -91,8 +91,8 @@ def _wipe(org, log):
     from app.models.privacy import ProcessingActivity, SubjectRequest
     from app.models.service_mgmt import ContinuityPlan, ItService, ServiceMeasure, Problem, Release
     from app.models.quality import QmsProcess, CustomerSurvey, Complaint
-    from app.models import PolicyAcceptance
-    for model in (PolicyAcceptance, FrameworkLink, RiskLink, AiImpactAssessment, AiSystem, SubjectRequest, ProcessingActivity,
+    from app.models import PolicyAcceptance, TrustRequest
+    for model in (TrustRequest, PolicyAcceptance, FrameworkLink, RiskLink, AiImpactAssessment, AiSystem, SubjectRequest, ProcessingActivity,
                   ServiceMeasure, Problem, Release, ItService, ContinuityPlan, Complaint, CustomerSurvey, QmsProcess):
         model.query.filter(model.organization_id == oid).delete(synchronize_session=False)
     for model in (ActivityLog, Attachment, CorrectiveAction, NonConformity, AuditPlanItem, CompetenceRecord,
@@ -260,6 +260,7 @@ def _seed(org, log):
     _p2_demo(users, ctrl)
     _p3_demo(users)
     _links_demo()
+    _trust_demo(users)
     settings_svc.set_many({"org_name": C.ORG_NAME})  # commit
     log(f"Données chargées : {len(C.RISKS)} risques, {len(C.ASSETS)} actifs, {len(C.INCIDENTS)} incidents, "
         f"{len(C.AUDITS)} audits, {len(C.REVIEWS)} revues, {len(C.DOCUMENTS)} documents, {len(C.EVIDENCE)} preuves.")
@@ -421,6 +422,12 @@ def _files(users, audits, reviews, incidents, awareness, evidences, log):
            ["s.ancien", "Base de production", "Lecture", "Supprimé (départ)", "Karim Trabelsi"],
            ["m.chaabane", "Base de production", "Lecture", "Réduit (lecture seule recette)", "Karim Trabelsi"]]
     n_att += _attach("evidence", ev, "Revue des accès production.xlsx", docgen.xlsx([("Revue", acc)]), users["dsi"])
+    # Documents publiés sur la page de confiance : fichier joint au document
+    for d in Document.query.filter(Document.ref.in_(list(C.TRUST_DOCS))).all():
+        body = _pssi() if d.ref == "DOC-002" else _generic(d.title)
+        n_att += _attach("document", d, f"{d.ref} {d.title} v{d.version}.docx",
+                         docgen.docx(_meta(d.title, d.ref, d.version, owners.get(d.owner_id, ""), d.status.label) + body),
+                         rssi)
     log(f"{n_att} pièces jointes générées.")
 
     # Espace Docs : un fichier par document du SMSI, rangé par dossier
@@ -615,6 +622,29 @@ def _p2_demo(users, ctrl):
 # --------------------------------------------------------------------------
 # P3 : programme d'audit, compétences, continuité, changements, actifs <-> risques
 # --------------------------------------------------------------------------
+def _trust_demo(users):
+    """Page de confiance de démonstration : publiée, documents publics et sur demande, sous-traitants."""
+    from app.models import TrustRequest, OrgFramework
+    from app.services import trust as trust_svc, frameworks as fw_svc
+    of = OrgFramework.query.filter_by(framework_id=fw_svc.get(fw_svc.CORE).id).first()
+    if of is not None:
+        of.target_date, of.certifier = _d(120), "Organisme de certification (fictif)"
+    trust_svc.save({"enabled": True, "title": C.TRUST["title"], "intro": C.TRUST["intro"], "contact": C.TRUST["contact"],
+                    "frameworks": ["ISO27001"], "show_controls": True, "noindex": True})
+    for d in Document.query.filter(Document.ref.in_(list(C.TRUST_DOCS))).all():
+        d.trust_visibility = C.TRUST_DOCS[d.ref]
+    for sup in Supplier.query.filter(Supplier.ref.in_(C.TRUST_SUPPLIERS)).all():
+        sup.trust_public = True
+    for name, email, company, reason, j, status in C.TRUST_REQUESTS:
+        r = TrustRequest(name=name, email=email, company=company, reason=reason, status=status,
+                         created_at=datetime.utcnow() + timedelta(days=j))
+        if status == "ACCORDEE":
+            r.decided_by_id, r.decided_at = users["rssi"].id, r.created_at + timedelta(hours=5)
+            r.expires_at, r.downloads = r.decided_at + timedelta(days=30), 2
+        db.session.add(r)
+    db.session.flush()
+
+
 def _links_demo():
     """Maillage SMI : risques liés aux incidents, fournisseurs, activités de la BIA, changements."""
     from app.models import RiskLink, Incident, Supplier, BusinessProcess, ChangeRequest

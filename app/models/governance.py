@@ -275,6 +275,7 @@ class Supplier(TenantMixin, db.Model):
     security_clauses = db.Column(db.Boolean, default=False, nullable=False)   # A.5.20
     dpa = db.Column(db.Boolean, default=False, nullable=False)                # accord de traitement des données
     certifications = db.Column(db.Text, nullable=True)
+    trust_public = db.Column(db.Boolean, nullable=False, default=False, server_default="false")  # sous-traitant affiché (3.11)
     assessment_result = _enum(AssessmentResult, AssessmentResult.NON_EVALUE, nullable=False)
     last_assessment = db.Column(db.Date, nullable=True)
     next_assessment = db.Column(db.Date, nullable=True)

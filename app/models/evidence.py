@@ -39,6 +39,8 @@ class Document(TenantMixin, db.Model):
     ack_required = db.Column(db.Boolean, nullable=False, default=False, server_default="false")
     ack_roles = db.Column(db.String(80), nullable=True)
     ack_days = db.Column(db.Integer, nullable=False, default=30, server_default="30")   # délai après approbation
+    # Page de confiance (3.11) : NULL = privé, PUBLIC = téléchargeable, DEMANDE = sur demande accordée
+    trust_visibility = db.Column(db.String(12), nullable=True)
 
     owner = db.relationship("User", foreign_keys=[owner_id])
     submitted_by = db.relationship("User", foreign_keys=[submitted_by_id])

@@ -1,0 +1,20 @@
+{% extends 'trust/_layout.html' %}
+{% block title %}Documents de sécurité - {{ org.name }}{% endblock %}
+{% block hero %}
+  <div class="tc-kicker">Centre de confiance</div>
+  <h1 class="tc-h1">Documents de sécurité</h1>
+  {% if req %}<p class="tc-intro">Accès accordé à {{ req.name }}{{ ' (' ~ req.company ~ ')' if req.company }} jusqu'au {{ req.expires_at|d }}. Ce lien est personnel : merci de ne pas le diffuser.</p>{% endif %}
+{% endblock %}
+{% block content %}
+{% if not req %}
+<section class="tc-sec"><h2>Lien invalide ou expiré</h2>
+  <p class="tc-sub" style="margin:0;">Ce lien d'accès n'est plus valable. Vous pouvez faire une nouvelle demande depuis <a href="{{ url_for('trust.page', slug=org.slug) }}#documents">la page de confiance</a>.</p></section>
+{% else %}
+<section class="tc-sec">
+  {% for d in docs %}{% set f = file_of(d) %}
+  <div class="tc-doc"><span>{{ d.title }} <small>· version {{ d.version }}</small></span>
+    {% if f %}<a class="btn btn--subtle btn--sm" href="{{ url_for('trust.access_doc', slug=org.slug, token=token, doc_id=d.id) }}">Télécharger</a>{% else %}<small>fichier non disponible</small>{% endif %}</div>
+  {% else %}<p class="tc-sub" style="margin:0;">Aucun document disponible pour le moment.</p>{% endfor %}
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,83 @@
+{% extends 'trust/_layout.html' %}
+{% block hero %}
+  <div class="tc-kicker">Centre de confiance</div>
+  <h1 class="tc-h1">{{ cfg.title or ('Sécurité et conformité chez ' ~ org.name) }}</h1>
+  <p class="tc-intro">{{ cfg.intro or ("Cette page présente les engagements de " ~ org.name ~ " en matière de sécurité de l'information, de protection des données et de conformité : certifications, mesures en place, documents et sous-traitants.") }}</p>
+{% endblock %}
+{% block content %}
+{% if certs %}
+<section class="tc-sec" id="conformite">
+  <h2>Certifications et conformité</h2>
+  <p class="tc-sub">Normes internationales appliquées par notre système de management.</p>
+  <div class="tc-certs">
+    {% for c in certs %}
+    <div class="tc-cert">
+      <b>{{ c.name }}</b><span class="muted" style="font-size:12px;">{{ c.domain }}</span>
+      {% if c.certified_on %}<span class="tc-badge tc-badge--ok">Certifiée</span>
+        <span class="muted" style="font-size:12px;">depuis le {{ c.certified_on|d }}{{ ' - ' ~ c.certifier if c.certifier }}</span>
+      {% else %}<span class="tc-badge tc-badge--wip">Mise en conformité en cours</span>
+        {% if c.target %}<span class="muted" style="font-size:12px;">Certification visée : {{ c.target.strftime('%m/%Y') }}</span>{% endif %}{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% if controls %}
+<section class="tc-sec" id="mesures">
+  <h2>Mesures de sécurité en place</h2>
+  <p class="tc-sub">Mesures mises en œuvre et vérifiées dans le cadre de notre système de management.</p>
+  {% for fwname, groups in controls %}
+  <div class="tc-ctrl">
+    {% if controls|length > 1 %}<div style="font-weight:700;font-size:13px;margin:8px 0 2px;">{{ fwname }}</div>{% endif %}
+    {% for theme, titles in groups %}
+    <details><summary><span>{{ theme }}</span><span class="muted" style="font-weight:400;">{{ titles|length }} mesure(s)</span></summary>
+      <ul>{% for t in titles %}<li>{{ t }}</li>{% endfor %}</ul></details>
+    {% endfor %}
+  </div>
+  {% endfor %}
+</section>
+{% endif %}
+
+{% if public_docs or request_docs %}
+<section class="tc-sec" id="documents">
+  <h2>Documents</h2>
+  <p class="tc-sub">Politiques et documents de sécurité. Les documents réservés sont transmis sur demande.</p>
+  {% for d in public_docs %}{% set f = file_of(d) %}
+  <div class="tc-doc"><span>{{ d.title }} <small>· version {{ d.version }}</small></span>
+    {% if f %}<a class="btn btn--subtle btn--sm" href="{{ url_for('trust.public_doc', slug=org.slug, doc_id=d.id) }}">Télécharger</a>{% else %}<small>bientôt disponible</small>{% endif %}</div>
+  {% endfor %}
+  {% for d in request_docs %}
+  <div class="tc-doc"><span>{{ d.title }} <small>· version {{ d.version }}</small></span><span class="tc-lock" style="flex:none;">Sur demande</span></div>
+  {% endfor %}
+  {% if request_docs %}
+  <form method="post" action="{{ url_for('trust.ask', slug=org.slug) }}" class="tc-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="full" style="font-weight:700;font-size:14px;">Demander l'accès aux documents réservés</div>
+    <div class="field"><label>Nom et prénom *</label><input type="text" name="name" required maxlength="120"></div>
+    <div class="field"><label>E-mail professionnel *</label><input type="email" name="email" required maxlength="255"></div>
+    <div class="field"><label>Société</label><input type="text" name="company" maxlength="200"></div>
+    <div class="field"><label>Motif</label><input type="text" name="reason" maxlength="500" placeholder="Ex. évaluation fournisseur, appel d'offres"></div>
+    <div class="tc-hp" aria-hidden="true"><label>Site web</label><input type="text" name="website" tabindex="-1" autocomplete="off"></div>
+    <label class="full" style="display:flex;gap:8px;align-items:flex-start;font-size:12.5px;"><input type="checkbox" name="consent" value="1" required style="width:auto;margin-top:2px;"> J'accepte que ces informations soient utilisées pour traiter ma demande d'accès.</label>
+    <div class="full"><button class="btn btn--primary btn--sm" type="submit">Envoyer la demande</button></div>
+  </form>
+  {% endif %}
+</section>
+{% endif %}
+
+{% if subprocessors %}
+<section class="tc-sec" id="sous-traitants">
+  <h2>Sous-traitants</h2>
+  <p class="tc-sub">Prestataires intervenant dans la fourniture de nos services.</p>
+  <div style="overflow-x:auto;"><table class="tc-table">
+    <thead><tr><th>Prestataire</th><th>Service</th><th>Certifications</th></tr></thead>
+    <tbody>{% for s in subprocessors %}<tr><td><b>{{ s.name }}</b><div class="muted" style="font-size:11.5px;">{{ s.category.label }}</div></td><td>{{ (s.service or '-')|truncate(160) }}</td><td>{{ s.certifications or '-' }}</td></tr>{% endfor %}</tbody>
+  </table></div>
+</section>
+{% endif %}
+
+{% if not (certs or controls or public_docs or request_docs or subprocessors) %}
+<section class="tc-sec"><p class="tc-sub" style="margin:0;">Le contenu de cette page est en cours de préparation.</p></section>
+{% endif %}
+{% endblock %}

@@ -57,7 +57,7 @@ communs (audits, revues, documents, objectifs, non-conformités) peuvent être
 rattachés à une ou plusieurs normes. Les écrans historiques restent limités à
 l'ISO 27001 (`Control.of()`).
 
-Normes disponibles (3.10) :
+Normes disponibles (3.11) :
 
 | Norme | Type | Module propre |
 |---|---|---|
@@ -298,6 +298,41 @@ personnes conscientes de la politique), ISO/IEC 27001 A.5.1 et A.6.3.
   techniques) et le télétravail sont soumis à acceptation, avec des
   acceptations partielles, dont une hors délai.
 - **Migration** : table `policy_acceptances` et colonnes `documents.ack_*`.
+
+### Page de confiance publique (3.11)
+
+Une page publique, sans connexion, à l'adresse `/confiance/<slug>`, sur le
+modèle des « Trust Centers ». Elle se règle dans **Administration › Page de
+confiance** (`app/blueprints/trust`, `app/services/trust.py`). Rien n'est
+publié sans un choix explicite du RSSI.
+
+- **Présentation** : titre, texte, bouton de contact sécurité, option de
+  non-référencement (activée par défaut).
+- **Certifications** des normes choisies : « Certifiée » (date et organisme)
+  ou « Mise en conformité en cours » (mois visé), d'après les référentiels.
+  Aucun pourcentage interne n'est affiché.
+- **Mesures en place** (option) : les mesures d'annexe retenues et
+  implémentées, par thème.
+- **Documents approuvés** : chaque document est soit *public*
+  (téléchargeable), soit *sur demande*. Le visiteur envoie une demande (nom,
+  e-mail, société, motif, consentement ; champ piège anti-robot ; 3 demandes
+  par jour et par e-mail au maximum). Le contact est notifié. Le RSSI accorde
+  l'accès pour N jours, et un lien personnel signé est envoyé par e-mail et
+  affiché dans la gestion. Le RSSI peut aussi refuser ou révoquer. Les
+  téléchargements sont comptés.
+- **Sous-traitants** choisis : fournisseurs actifs seulement (nom, catégorie,
+  service, certifications).
+- **Isolation** : sans connexion, il n'y a pas d'organisation courante, donc
+  chaque page publique fixe explicitement l'organisation. Les documents et
+  les pièces jointes servis sont contrôlés : organisation, statut approuvé,
+  visibilité. Un lien d'accès est lié à sa demande et à son organisation.
+- Les demandes en attente apparaissent dans les points à traiter du tableau
+  de bord. La page non publiée reste visible en aperçu pour le RSSI.
+- **Démo** : la page est publiée, avec la PSSI publique, deux politiques sur
+  demande, quatre sous-traitants et deux demandes (une accordée, une en
+  attente).
+- **Migration** : table `trust_requests`, colonnes `documents.trust_visibility`
+  et `suppliers.trust_public`.
 
 ## Modules
 

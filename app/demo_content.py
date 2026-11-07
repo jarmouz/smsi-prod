@@ -859,3 +859,21 @@ POLICY_ACKS = {
     "DOC-009": ("RSSI,CONTRIBUTEUR", 30, ["rssi", "infra", "dev"]),             # cryptographie : équipes techniques
 }
 
+# Page de confiance (3.11)
+TRUST = {
+    "title": "Sécurité et conformité chez Fictivia",
+    "intro": ("Fictivia héberge les données de paie de plus de 240 entreprises. La sécurité de ces données est au cœur "
+              "de notre service : système de management de la sécurité de l'information conforme à l'ISO/IEC 27001, "
+              "chiffrement des données, hébergement redondé et équipe sécurité dédiée.\n\n"
+              "Cette page présente nos engagements, nos mesures en place et nos documents de sécurité."),
+    "contact": "securite@fictivia.demo",
+}
+TRUST_DOCS = {"DOC-002": "PUBLIC", "DOC-007": "DEMANDE", "DOC-009": "DEMANDE"}
+TRUST_SUPPLIERS = ["FRN-001", "FRN-002", "FRN-003", "FRN-007"]
+TRUST_REQUESTS = [   # (nom, e-mail, société, motif, jours, statut)
+    ("Rania Ben Amor", "rania.benamor@client-exemple.demo", "Groupe Atlas (fictif)", "Évaluation fournisseur annuelle", -6,
+     "ACCORDEE"),
+    ("Walid Ferchichi", "w.ferchichi@prospect-exemple.demo", "Banque du Sahel (fictif)", "Appel d'offres paie externalisée",
+     -1, "EN_ATTENTE"),
+]
+

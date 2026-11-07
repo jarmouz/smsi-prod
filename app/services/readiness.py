@@ -116,6 +116,9 @@ def attention(pilot):
     ps = policies.summary()
     add(1, "Acceptations de politiques hors délai", ps["overdue"], url_for("documents.acceptances"))
     add(2, "Acceptations de politiques en attente", ps["pending"] - ps["overdue"], url_for("documents.acceptances"))
+    from app.models import TrustRequest
+    add(2, "Demandes d'accès à la page de confiance", TrustRequest.query.filter_by(status="EN_ATTENTE").count(),
+        url_for("trust.manage") + "#demandes")
     for code, label, n, url in module_inputs():
         add(1 if "retard" in label else 2, f"{label} ({code[3:] if code != 'ISO20000' else '20000-1'})", n, url)
     review = sum(1 for r in open_r if r.review_date and r.review_date < date.today())

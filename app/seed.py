@@ -179,6 +179,9 @@ UPGRADE_DDL = [
     "ALTER TABLE documents ADD COLUMN IF NOT EXISTS ack_required BOOLEAN NOT NULL DEFAULT false",
     "ALTER TABLE documents ADD COLUMN IF NOT EXISTS ack_roles VARCHAR(80) NULL",
     "ALTER TABLE documents ADD COLUMN IF NOT EXISTS ack_days INTEGER NOT NULL DEFAULT 30",
+    # Page de confiance (3.11)
+    "ALTER TABLE documents ADD COLUMN IF NOT EXISTS trust_visibility VARCHAR(12) NULL",
+    "ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS trust_public BOOLEAN NOT NULL DEFAULT false",
 ]
 
 # Tables rattachées à une organisation (voir TenantMixin)

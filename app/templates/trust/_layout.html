@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ cfg.title or ('Centre de confiance - ' ~ org.name) }}{% endblock %}</title>
+  {% if cfg.noindex or preview is defined and preview %}<meta name="robots" content="noindex, nofollow">{% endif %}
+  <meta name="description" content="Sécurité, conformité et documents de confiance de {{ org.name }}.">
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  <style>
+    html,body{margin:0;background:var(--canvas);font-family:var(--font-body);color:var(--ink-900)}
+    .tc-hero{background:var(--surface);border-bottom:1px solid var(--line)}
+    .tc-wrap{max-width:1040px;margin:0 auto;padding:0 20px}
+    .tc-top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 0}
+    .tc-org{font-family:var(--font-display);font-weight:800;font-size:18px}
+    .tc-kicker{font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--kicker);margin:18px 0 8px}
+    .tc-h1{font-family:var(--font-display);font-weight:800;font-size:34px;line-height:1.1;margin:0 0 12px;letter-spacing:-.01em}
+    .tc-intro{font-size:15px;line-height:1.6;color:var(--ink-500);max-width:720px;margin:0 0 26px;white-space:pre-line}
+    .tc-main{padding:26px 0 40px;display:flex;flex-direction:column;gap:22px}
+    .tc-sec{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:20px 22px}
+    .tc-sec h2{font-family:var(--font-display);font-size:18px;margin:0 0 4px}
+    .tc-sub{font-size:13px;color:var(--ink-500);margin:0 0 14px}
+    .tc-certs{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+    .tc-cert{border:1px solid var(--line);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:6px}
+    .tc-cert b{font-family:var(--font-display);font-size:15px}
+    .tc-badge{align-self:flex-start;font-size:11.5px;font-weight:700;padding:3px 8px;border-radius:999px}
+    .tc-badge--ok{background:#E3F2EA;color:#20653E}.tc-badge--wip{background:#E8F0FD;color:#1E5BB8}
+    .tc-ctrl summary{cursor:pointer;font-weight:600;font-size:13.5px;padding:8px 0;border-top:1px solid var(--line);list-style:none;display:flex;justify-content:space-between}
+    .tc-ctrl ul{margin:0 0 10px;padding:0 0 0 2px;list-style:none;columns:2;column-gap:28px}
+    .tc-ctrl li{font-size:12.5px;padding:3px 0 3px 20px;position:relative;break-inside:avoid}
+    .tc-ctrl li::before{content:"";position:absolute;left:2px;top:8px;width:9px;height:5px;border-left:2px solid #2A7E4F;border-bottom:2px solid #2A7E4F;transform:rotate(-45deg)}
+    .tc-doc{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line);font-size:13.5px}
+    .tc-doc:first-of-type{border-top:0}
+    .tc-doc span{flex:1}.tc-doc small{color:var(--ink-500)}
+    .tc-lock{font-size:11.5px;font-weight:700;color:var(--ink-500);background:var(--paper);padding:3px 8px;border-radius:999px}
+    .tc-form{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+    .tc-form .full{grid-column:1/-1}
+    .tc-hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+    .tc-table{width:100%;border-collapse:collapse;font-size:13px}
+    .tc-table th{text-align:left;font-size:11.5px;color:var(--ink-500);font-weight:700;padding:6px 8px;border-bottom:1px solid var(--line)}
+    .tc-table td{padding:8px;border-bottom:1px solid var(--line);vertical-align:top}
+    .tc-foot{font-size:12px;color:var(--ink-500);padding:18px 0 30px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .tc-preview{background:#FFF4D6;color:#6E4700;font-size:13px;text-align:center;padding:8px 12px}
+    @media (max-width:640px){.tc-h1{font-size:26px}.tc-form{grid-template-columns:1fr}.tc-ctrl ul{columns:1}.tc-sec{padding:16px}}
+  </style>
+</head>
+<body>
+  {% if preview is defined and preview %}<div class="tc-preview">Aperçu : la page de confiance n'est pas encore publiée (Administration › Page de confiance).</div>{% endif %}
+  <header class="tc-hero"><div class="tc-wrap">
+    <div class="tc-top"><span class="tc-org">{{ org.name }}</span>
+      {% if cfg.contact %}<a class="btn btn--primary btn--sm" href="mailto:{{ cfg.contact }}">Contacter l'équipe sécurité</a>{% endif %}</div>
+    {% block hero %}{% endblock %}
+  </div></header>
+  <main class="tc-wrap tc-main">
+    {% with messages = get_flashed_messages(with_categories=true) %}{% for cat, msg in messages %}<div class="flash flash--{{ cat }}">{{ msg }}</div>{% endfor %}{% endwith %}
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="tc-wrap tc-foot"><span>{{ org.name }} - centre de confiance</span><span>Publié avec Integra</span></footer>
+</body>
+</html>

@@ -16,6 +16,7 @@ from app.models.risk import Risk, RiskAction, RiskActionStatus, RiskLink
 from app.models.audit import Audit, Finding, CorrectiveAction
 from app.models.review import ManagementReview, ReviewAction
 from app.models.evidence import Document, DocumentVersion, Evidence, PolicyAcceptance
+from app.models.trust import TrustRequest
 from app.models.attachment import Attachment
 from app.models.asset import Asset, Incident, AwarenessAction
 from app.models.activity import ActivityLog
@@ -41,7 +42,7 @@ __all__ = [
     "Organization", "TenantMixin", "User", "Setting",
     "Framework", "FrameworkItem", "ItemMapping", "OrgFramework", "FrameworkLink", "ISO27001", "Control", "risk_controls", "evidence_controls",
     "Risk", "RiskAction", "RiskActionStatus", "RiskLink", "Audit", "Finding", "CorrectiveAction",
-    "ManagementReview", "ReviewAction", "Document", "PolicyAcceptance", "DocumentVersion", "Evidence", "Attachment", "Asset", "Incident", "AwarenessAction", "ActivityLog",
+    "ManagementReview", "ReviewAction", "Document", "PolicyAcceptance", "TrustRequest", "DocumentVersion", "Evidence", "Attachment", "Asset", "Incident", "AwarenessAction", "ActivityLog",
     "AssetCategory", "Classification", "AssetStatus", "IncidentCategory",
     "IncidentSeverity", "IncidentStatus", "AwarenessType", "AwarenessStatus",
     "ContextIssue", "InterestedParty", "Objective", "Indicator", "Measurement", "NonConformity", "Supplier",

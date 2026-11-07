@@ -106,6 +106,7 @@ def _register_blueprints(app):
     from app.blueprints.bcplans import bp as bcplans_bp
     from app.blueprints.itsm import bp as itsm_bp
     from app.blueprints.quality import bp as quality_bp
+    from app.blueprints.trust import bp as trust_bp
     from app.blueprints.requirements import bp as requirements_bp
     from app.blueprints.competences import bp as competences_bp
     from app.blueprints.continuity import bp as continuity_bp
@@ -115,7 +116,7 @@ def _register_blueprints(app):
     for b in (auth_bp, dash_bp, soa_bp, risks_bp, audits_bp,
               reviews_bp, documents_bp, evidence_bp, admin_bp, attachments_bp, docs_bp, onlyoffice_bp,
               assets_bp, incidents_bp, awareness_bp, platform_bp, account_bp, context_bp, objectives_bp,
-              nonconformities_bp, suppliers_bp, requirements_bp, competences_bp, continuity_bp, changes_bp, imports_bp, privacy_bp, aisystems_bp, bcplans_bp, itsm_bp, quality_bp):
+              nonconformities_bp, suppliers_bp, requirements_bp, competences_bp, continuity_bp, changes_bp, imports_bp, privacy_bp, aisystems_bp, bcplans_bp, itsm_bp, quality_bp, trust_bp):
         app.register_blueprint(b)
 
 
