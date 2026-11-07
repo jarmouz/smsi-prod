@@ -424,7 +424,7 @@ def register_seed_command(app):
         db.create_all()
         from app.services import frameworks
         frameworks.sync_catalogues()
-        for k, v in [("smtp_from_name", "SMSI"), ("smtp_port", "587"),
+        for k, v in [("smtp_from_name", "Integra"), ("smtp_port", "587"),
                      ("smtp_use_tls", "1"), ("notifications_enabled", "1")]:
             db.session.add(Setting(key=k, value=v))
         db.session.commit()
@@ -454,7 +454,7 @@ def register_seed_command(app):
         frameworks.sync_catalogues()
 
         # Réglages par défaut (globaux : hérités par toutes les organisations)
-        for k, v in [("smtp_from_name", "SMSI"), ("smtp_port", "587"),
+        for k, v in [("smtp_from_name", "Integra"), ("smtp_port", "587"),
                      ("smtp_use_tls", "1"), ("notifications_enabled", "1")]:
             db.session.add(Setting(key=k, value=v))
         db.session.commit()

@@ -149,7 +149,7 @@ def render(user, org, sections, base_url):
                         f'white-space:nowrap;text-align:right;">{escape(when)}</td></tr>')
     pref = escape(base_url + url_for("account.home"))
     return (f'<div style="font-family:Montserrat,Arial,sans-serif;max-width:640px;margin:0 auto;color:#1F2937;">'
-            f'<h2 style="color:#1F3A8A;margin:0 0 4px;">Vos échéances SMSI</h2>'
+            f'<h2 style="color:#1F3A8A;margin:0 0 4px;">Vos échéances Integra</h2>'
             f'<p style="color:#5B6676;margin:0 0 8px;font-size:13px;">{escape(org.name)} - {total} point(s) à traiter'
             f'{f", dont {late} en retard" if late else ""}.</p>'
             f'<table style="width:100%;border-collapse:collapse;">{"".join(rows)}</table>'
@@ -195,7 +195,7 @@ def run(dry_run=False, org_slug=None, force=False, log=print):
                 if dry_run:
                     log(f"[{org.slug}] {u.email} : {n} point(s) (simulation)")
                     continue
-                ok, msg = mailer.send_now(u.email, f"SMSI - {n} échéance(s) à traiter", render(u, org, sections, base), cfg)
+                ok, msg = mailer.send_now(u.email, f"Integra - {n} échéance(s) à traiter", render(u, org, sections, base), cfg)
                 if ok:
                     u.last_digest_at = now
                     db.session.commit()

@@ -726,3 +726,4 @@ table.grid tbody tr.imp-row--error td { background: #fdf6f4; }
 .fw-tabs .fw-tab.is-active { color: var(--teal-600); border-bottom-color: var(--teal-600); }
 .rail__group[data-group="vieprivee"] { --g: #6A4C93; --g-dark: #533A75; --g-soft: #EFEAF6; }
 .rail__group[data-group="ia"]        { --g: #8E3B5A; --g-dark: #722F48; --g-soft: #F6E9EE; }
+.rail__tagline { display: block; font-size: 10.5px; font-weight: 500; letter-spacing: .02em; text-transform: none; opacity: .75; margin-top: 2px; line-height: 1.3; }

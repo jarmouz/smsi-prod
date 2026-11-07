@@ -1,8 +1,15 @@
-# SMSI — Système de management de la sécurité (ISO/IEC 27001)
+# Integra — Integrated Management System Platform
 
-Application de pilotage d'un **SMSI** pour une entreprise. Six modules reliés
-entre eux, pensés pour l'audit de certification : la valeur n'est pas dans six
-listes séparées mais dans le **maillage** entre elles.
+Plateforme de pilotage de **systèmes de management** ISO, éditée par Kaizen
+Intelligence : sécurité de l'information (ISO/IEC 27001, socle historique de
+l'application), vie privée (ISO/IEC 27701), intelligence artificielle
+(ISO/IEC 42001), d'autres normes à venir. Les modules sont reliés entre eux,
+pensés pour l'audit de certification : la valeur n'est pas dans des listes
+séparées mais dans le **maillage** entre elles.
+
+> Noms techniques conservés pour la compatibilité des installations existantes :
+> image Docker `smsi-web`, paquet `smsi-<version>.tar.gz`, dossier `/opt/smsi`,
+> base `smsi`.
 
 ## Ce dépôt
 

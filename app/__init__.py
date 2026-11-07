@@ -160,6 +160,7 @@ def _register_jinja(app):
             "oo_enabled": oo_on,
             "oo_editable": oo.is_editable,
             "APP_NAME": app.config["APP_NAME"],
+            "APP_TAGLINE": app.config["APP_TAGLINE"],
             "Theme": Theme, "ControlStatus": ControlStatus, "RiskStatus": RiskStatus,
             "Treatment": Treatment, "FindingType": FindingType, "ActionStatus": ActionStatus,
             "DocStatus": DocStatus, "DocType": DocType, "AuditStatus": AuditStatus,

@@ -54,4 +54,5 @@ class Config:
     # Récapitulatifs par e-mail : domaines jamais destinataires (comptes de démonstration, tests)
     NOTIFY_SKIP_DOMAINS = os.environ.get("NOTIFY_SKIP_DOMAINS", ".demo,.local,.test,.example,example.com")
 
-    APP_NAME = "Information Security"
+    APP_NAME = "Integra"
+    APP_TAGLINE = "Integrated Management System Platform"

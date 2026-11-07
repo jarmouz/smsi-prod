@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Connexion - {{ APP_NAME }}</title>
+  <title>Connexion - {{ APP_NAME }} - {{ APP_TAGLINE }}</title>
   <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
   <style>
@@ -40,8 +40,8 @@
   <aside class="lg-aside">
     <div class="lg-main">
       <div class="lg-head">
-        <p class="lg-kicker">SMSI - ISO/IEC 27001:2022</p>
-        <h2 class="ttl">Un SMSI qui s'améliore en continu.</h2>
+        <p class="lg-kicker">{{ APP_NAME }} - {{ APP_TAGLINE }}</p>
+        <h2 class="ttl">Un système de management qui s'améliore en continu.</h2>
         <p>Applicabilité, risques, incidents, audits et preuves reliés dans un même cycle, prêts pour la certification.</p>
       </div>
 
@@ -63,7 +63,7 @@
     <p class="sub">Saisissez le code à 6 chiffres affiché par votre application d'authentification, ou l'un de vos codes de secours.</p>
     {% else %}
     <h1>Connexion</h1>
-    <p class="sub">Accédez à votre espace de management de la sécurité.</p>
+    <p class="sub">Accédez à votre système de management intégré.</p>
     {% endif %}
 
     {% with messages = get_flashed_messages(with_categories=true) %}

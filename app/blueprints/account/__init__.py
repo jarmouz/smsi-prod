@@ -11,7 +11,7 @@ from app.services.audit_trail import log_event
 bp = Blueprint("account", __name__, url_prefix="/compte")
 
 SETUP_KEY = "mfa_setup_secret"
-ISSUER = "SMSI Kaizen"
+ISSUER = "Integra"
 
 
 def mfa_required_for(user):

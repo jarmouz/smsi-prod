@@ -1,6 +1,6 @@
-# SMSI — Guide d'installation sur site
+# Integra — Guide d'installation sur site
 
-Ce paquet installe l'application SMSI sur un serveur du client, **sans accès
+Ce paquet installe **Integra** (Integrated Management System Platform) sur un serveur du client, **sans accès
 internet** : les images Docker sont fournies dans `images/`.
 
 ## 1. Avant l'intervention : à obtenir du client
