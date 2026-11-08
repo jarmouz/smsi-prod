@@ -950,3 +950,12 @@ tr.q-off { display: none !important; }
 .q-none { padding: 30px; }
 .q-bar { margin: 0; padding: 10px 14px; border-bottom: 1px solid var(--line); }
 @media print { .q-bar { display: none; } }
+
+/* ------------------------------------------------------------ Textes longs sans espace
+   Une URL ou un chemin se coupe pour rester dans son cadre. « anywhere » permet aussi aux
+   grilles, aux flex et aux tableaux de rétrécir sous la longueur de la chaîne : il est
+   réservé aux textes repérés par lists.js, sinon les colonnes étroites coupent les mots. */
+.tc-main { overflow-wrap: break-word; }
+.txt-long { overflow-wrap: anywhere; }
+td.td-long { min-width: 180px; }
+@media (max-width: 640px) { .lib-body .meta-list > div { grid-template-columns: minmax(0, 1fr); } }

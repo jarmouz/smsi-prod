@@ -1,6 +1,14 @@
 /* Listes : tri par colonne, sélection et actions en masse, ouverture dans un nouvel onglet (3.18), pagination (3.19), recherche libre (3.20). */
 (function () {
   var csrf = (document.querySelector('meta[name=csrf-token]') || {}).content;
+  /* Une URL ou un chemin très long ne doit pas élargir son cadre (cellule, carte, grille). */
+  var walker = document.createTreeWalker(document.querySelector('.main') || document.body, NodeFilter.SHOW_TEXT);
+  for (var node = walker.nextNode(); node; node = walker.nextNode()) {
+    if (!/\S{32}/.test(node.nodeValue)) continue;
+    node.parentElement.classList.add('txt-long');
+    var cell = node.parentElement.closest('td');
+    if (cell) cell.classList.add('td-long');
+  }
   function cellKey(row, i) {
     var c = row.cells[i], t = c ? c.textContent.trim() : '';
     var d = t.match(/^(\d{2})\/(\d{2})\/(\d{4})/);

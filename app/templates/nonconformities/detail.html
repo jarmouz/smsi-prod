@@ -38,9 +38,9 @@
       </div>
       {% else %}<p class="muted" style="font-size:12.5px;margin:0 0 8px;">Aucune action corrective.</p>{% endfor %}
       {% if current_user.can_edit and nc.status.value != 'CLOTUREE' %}
-      <form method="post" action="{{ url_for('nonconformities.add_action', nc_id=nc.id) }}" style="display:flex;gap:6px;margin-top:8px;">
+      <form method="post" action="{{ url_for('nonconformities.add_action', nc_id=nc.id) }}" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <input type="text" name="description" required placeholder="Action pour éliminer la cause…" style="flex:1;font-size:12.5px;">
+        <input type="text" name="description" required placeholder="Action pour éliminer la cause…" style="flex:1 1 100px;min-width:0;font-size:12.5px;">
         <select name="owner_id" style="width:auto;font-size:12px;"><option value="">Resp.</option>{% for u in users %}<option value="{{ u.id }}">{{ u.name }}</option>{% endfor %}</select>
         <input type="date" name="due_date" style="width:auto;font-size:12px;">
         <button class="btn btn--subtle btn--sm" type="submit">+</button>

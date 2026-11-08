@@ -378,6 +378,14 @@ ouvre directement sa fiche. La bibliothèque est aussi proposée depuis
 les références sont contrôlées par les tests contre les catalogues de
 l'application.
 
+### Liens et textes longs dans leur cadre (3.20.1)
+
+- Une URL, un chemin ou toute chaîne de plus de 32 caractères sans espace se coupe
+  pour rester dans sa cellule, sa carte ou sa fiche, sur tous les écrans. Les autres
+  textes gardent leurs mots entiers et leur mise en page.
+- Sur téléphone, les formulaires d'action des audits et des non-conformités, les
+  constats d'audit et le détail de la bibliothèque de risques restent dans l'écran.
+
 ### Recherche libre dans les filtres (3.20)
 
 - Un champ « Rechercher dans le tableau… » dans la barre de filtres des listes, ou
