@@ -3,72 +3,25 @@
 {% block heading %}Page de confiance{% endblock %}
 {% block topactions %}<a href="{{ url_for('trust.page', slug=org.slug) }}" target="_blank" class="btn btn--subtle btn--sm">{{ 'Voir la page publique' if cfg.enabled else 'Aperçu' }}</a>{% endblock %}
 {% block content %}
+{% set pending = reqs|selectattr('status', 'equalto', 'EN_ATTENTE')|list|length %}{% set published = docs|selectattr('trust_visibility')|list|length %}
 {% set public_url = url_for('trust.page', slug=org.slug, _external=True) %}
 <p class="muted" style="font-size:12.5px;max-width:880px;margin:0 0 14px;">Page publique, sans connexion, qui présente à vos clients et prospects vos certifications, vos mesures de sécurité en place, vos documents et vos sous-traitants. Rien n'est publié sans votre choix explicite ; les pourcentages internes, les risques et les écarts ne sont jamais affichés.
   {% if cfg.enabled %}Adresse : <a href="{{ public_url }}" target="_blank">{{ public_url }}</a>{% endif %}</p>
 
-<form method="post">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-  <div class="detail-grid">
-    <div class="stack">
-      <div class="panel">
-        <div class="panel__head"><h2>Publication</h2>{% if cfg.enabled %}<span class="appl appl--in">En ligne</span>{% else %}<span class="appl appl--out">Non publiée</span>{% endif %}</div>
-        <div class="panel__body stack">
-          <label style="display:flex;align-items:center;gap:8px;font-size:13px;"><input type="checkbox" name="enabled" value="1" {{ 'checked' if cfg.enabled }} style="width:auto;"> Publier la page de confiance</label>
-          <div class="field"><label>Titre</label><input type="text" name="title" maxlength="200" value="{{ cfg.title }}" placeholder="Sécurité et conformité chez {{ org.name }}"></div>
-          <div class="field"><label>Présentation</label><textarea name="intro" rows="4" maxlength="4000" placeholder="Nos engagements en matière de sécurité, de protection des données et de continuité de service...">{{ cfg.intro }}</textarea></div>
-          <div class="field"><label>Contact sécurité (e-mail)</label><input type="email" name="contact" value="{{ cfg.contact }}" placeholder="securite@exemple.tn"><div class="hint">Bouton de contact de la page ; reçoit les notifications de demandes d'accès.</div></div>
-          <label style="display:flex;align-items:center;gap:8px;font-size:13px;"><input type="checkbox" name="noindex" value="1" {{ 'checked' if cfg.noindex }} style="width:auto;"> Ne pas référencer la page dans les moteurs de recherche</label>
-        </div>
-      </div>
-      <div class="panel">
-        <div class="panel__head"><h2>Certifications et mesures</h2></div>
-        <div class="panel__body stack">
-          <div class="field"><label>Normes affichées</label>
-            <div style="display:flex;flex-wrap:wrap;gap:12px;font-size:13px;">{% for f in fws %}<label style="display:flex;align-items:center;gap:5px;"><input type="checkbox" name="frameworks" value="{{ f.code }}" {{ 'checked' if f.code in cfg.frameworks }} style="width:auto;"> {{ f.name }}</label>{% endfor %}</div>
-            <div class="hint">Statut affiché : « Certifiée » (date et organisme) ou « Mise en conformité en cours » (date visée), d'après Administration › Référentiels.</div></div>
-          <label style="display:flex;align-items:center;gap:8px;font-size:13px;"><input type="checkbox" name="show_controls" value="1" {{ 'checked' if cfg.show_controls }} style="width:auto;"> Afficher les mesures en place (mesures d'annexe retenues et implémentées des normes affichées, par thème)</label>
-        </div>
-      </div>
-      <div><button class="btn btn--primary" type="submit">Enregistrer</button></div>
-    </div>
+<nav class="fw-tabs" id="trust-tabs" aria-label="Sections de la page de confiance">
+  <a class="fw-tab" href="#demandes" data-tab="demandes">Demandes{% if pending %} <span class="rail__badge">{{ pending }}</span>{% endif %}</a>
+  <a class="fw-tab" href="#publication" data-tab="publication">Publication</a>
+  <a class="fw-tab" href="#documents" data-tab="documents">Documents <span class="muted">{{ published }}/{{ docs|length }}</span></a>
+  <a class="fw-tab" href="#sous-traitants" data-tab="sous-traitants">Sous-traitants <span class="muted">{{ suppliers|selectattr('trust_public')|list|length }}/{{ suppliers|length }}</span></a>
+</nav>
 
-    <div class="stack">
-      <div class="panel">
-        <div class="panel__head"><h2>Documents publiés</h2></div>
-        <div class="panel__body--flush"><div class="table-wrap"><table class="grid"><tbody>
-          {% for d in docs %}
-          <tr>
-            <td class="ref" style="width:80px;">{{ d.ref }}</td>
-            <td class="subj" style="font-size:12.5px;">{{ d.title|truncate(60) }}
-              <div class="muted" style="font-size:11px;">v{{ d.version }} · {{ d.status.label }}{% if not file_of(d) %} · <span style="color:var(--red-600);">aucun fichier joint</span>{% endif %}{% if d.status.value != 'APPROUVE' %} · publié une fois approuvé{% endif %}</div></td>
-            <td style="width:150px;"><select name="doc_{{ d.id }}" style="font-size:12px;">
-              <option value="">Privé</option>
-              <option value="PUBLIC" {{ 'selected' if d.trust_visibility == 'PUBLIC' }}>Public</option>
-              <option value="DEMANDE" {{ 'selected' if d.trust_visibility == 'DEMANDE' }}>Sur demande</option></select></td>
-          </tr>
-          {% else %}<tr><td class="muted" style="padding:14px;">Aucun document.</td></tr>{% endfor %}
-        </tbody></table></div></div>
-      </div>
-      <div class="panel">
-        <div class="panel__head"><h2>Sous-traitants affichés</h2></div>
-        <div class="panel__body">
-          <input type="hidden" name="sup_present" value="1">
-          {% for s in suppliers %}<label style="display:flex;align-items:center;gap:8px;font-size:12.5px;padding:2px 0;"><input type="checkbox" name="suppliers" value="{{ s.id }}" {{ 'checked' if s.trust_public }} style="width:auto;"> {{ s.name }} <span class="muted">· {{ s.category.label }}{{ ' · ' ~ s.status.label if s.status.value != 'ACTIF' }}</span></label>
-          {% else %}<p class="muted" style="font-size:12.5px;margin:0;">Aucun fournisseur.</p>{% endfor %}
-          <p class="muted" style="font-size:11px;margin:6px 0 0;">Seuls les fournisseurs actifs sont affichés (nom, catégorie, service, certifications).</p>
-        </div>
-      </div>
-    </div>
-  </div>
-</form>
-
-<div class="panel" id="demandes" style="margin-top:16px;">
+<section data-panel="demandes">
+<div class="panel">
   <div class="panel__head"><h2>Demandes d'accès aux documents réservés</h2><span class="rail__badge">{{ reqs|selectattr('status', 'equalto', 'EN_ATTENTE')|list|length }} en attente</span></div>
   <div class="panel__body--flush"><div class="table-wrap"><table class="grid">
     <thead><tr><th>Demandeur</th><th>Motif</th><th style="width:110px;">Reçue le</th><th style="width:150px;">Statut</th><th style="width:330px;">Décision</th></tr></thead>
     <tbody>
-    {% for r in reqs %}
+    {% for r in (reqs|selectattr('status', 'equalto', 'EN_ATTENTE')|list) + (reqs|rejectattr('status', 'equalto', 'EN_ATTENTE')|list) %}
       <tr>
         <td class="subj"><b>{{ r.name }}</b><div class="muted" style="font-size:11.5px;">{{ r.email }}{{ ' · ' ~ r.company if r.company }}</div></td>
         <td style="font-size:12px;">{{ r.reason or '-' }}</td>
@@ -93,4 +46,90 @@
     </tbody>
   </table></div></div>
 </div>
+</section>
+
+<form method="post" id="trust-form" data-guard>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <section data-panel="publication"><div class="two-col">
+      <div class="panel">
+        <div class="panel__head"><h2>Publication</h2>{% if cfg.enabled %}<span class="appl appl--in">En ligne</span>{% else %}<span class="appl appl--out">Non publiée</span>{% endif %}</div>
+        <div class="panel__body stack">
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;"><input type="checkbox" name="enabled" value="1" {{ 'checked' if cfg.enabled }} style="width:auto;"> Publier la page de confiance</label>
+          <div class="field"><label>Titre</label><input type="text" name="title" maxlength="200" value="{{ cfg.title }}" placeholder="Sécurité et conformité chez {{ org.name }}"></div>
+          <div class="field"><label>Présentation</label><textarea name="intro" rows="4" maxlength="4000" placeholder="Nos engagements en matière de sécurité, de protection des données et de continuité de service...">{{ cfg.intro }}</textarea></div>
+          <div class="field"><label>Contact sécurité (e-mail)</label><input type="email" name="contact" value="{{ cfg.contact }}" placeholder="securite@exemple.tn"><div class="hint">Bouton de contact de la page ; reçoit les notifications de demandes d'accès.</div></div>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;"><input type="checkbox" name="noindex" value="1" {{ 'checked' if cfg.noindex }} style="width:auto;"> Ne pas référencer la page dans les moteurs de recherche</label>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel__head"><h2>Certifications et mesures</h2></div>
+        <div class="panel__body stack">
+          <div class="field"><label>Normes affichées</label>
+            <div style="display:flex;flex-wrap:wrap;gap:12px;font-size:13px;">{% for f in fws %}<label style="display:flex;align-items:center;gap:5px;"><input type="checkbox" name="frameworks" value="{{ f.code }}" {{ 'checked' if f.code in cfg.frameworks }} style="width:auto;"> {{ f.name }}</label>{% endfor %}</div>
+            <div class="hint">Statut affiché : « Certifiée » (date et organisme) ou « Mise en conformité en cours » (date visée), d'après Administration › Référentiels.</div></div>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;"><input type="checkbox" name="show_controls" value="1" {{ 'checked' if cfg.show_controls }} style="width:auto;"> Afficher les mesures en place (mesures d'annexe retenues et implémentées des normes affichées, par thème)</label>
+        </div>
+      </div>
+  </div></section>
+
+  <section data-panel="documents">
+    <div class="panel">
+      <div class="panel__head"><h2>Documents publiés</h2><div class="spacer"></div>
+        <input type="search" id="doc-q" placeholder="Filtrer les documents" aria-label="Filtrer les documents" style="max-width:220px;padding:5px 9px;font-size:12.5px;">
+        <label style="font-size:12.5px;display:flex;gap:6px;align-items:center;margin-left:12px;white-space:nowrap;"><input type="checkbox" id="doc-pub" style="width:auto;"> Publiés seulement</label></div>
+      <div class="panel__body--flush"><div class="table-wrap"><table class="grid"><tbody>
+          {% for d in docs %}
+          <tr class="trust-doc" data-vis="{{ d.trust_visibility or '' }}">
+            <td class="ref" style="width:80px;">{{ d.ref }}</td>
+            <td class="subj" style="font-size:12.5px;">{{ d.title }}
+              <div class="muted" style="font-size:11px;">v{{ d.version }} · {{ d.status.label }}{% if not file_of(d) %} · <span style="color:var(--red-600);">aucun fichier joint</span>{% endif %}{% if d.status.value != 'APPROUVE' %} · publié une fois approuvé{% endif %}</div></td>
+            <td style="width:150px;"><select name="doc_{{ d.id }}" aria-label="Visibilité de {{ d.ref }}" style="font-size:12.5px;padding:5px 8px;">
+              <option value="">Privé</option>
+              <option value="PUBLIC" {{ 'selected' if d.trust_visibility == 'PUBLIC' }}>Public</option>
+              <option value="DEMANDE" {{ 'selected' if d.trust_visibility == 'DEMANDE' }}>Sur demande</option></select></td>
+          </tr>
+          {% else %}<tr><td class="muted" style="padding:14px;">Aucun document.</td></tr>{% endfor %}
+        </tbody></table></div></div>
+    </div>
+  </section>
+
+  <section data-panel="sous-traitants">
+    <div class="panel">
+      <div class="panel__head"><h2>Sous-traitants affichés</h2></div>
+      <div class="panel__body">
+          <input type="hidden" name="sup_present" value="1">
+          <div class="trust-sup">{% for s in suppliers %}<label style="display:flex;align-items:center;gap:8px;font-size:12.5px;padding:2px 0;"><input type="checkbox" name="suppliers" value="{{ s.id }}" {{ 'checked' if s.trust_public }} style="width:auto;"> {{ s.name }} <span class="muted">· {{ s.category.label }}{{ ' · ' ~ s.status.label if s.status.value != 'ACTIF' }}</span></label>
+          {% else %}<p class="muted" style="font-size:12.5px;margin:0;">Aucun fournisseur.</p>{% endfor %}</div>
+          <p class="muted" style="font-size:11px;margin:6px 0 0;">Seuls les fournisseurs actifs sont affichés (nom, catégorie, service, certifications).</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="trust-save"><button class="btn btn--primary" type="submit">Enregistrer</button></div>
+</form>
+<script>
+(function () {
+  var tabs = document.querySelectorAll('#trust-tabs [data-tab]'), panels = document.querySelectorAll('[data-panel]'),
+      form = document.getElementById('trust-form'), save = document.querySelector('.trust-save');
+  function show(name) {
+    tabs.forEach(function (t) { var on = t.dataset.tab === name; t.classList.toggle('is-active', on); if (on) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); });
+    panels.forEach(function (p) { p.hidden = p.dataset.panel !== name; });
+    save.hidden = name === 'demandes';
+    form.action = location.pathname + '#' + name;       // revenir au même onglet après l'enregistrement
+  }
+  tabs.forEach(function (t) { t.addEventListener('click', function (e) { e.preventDefault(); history.replaceState(null, '', '#' + t.dataset.tab); show(t.dataset.tab); }); });
+  var wanted = location.hash.slice(1);
+  show(document.querySelector('[data-tab="' + wanted + '"]') ? wanted : '{{ 'demandes' if pending else 'publication' }}');
+  var q = document.getElementById('doc-q'), pub = document.getElementById('doc-pub');
+  function filter() {
+    var v = q.value.trim().toLowerCase();
+    document.querySelectorAll('.trust-doc').forEach(function (r) {
+      var sel = r.querySelector('select');
+      r.hidden = (v && r.textContent.toLowerCase().replace(/\s+/g, ' ').split('privé')[0].indexOf(v) === -1) || (pub.checked && !sel.value);
+    });
+  }
+  q.addEventListener('input', filter); pub.addEventListener('change', filter);
+  q.addEventListener('keydown', function (e) { if (e.key === 'Enter') e.preventDefault(); });
+})();
+</script>
 {% endblock %}

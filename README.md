@@ -57,7 +57,7 @@ communs (audits, revues, documents, objectifs, non-conformités) peuvent être
 rattachés à une ou plusieurs normes. Les écrans historiques restent limités à
 l'ISO 27001 (`Control.of()`).
 
-Normes disponibles (3.16) :
+Normes disponibles (3.17) :
 
 | Norme | Type | Module propre |
 |---|---|---|
@@ -377,6 +377,15 @@ ouvre directement sa fiche. La bibliothèque est aussi proposée depuis
 **Ajouter des scénarios** : il suffit de compléter un module du paquet. Toutes
 les références sont contrôlées par les tests contre les catalogues de
 l'application.
+
+### Écrans denses (3.17)
+
+- **Page de confiance** : onglets Demandes, Publication, Documents, Sous-traitants ;
+  les demandes en attente arrivent en premier ; filtre des documents.
+- **Formulaire de risque** : score et niveau calculés en direct, actifs et mesures
+  en listes à cocher avec recherche et compteur.
+- **Bibliothèque** : affichage par tranches de 40 ; filtres et sélection portent
+  sur tous les scénarios.
 
 ### Ergonomie (3.16)
 

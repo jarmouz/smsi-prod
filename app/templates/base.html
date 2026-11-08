@@ -307,7 +307,7 @@
   var dirty = false;
   content.querySelectorAll('form[method=post], form[method=POST]').forEach(function (f) {
     var n = Array.prototype.filter.call(f.querySelectorAll('input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=file]), textarea, select'), visible).length;
-    if (n < 3) return;
+    if (n < 3 && !f.hasAttribute('data-guard')) return;
     f.addEventListener('input', function () { dirty = true; });
     f.addEventListener('change', function () { dirty = true; });
   });

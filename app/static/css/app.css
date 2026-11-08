@@ -900,3 +900,18 @@ h2.section-title { margin: 0 0 10px; }
   .toolbar select, .toolbar input[type=text], .toolbar input[type=search] { max-width: 100%; flex: 1 1 140px; }
   .sticky-submit { bottom: 0; }
 }
+
+/* ------------------------------------------------------------ Écrans denses (3.17) */
+[data-panel][hidden], .trust-save[hidden], tr[hidden], .ctrl-picker [hidden], .lib-row[hidden] { display: none; }
+.two-col > .panel { margin: 0; }
+.trust-save { position: sticky; bottom: 0; z-index: 6; background: var(--surface); padding: 10px 0; margin-top: 14px; }
+.trust-sup { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 2px 20px; }
+.form-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.form-grid--score { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 180px; }
+.risk-score { min-height: 36px; display: flex; align-items: center; gap: 8px; font-size: 13px; flex-wrap: wrap; }
+.picker__bar { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.picker__bar input { flex: 1; min-width: 0; padding: 6px 9px; font-size: 12.5px; }
+.picker__count { font-size: 11.5px; color: var(--text-dim); white-space: nowrap; }
+.picker--wide .ctrl-picker { max-height: 170px; }
+.picker--wide .ctrl-picker .ref { flex: 0 0 104px; }
+@media (max-width: 760px) { .form-grid--3, .form-grid--score { grid-template-columns: 1fr; } }

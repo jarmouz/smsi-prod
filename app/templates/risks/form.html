@@ -1,9 +1,11 @@
 {% extends 'base.html' %}
+{% from 'partials/macros.html' import risk_chip with context %}
 {% block title %}{{ 'Modifier' if risk else 'Nouveau' }} risque - {{ APP_NAME }}{% endblock %}
 {% block heading %}{{ 'Modifier ' + risk.ref if risk else 'Nouveau risque' }}{% endblock %}
 {% block topactions %}{% if not risk %}<a href="{{ url_for('risks.library') }}" class="btn btn--subtle btn--sm">Partir d'un scénario de la bibliothèque</a> {% endif %}<a href="{{ url_for('risks.index') }}" class="btn btn--ghost btn--sm">Retour</a>{% endblock %}
 
 {% block content %}
+{%- set _chips = {} %}{% for l in range(1, risk_criteria()['scale']['likelihood'] + 1) %}{% for i in range(1, risk_criteria()['scale']['impact'] + 1) %}{% set _ = _chips.update({(l * i)|string: risk_chip(risk_level(l * i))|string}) %}{% endfor %}{% endfor %}
 {% set sel = risk.controls|map(attribute='id')|list if risk else [] %}
 <form method="post" class="detail-grid">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -26,16 +28,22 @@
           <div class="hint">Les normes du domaine sont toujours incluses ; cochez celles que le risque concerne aussi (ex. un rançongiciel : 27001, 22301 et 20000-1).</div>
         </div>
         {%- endif %}
+        <div class="form-grid">
         <div class="field"><label>Événement redouté (description)</label><textarea name="description" rows="2" placeholder="Ce qui peut arriver">{{ risk.description if risk else '' }}</textarea></div>
         <div class="field"><label>Conséquences</label><textarea name="consequence" rows="2" placeholder="Effets sur l'organisation, les clients, les personnes concernées...">{{ risk.consequence or '' if risk else '' }}</textarea></div>
-        <div class="form-grid">
+        </div>
+        <div class="form-grid form-grid--3">
           <div class="field"><label>Actif / périmètre</label><input type="text" name="asset" value="{{ risk.asset if risk else '' }}"></div>
           <div class="field"><label>Menace ou cause</label><input type="text" name="threat" value="{{ risk.threat if risk else '' }}"></div>
+          <div class="field"><label>Vulnérabilité ou facteur</label><input type="text" name="vulnerability" value="{{ risk.vulnerability if risk else '' }}"></div>
         </div>
-        <div class="field"><label>Vulnérabilité ou facteur aggravant</label><input type="text" name="vulnerability" value="{{ risk.vulnerability if risk else '' }}"></div>
+
         <div class="field"><label>Actifs de l'inventaire concernés</label>
-          <select name="assets" multiple size="5">{% for a in assets %}<option value="{{ a.id }}" {{ 'selected' if risk and a in risk.assets }}>{{ a.ref }} - {{ a.name|truncate(50) }}</option>{% endfor %}</select>
-          <div class="muted" style="font-size:11px;margin-top:3px;">Ctrl / Cmd + clic pour une sélection multiple. Le champ « Actif / périmètre » reste disponible pour un libellé libre.</div></div>
+          <div class="picker picker--wide" data-picker>
+            <div class="picker__bar"><input type="search" placeholder="Filtrer les actifs" aria-label="Filtrer les actifs"><span class="picker__count"></span></div>
+            <div class="ctrl-picker">{% for a in assets %}<label><input type="checkbox" name="assets" value="{{ a.id }}" {{ 'checked' if risk and a in risk.assets }}><span class="ref">{{ a.ref }}</span><span>{{ a.name }}</span></label>{% else %}<p class="muted" style="font-size:12px;margin:4px;">Aucun actif dans l'inventaire.</p>{% endfor %}</div>
+          </div>
+          <div class="hint">Le champ « Actif / périmètre » reste disponible pour un libellé libre.</div></div>
       </div>
     </div>
 
@@ -43,11 +51,12 @@
       <div class="panel__head"><h2>Évaluation</h2></div>
       <div class="panel__body stack">
         <div class="section-title">Risque inhérent (avant traitement)</div>
-        <div class="form-grid">
+        <div class="form-grid form-grid--score">
           <div class="field"><label>Vraisemblance</label>
             <select name="likelihood">{% for n in range(1, risk_criteria()['scale']['likelihood'] + 1) %}<option value="{{ n }}" {{ 'selected' if risk and risk.likelihood==n or (not risk and n==(risk_criteria()['scale']['likelihood'] + 1) // 2) }}>{{ n }} - {{ risk_criteria()['likelihood'][n-1]|truncate(48) }}</option>{% endfor %}</select></div>
           <div class="field"><label id="impact-label">Impact</label>
             <select name="impact">{% for n in range(1, risk_criteria()['scale']['impact'] + 1) %}<option value="{{ n }}" {{ 'selected' if risk and risk.impact==n or (not risk and n==(risk_criteria()['scale']['impact'] + 1) // 2) }}>{{ n }} - {{ risk_criteria()['impact'][n-1]|truncate(48) }}</option>{% endfor %}</select></div>
+          <div class="field"><label>Score inhérent</label><div class="risk-score" id="score-in" aria-live="polite"></div></div>
         </div>
         {%- set _dims = impact_dimensions() %}
         {%- set _det = risk.impact_by_dim if risk else {} %}
@@ -68,11 +77,12 @@
             <optgroup label="Opportunité" data-nature="OPPORTUNITE">{% for t in Treatment.for_nature('OPPORTUNITE') %}<option value="{{ t.value }}" {{ 'selected' if risk and risk.treatment==t and risk.is_opportunity }}>{{ t.label }}</option>{% endfor %}</optgroup>
           </select></div>
         <div class="section-title">Risque résiduel (après mesures)</div>
-        <div class="form-grid">
+        <div class="form-grid form-grid--score">
           <div class="field"><label>Vraisemblance résiduelle</label>
             <select name="residual_likelihood"><option value="">-</option>{% for n in range(1, risk_criteria()['scale']['likelihood'] + 1) %}<option value="{{ n }}" {{ 'selected' if risk and risk.residual_likelihood==n }}>{{ n }} - {{ risk_criteria()['likelihood'][n-1]|truncate(48) }}</option>{% endfor %}</select></div>
           <div class="field"><label>Impact résiduel</label>
             <select name="residual_impact"><option value="">-</option>{% for n in range(1, risk_criteria()['scale']['impact'] + 1) %}<option value="{{ n }}" {{ 'selected' if risk and risk.residual_impact==n }}>{{ n }} - {{ risk_criteria()['impact'][n-1]|truncate(48) }}</option>{% endfor %}</select></div>
+          <div class="field"><label>Score résiduel</label><div class="risk-score" id="score-res" aria-live="polite"></div></div>
         </div>
       </div>
     </div>
@@ -96,6 +106,8 @@
       <div class="panel__body">
         <p class="muted" style="font-size:12px;margin-bottom:8px;">Sélectionnez les mesures d'annexe qui traitent ce risque, dans les normes actives (la déclaration d'applicabilité de chaque norme en tient compte).</p>
         {% if control_groups %}
+        <div class="picker" data-picker>
+          <div class="picker__bar"><input type="search" placeholder="Filtrer : réf. ou intitulé" aria-label="Filtrer les mesures"><span class="picker__count"></span></div>
         <div class="ctrl-picker">
           {% for fw, groups in control_groups %}
           {% if control_groups|length > 1 %}<div class="section-title" style="margin:10px 0 2px;font-size:12.5px;">{{ fw.name }}</div>{% endif %}
@@ -106,6 +118,7 @@
           {% endfor %}
           {% endfor %}
           {% endfor %}
+        </div>
         </div>
         {% else %}<p class="muted">Aucune norme à annexe de mesures n'est active (27001, 27701, 42001) : décrivez le traitement dans la description.</p>{% endif %}
       </div>
@@ -152,6 +165,38 @@
   syncImpact();
   nat.addEventListener('change', syncNature); dom.addEventListener('change', syncDomain);
   syncNature(); syncDomain();
+  // Score en direct
+  var chips = {{ _chips|tojson }}, oppChip = {{ risk_chip('opportunite')|string|tojson }};
+  function score(box, l, i) {
+    var a = parseInt(l.value, 10), b = parseInt(i.value, 10);
+    if (!a || !b) { box.innerHTML = '<span class="muted">À coter</span>'; return; }
+    box.innerHTML = '<b>' + a + ' × ' + b + ' = ' + (a * b) + '</b> ' + (nat.value === 'OPPORTUNITE' ? oppChip : (chips[a * b] || ''));
+  }
+  function byName(n) { return document.querySelector('select[name=' + n + ']'); }
+  function scores() {
+    score(document.getElementById('score-in'), byName('likelihood'), byName('impact'));
+    score(document.getElementById('score-res'), byName('residual_likelihood'), byName('residual_impact'));
+  }
+  ['likelihood', 'impact', 'residual_likelihood', 'residual_impact'].forEach(function (n) { byName(n).addEventListener('change', scores); });
+  Array.prototype.forEach.call(dims, function (d) { d.addEventListener('change', scores); });
+  nat.addEventListener('change', scores);
+  scores();
+  // Listes à cocher : filtre et compteur
+  document.querySelectorAll('[data-picker]').forEach(function (p) {
+    var q = p.querySelector('input[type=search]'), n = p.querySelector('.picker__count'), box = p.querySelector('.ctrl-picker');
+    function count() { n.textContent = box.querySelectorAll('input:checked').length + ' sélectionné(s)'; }
+    function filter() {
+      var v = q.value.trim().toLowerCase(), last = null, any = false;
+      Array.prototype.forEach.call(box.children, function (c) {
+        if (c.tagName === 'LABEL') { c.hidden = v && c.textContent.toLowerCase().indexOf(v) === -1; if (!c.hidden) any = true; }
+        else if (c.classList.contains('section-title')) { if (last) last.hidden = !any; last = c; any = false; }
+      });
+      if (last) last.hidden = !any;
+    }
+    box.addEventListener('change', count); q.addEventListener('input', filter);
+    q.addEventListener('keydown', function (e) { if (e.key === 'Enter') e.preventDefault(); });
+    count();
+  });
 })();
 </script>
 {% endblock %}
