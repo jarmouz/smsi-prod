@@ -57,7 +57,7 @@ communs (audits, revues, documents, objectifs, non-conformités) peuvent être
 rattachés à une ou plusieurs normes. Les écrans historiques restent limités à
 l'ISO 27001 (`Control.of()`).
 
-Normes disponibles (3.12) :
+Normes disponibles (3.13) :
 
 | Norme | Type | Module propre |
 |---|---|---|
@@ -377,6 +377,36 @@ ouvre directement sa fiche. La bibliothèque est aussi proposée depuis
 **Ajouter des scénarios** : il suffit de compléter un module du paquet. Toutes
 les références sont contrôlées par les tests contre les catalogues de
 l'application.
+
+### Actifs : valeurs métier, besoins DIC+T, cycle de vie (3.13)
+
+Inventaire selon ISO/IEC 27005 et EBIOS RM (`app/models/asset.py`) :
+- **Valeurs métier** (catégories Information et Processus, ce dernier étant
+  nouveau) et **biens supports** (logiciels, matériels, services, sites,
+  personnel). Les dépendances sont gérées dans la table `asset_dependencies` :
+  une valeur métier choisit ses biens supports, et un bien support choisit
+  les valeurs métier qu'il porte.
+- **Besoins de sécurité** C, I, D, T de 1 (faible) à 4 (critique) : ceux de la
+  valeur métier ; un bien support retient le **maximum** de ses propres
+  besoins et de ceux des valeurs métier portées (`Asset.needs()`, avec la
+  source affichée). La criticité est le besoin le plus élevé. La fiche d'un
+  risque affiche la sensibilité de ses actifs.
+- **Cycle de vie** : mise en service ; fin de support (alerte 180 jours, A.8.8) ;
+  détenteur (restitution quand son compte est désactivé, A.5.11) ;
+  élimination avec méthode et preuve (A.7.14).
+- **Inventaire** : indicateurs (valeurs métier, biens supports, critiques, fin
+  de support) et filtres par rôle, criticité et cycle de vie (fin de support,
+  à restituer, élimination à prouver, sans cotation, sans propriétaire).
+- **Points à traiter**, **relances** des propriétaires, **alerte** à la
+  désactivation d'un compte qui détient du matériel.
+- **Import** : besoins C, I, D, T (chiffres sur l'échelle du fichier, ou
+  libellés faible… critique), dates de mise en service et de fin de support,
+  catégorie Processus.
+- **Démo** : trois valeurs métier ajoutées, besoins cotés, dépendances, un
+  pare-feu hors support, des portables en fin de garantie, un ancien serveur
+  sans certificat d'effacement.
+- **Migration** : colonnes `assets.need_*`, colonnes de cycle de vie, table
+  `asset_dependencies`.
 
 ## Modules
 

@@ -173,6 +173,12 @@ ASSETS = [
     ("Siège social - Tunis", "SITE", "INTERNE", "dg", "Services généraux", "Tunis, Les Berges du Lac", "ACTIF", "140 collaborateurs, local technique."),
     ("Agence - Sfax", "SITE", "INTERNE", "dg", "Services généraux", "Sfax", "ACTIF", "40 collaborateurs (support et développement)."),
     ("Site vitrine et documentation publique", "INFORMATION", "PUBLIC", "dsi", "Marketing", "Hébergement web", "ACTIF", "Contenus publics, aucune donnée client."),
+    ("Calcul et diffusion de la paie des clients", "PROCESSUS", "SECRET", "dg", "Direction des opérations", "Tous sites",
+     "ACTIF", "Processus cœur de métier : paie mensuelle de 240 entreprises clientes (plus de 30 000 salariés)."),
+    ("Support et assistance aux clients", "PROCESSUS", "CONFIDENTIEL", "dsi", "Service client", "Sfax et télétravail",
+     "ACTIF", "Assistance aux gestionnaires de paie des clients, tickets et accès aux dossiers à la demande."),
+    ("Dossiers du personnel de Fictivia", "INFORMATION", "CONFIDENTIEL", "rh", "Ressources humaines", "SIRH",
+     "ACTIF", "Contrats, évaluations, données de santé au travail des 180 collaborateurs."),
 ]
 
 # ---------------------------------------------------------------------------
@@ -876,4 +882,16 @@ TRUST_REQUESTS = [   # (nom, e-mail, société, motif, jours, statut)
     ("Walid Ferchichi", "w.ferchichi@prospect-exemple.demo", "Banque du Sahel (fictif)", "Appel d'offres paie externalisée",
      -1, "EN_ATTENTE"),
 ]
+
+# Actifs (3.13) : n° de l'actif -> (C, I, D, T) ; dépendances valeur métier -> biens supports ; cycle de vie
+ASSET_NEEDS = {2: (4, 4, 4, 3), 3: (4, 4, 3, 2), 4: (3, 4, 2, 3), 18: (1, 3, 2, 1), 19: (4, 4, 4, 4),
+               20: (2, 2, 3, 2), 21: (4, 3, 2, 2)}
+ASSET_DEPS = {2: [1, 10, 15], 3: [15], 4: [14, 5], 19: [1, 5, 9, 10, 15, 16], 20: [5, 6, 12, 16, 17], 21: [6, 7, 12]}
+ASSET_LIFE = {   # n° -> (mise en service, fin de support en jours, méthode d'élimination, preuve)
+    11: (-2200, -40, None, None),            # pare-feu du siège : fin de support dépassée
+    12: (-900, 150, None, None),             # parc de portables : fin de garantie proche
+    13: (-3000, -400, "EFFACEMENT", None),   # ancien serveur : effacé mais sans certificat
+    14: (-500, 600, None, None),
+    7: (-1300, 420, None, None),
+}
 

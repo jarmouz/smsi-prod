@@ -161,6 +161,21 @@ def _seed(org, log):
                              classification=Classification(cls), owner_id=uid(owner), custodian=cust or None,
                              location=loc, status=AssetStatus(st), description=desc))
 
+    # actifs (3.13) : besoins DIC+T, dépendances, cycle de vie
+    db.session.flush()
+    by_n = {int(a.ref[-4:]): a for a in Asset.query.all()}
+    for n, (c, i_, a_, t_) in C.ASSET_NEEDS.items():
+        if n in by_n:
+            by_n[n].need_c, by_n[n].need_i, by_n[n].need_a, by_n[n].need_t = c, i_, a_, t_
+    for n, deps in C.ASSET_DEPS.items():
+        if n in by_n:
+            by_n[n].supports = [by_n[k] for k in deps if k in by_n]
+    for n, (acq, eos, method, proof) in C.ASSET_LIFE.items():
+        if n in by_n:
+            by_n[n].acquired_on, by_n[n].end_of_support = _d(acq), _d(eos)
+            if method:
+                by_n[n].disposal_method, by_n[n].disposal_proof, by_n[n].disposed_on = method, proof, _d(-380)
+
     for i, (title, asset, threat, vuln, l, imp, tr, rl, ri, st, owner, refs, desc) in enumerate(C.RISKS, 1):
         r = Risk(ref=f"R-{y}-{i:04d}", title=title, description=desc, asset=asset, threat=threat,
                  vulnerability=vuln, likelihood=l, impact=imp, treatment=Treatment(tr),

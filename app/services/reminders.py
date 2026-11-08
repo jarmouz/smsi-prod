@@ -75,6 +75,13 @@ def collect(user, today=None):
         elif r.status.is_open and r.review_date and r.review_date <= soon7:
             add("Risques à réévaluer", f"{r.ref} : {r.title}", url_for("risks.detail", risk_id=r.id),
                 _due(r.review_date, t), r.review_date < t)
+    from app.models import Asset
+    for a in Asset.query.filter(Asset.owner_id == user.id).all():
+        if a.eos_state:
+            add("Actifs en fin de support", f"{a.ref} : {a.name}", url_for("assets.detail", asset_id=a.id),
+                _due(a.end_of_support, t), a.eos_state == "depassee")
+        if a.disposal_missing:
+            add("Élimination d'actifs à prouver", f"{a.ref} : {a.name}", url_for("assets.detail", asset_id=a.id))
     from app.services import policies
     for d in policies.pending_for(user):
         add("Politiques à lire et accepter", f"{d.ref} : {d.title} (v{d.version})",

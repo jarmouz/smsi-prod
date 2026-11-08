@@ -3,34 +3,45 @@
 {% block title %}Inventaire des actifs - {{ APP_NAME }}{% endblock %}
 {% block heading %}Inventaire des actifs{% endblock %}
 {% block topactions %}{% if current_user.can_edit %}<a href="{{ url_for('imports.upload', kind='actifs') }}" class="btn btn--subtle btn--sm">Importer</a> <a href="{{ url_for('assets.create') }}" class="btn btn--primary btn--sm">+ Nouvel actif</a>{% endif %}{% endblock %}
+{% macro need_badge(v) -%}{% if v %}<span class="need need--{{ v }}">{{ v }}</span>{% else %}<span class="muted">-</span>{% endif %}{%- endmacro %}
 {% block content %}
-<div class="kpis" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px;">
-  <div class="kpi kpi--total"><div class="kpi__label">Actifs recensés</div><div class="kpi__value">{{ stats.total }}</div></div>
-  <div class="kpi kpi--sla"><div class="kpi__label">Actifs en service</div><div class="kpi__value">{{ stats.actifs }}</div></div>
-  <div class="kpi kpi--retard"><div class="kpi__label">Sensibles</div><div class="kpi__value">{{ stats.sensibles }}</div><div class="kpi__sub">confidentiel / secret</div></div>
+<div class="kpis" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px;">
+  <a class="kpi kpi--total" href="{{ url_for('assets.index', role='metier') }}" style="text-decoration:none;color:inherit;"><div class="kpi__label">Valeurs métier</div><div class="kpi__value">{{ stats.metier }}</div><div class="kpi__sub">{{ stats.sans_dic }} sans cotation DIC</div></a>
+  <a class="kpi kpi--sla" href="{{ url_for('assets.index', role='support') }}" style="text-decoration:none;color:inherit;"><div class="kpi__label">Biens supports</div><div class="kpi__value">{{ stats.support }}</div><div class="kpi__sub">{{ stats.sans_proprietaire }} actif(s) sans propriétaire</div></a>
+  <a class="kpi kpi--retard" href="{{ url_for('assets.index', criticite=4) }}" style="text-decoration:none;color:inherit;"><div class="kpi__label">Critiques</div><div class="kpi__value">{{ stats.critiques }}</div><div class="kpi__sub">{{ stats.sensibles }} confidentiel(s) ou secret(s)</div></a>
+  <a class="kpi kpi--ouvert" href="{{ url_for('assets.index', cycle='fin_support') }}" style="text-decoration:none;color:inherit;"><div class="kpi__label">Fin de support dépassée</div><div class="kpi__value">{{ stats.fin_support }}</div><div class="kpi__sub">{{ stats.fin_proche }} dans les 6 mois · {{ stats.a_restituer }} à restituer</div></a>
 </div>
 <form class="toolbar" method="get">
+  <select name="role" onchange="this.form.submit()"><option value="">Valeurs métier et biens supports</option><option value="metier" {{ 'selected' if f_role=='metier' }}>Valeurs métier</option><option value="support" {{ 'selected' if f_role=='support' }}>Biens supports</option></select>
   <select name="categorie" onchange="this.form.submit()"><option value="">Toutes catégories</option>{% for x in AssetCategory %}<option value="{{ x.value }}" {{ 'selected' if f_cat==x.value }}>{{ x.label }}</option>{% endfor %}</select>
+  <select name="criticite" onchange="this.form.submit()"><option value="">Toutes criticités</option>{% for n, l in NEED_LEVELS.items()|reverse %}<option value="{{ n }}" {{ 'selected' if f_crit==n }}>{{ l }}</option>{% endfor %}</select>
   <select name="classification" onchange="this.form.submit()"><option value="">Toutes classifications</option>{% for x in Classification %}<option value="{{ x.value }}" {{ 'selected' if f_cls==x.value }}>{{ x.label }}</option>{% endfor %}</select>
   <select name="statut" onchange="this.form.submit()"><option value="">Tous statuts</option>{% for x in AssetStatus %}<option value="{{ x.value }}" {{ 'selected' if f_st==x.value }}>{{ x.label }}</option>{% endfor %}</select>
-  {% if f_cat or f_cls or f_st %}<a href="{{ url_for('assets.index') }}" class="btn btn--ghost btn--sm">Réinitialiser</a>{% endif %}
+  <select name="cycle" onchange="this.form.submit()"><option value="">Cycle de vie : tout</option>
+    {% for k, l in [('fin_support', 'Fin de support dépassée'), ('fin_proche', 'Fin de support dans 6 mois'), ('a_restituer', 'À restituer (compte désactivé)'), ('elimination', 'Retirés sans preuve d\'élimination'), ('sans_dic', 'Valeurs métier sans cotation'), ('sans_proprietaire', 'Sans propriétaire')] %}<option value="{{ k }}" {{ 'selected' if f_cycle==k }}>{{ l }} ({{ stats[k] }})</option>{% endfor %}</select>
+  {% if f_cat or f_cls or f_st or f_role or f_crit or f_cycle %}<a href="{{ url_for('assets.index') }}" class="btn btn--ghost btn--sm">Réinitialiser</a>{% endif %}
 </form>
 <div class="panel" style="margin-top:16px;"><div class="panel__body--flush"><div class="table-wrap">
   <table class="grid">
-    <thead><tr><th style="width:110px;">Réf.</th><th>Actif</th><th style="width:150px;">Catégorie</th><th style="width:120px;">Classification</th><th style="width:130px;">Propriétaire</th><th style="width:90px;">Statut</th>{% if current_user.can_edit %}<th style="width:96px;"></th>{% endif %}</tr></thead>
+    <thead><tr><th style="width:110px;">Réf.</th><th>Actif</th><th style="width:150px;">Catégorie</th><th style="width:150px;" title="Confidentialité, Intégrité, Disponibilité, Traçabilité (besoins effectifs)">C · I · D · T</th><th style="width:110px;">Classification</th><th style="width:130px;">Propriétaire</th><th style="width:110px;">Statut</th></tr></thead>
     <tbody>
-      {% for a in assets %}
+      {% for a in assets %}{% set n = a.needs() %}
       <tr>
         <td class="ref">{{ a.ref }}</td>
-        <td class="subj"><a href="{{ url_for('assets.detail', asset_id=a.id) }}">{{ a.name }}</a>{% if a.risks %} <span class="muted" style="font-size:11px;">- {{ a.risks|length }} risque(s)</span>{% endif %}{% if a.location %}<div class="muted" style="font-size:11px;">{{ a.location }}</div>{% endif %}</td>
+        <td class="subj"><a href="{{ url_for('assets.detail', asset_id=a.id) }}">{{ a.name }}</a>
+          {% if a.is_business %}<span class="tag-q">Valeur métier</span>{% endif %}
+          <div class="muted" style="font-size:11px;">{% if a.is_business %}{{ a.supports|length }} bien(s) support(s){% else %}porte {{ a.supported|length }} valeur(s) métier{% endif %}{% if a.risks %} · {{ a.risks|length }} risque(s){% endif %}{% if a.location %} · {{ a.location }}{% endif %}</div></td>
         <td class="muted">{{ a.category.label }}</td>
+        <td style="white-space:nowrap;">{% for k in ('c', 'i', 'a', 't') %}{{ need_badge(n[k][0]) }} {% endfor %}</td>
         <td>{{ classification(a.classification) }}</td>
         <td class="muted">{{ a.owner.name if a.owner else (a.custodian or '-') }}</td>
-        <td class="muted">{{ a.status.label }}</td>
-        {% if current_user.can_edit %}<td><a href="{{ url_for('assets.edit', asset_id=a.id) }}" class="btn btn--ghost btn--sm">Modifier</a></td>{% endif %}
+        <td class="muted">{{ a.status.label }}
+          {% if a.eos_state == 'depassee' %}<div style="font-size:11px;color:var(--red-600);">fin de support dépassée</div>{% elif a.eos_state == 'proche' %}<div style="font-size:11px;color:#B4532C;">fin de support {{ a.end_of_support|d }}</div>{% endif %}
+          {% if a.to_recover %}<div style="font-size:11px;color:var(--red-600);">à restituer</div>{% endif %}
+          {% if a.disposal_missing %}<div style="font-size:11px;color:var(--red-600);">élimination à prouver</div>{% endif %}</td>
       </tr>
       {% else %}
-      <tr><td colspan="7"><div class="empty" style="padding:30px;"><h3>Inventaire vide</h3><p>Recensez vos actifs (mesure A.5.9).</p></div></td></tr>
+      <tr><td colspan="7"><div class="empty" style="padding:30px;"><h3>Aucun actif</h3><p>Recensez vos valeurs métier (informations, processus) puis les biens supports qui les portent (mesure A.5.9).</p></div></td></tr>
       {% endfor %}
     </tbody>
   </table>

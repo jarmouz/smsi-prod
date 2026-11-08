@@ -1,11 +1,32 @@
 {% extends 'base.html' %}
 {% from 'partials/macros.html' import classification, risk_chip, score_badge, history_panel with context %}
 {% block title %}{{ a.ref }} - {{ APP_NAME }}{% endblock %}
-{% block heading %}{{ a.ref }} - {{ a.name }}{% endblock %}
+{% block heading %}{{ a.ref }} - {{ a.name }}{% if a.is_business %} <span class="tag-q">Valeur métier</span>{% endif %}{% endblock %}
 {% block topactions %}<a href="{{ url_for('assets.index') }}" class="btn btn--ghost btn--sm">Retour</a>{% if current_user.can_edit %}<a href="{{ url_for('assets.edit', asset_id=a.id) }}" class="btn btn--primary btn--sm">Modifier</a>{% endif %}{% endblock %}
 {% block content %}
+{% if a.eos_state == 'depassee' %}<div class="flash flash--warning" style="margin-bottom:12px;">Fin de support dépassée depuis le {{ a.end_of_support|d }} : plus de correctifs de sécurité. Planifiez le remplacement ou une mesure compensatoire (A.8.8).</div>
+{% elif a.eos_state == 'proche' %}<div class="flash flash--warning" style="margin-bottom:12px;">Fin de support le {{ a.end_of_support|d }} : anticipez le renouvellement.</div>{% endif %}
+{% if a.to_recover %}<div class="flash flash--warning" style="margin-bottom:12px;">Détenu par {{ a.holder.name }}, dont le compte est désactivé : à restituer (A.5.11).</div>{% endif %}
+{% if a.disposal_missing %}<div class="flash flash--warning" style="margin-bottom:12px;">Actif retiré sans preuve d'élimination sécurisée des données (A.7.14).</div>{% endif %}
+{% set n = a.needs() %}
 <div class="detail-grid">
   <div class="stack">
+    <div class="panel"><div class="panel__head"><h2>Besoins de sécurité</h2><span class="rail__badge">{{ a.criticality_label }}</span></div><div class="panel__body">
+      <div class="table-wrap"><table class="grid"><tbody>
+        {% for k, l in NEED_KEYS %}{% set v, src = n[k] %}
+        <tr><td style="width:150px;">{{ l }}</td>
+          <td style="width:110px;">{% if v %}<span class="need need--{{ v }}">{{ v }}</span> {{ NEED_LEVELS[v] }}{% else %}<span class="muted">non évalué</span>{% endif %}</td>
+          <td class="muted" style="font-size:12px;">{% if src %}hérité de <a href="{{ url_for('assets.detail', asset_id=src.id) }}">{{ src.ref }} {{ src.name|truncate(40) }}</a>{% elif v %}propre à l'actif{% endif %}</td></tr>
+        {% endfor %}
+      </tbody></table></div>
+      {% if not a.is_business and not a.supported %}<p class="muted" style="font-size:11.5px;margin:8px 0 0;">Rattachez ce bien support aux valeurs métier qu'il porte : il en héritera les besoins.</p>{% endif %}
+    </div></div>
+
+    <div class="panel"><div class="panel__head"><h2>{{ 'Biens supports' if a.is_business else 'Valeurs métier portées' }}</h2><span class="rail__badge">{{ (a.supports if a.is_business else a.supported)|length }}</span></div><div class="panel__body--flush"><div class="table-wrap"><table class="grid">
+      <tbody>{% for o in (a.supports if a.is_business else a.supported) %}<tr class="row-link" onclick="window.location='{{ url_for('assets.detail', asset_id=o.id) }}'"><td class="ref">{{ o.ref }}</td><td class="subj">{{ o.name }}</td><td class="muted">{{ o.category.label }}</td><td class="mono" style="font-size:12px;">{{ o.dict_label }}</td></tr>
+      {% else %}<tr><td class="muted" style="padding:14px;">{{ 'Aucun bien support déclaré : sur quels logiciels, matériels, services, sites et personnes repose cette valeur métier ?' if a.is_business else 'Aucune valeur métier rattachée.' }}</td></tr>{% endfor %}</tbody>
+    </table></div></div></div>
+
     <div class="panel"><div class="panel__head"><h2>Risques portant sur cet actif</h2><span class="rail__badge">{{ a.risks|length }}</span></div><div class="panel__body--flush"><div class="table-wrap"><table class="grid">
       <tbody>{% for r in a.risks %}<tr class="row-link" onclick="window.location='{{ url_for('risks.detail', risk_id=r.id) }}'"><td class="ref">{{ r.ref }}</td><td class="subj">{{ r.title }}</td><td style="text-align:center;">{{ score_badge(r.effective_score, r.display_level) }}</td><td>{{ risk_chip(r.display_level) }}</td><td class="muted">{{ r.status.label }}</td></tr>
       {% else %}<tr><td class="muted" style="padding:14px;">Aucun risque rattaché (le lien se fait depuis la fiche du risque).</td></tr>{% endfor %}</tbody>
@@ -21,6 +42,7 @@
   </div>
   <div class="stack">
     <div class="panel"><div class="panel__head"><h2>Actif</h2></div><div class="panel__body"><div class="meta-list">
+      <div><span>Rôle</span><b>{{ 'Valeur métier' if a.is_business else 'Bien support' }}</b></div>
       <div><span>Catégorie</span><b>{{ a.category.label }}</b></div>
       <div><span>Classification</span><b>{{ classification(a.classification) }}</b></div>
       <div><span>Propriétaire</span><b>{{ a.owner.name if a.owner else '-' }}</b></div>
@@ -28,6 +50,14 @@
       <div><span>Emplacement</span><b>{{ a.location or '-' }}</b></div>
       <div><span>Statut</span><b>{{ a.status.label }}</b></div>
       {% if a.description %}<div><span>Description</span><b>{{ a.description }}</b></div>{% endif %}
+    </div></div></div>
+    <div class="panel"><div class="panel__head"><h2>Cycle de vie</h2></div><div class="panel__body"><div class="meta-list">
+      <div><span>Mise en service</span><b>{{ a.acquired_on|d if a.acquired_on else '-' }}</b></div>
+      <div><span>Fin de support</span><b{% if a.eos_state == 'depassee' %} style="color:var(--red-600);"{% endif %}>{{ a.end_of_support|d if a.end_of_support else '-' }}</b></div>
+      <div><span>Détenteur</span><b>{{ a.holder.name if a.holder else '-' }}{{ ' (compte désactivé)' if a.holder and not a.holder.is_active_flag }}</b></div>
+      {% if a.status.value == 'RETIRE' or a.disposal_method %}
+      <div><span>Élimination</span><b>{{ a.disposal_label or '-' }}{{ ' le ' ~ (a.disposed_on|d) if a.disposed_on }}</b></div>
+      <div><span>Preuve</span><b>{{ a.disposal_proof or '-' }}</b></div>{% endif %}
     </div></div></div>
     {{ history_panel(a) }}
   </div>

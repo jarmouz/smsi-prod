@@ -199,12 +199,19 @@ class AssetCategory(str, enum.Enum):
     SERVICE = "SERVICE"
     PERSONNEL = "PERSONNEL"
     SITE = "SITE"
+    PROCESSUS = "PROCESSUS"          # 3.13 : valeur métier (activité, processus)
 
     @property
     def label(self):
         return {"INFORMATION": "Information / données", "LOGICIEL": "Logiciel / application",
                 "MATERIEL": "Matériel", "SERVICE": "Service", "PERSONNEL": "Personnel",
-                "SITE": "Site / local"}[self.value]
+                "SITE": "Site / local", "PROCESSUS": "Processus / activité métier"}[self.value]
+
+    @property
+    def is_business(self):
+        """Valeur métier (ISO/IEC 27005 « actif primordial », EBIOS RM « valeur métier ») : information ou
+        processus ; les autres catégories sont des biens supports qui les portent."""
+        return self.value in ("INFORMATION", "PROCESSUS")
 
 
 class Classification(str, enum.Enum):

@@ -182,6 +182,18 @@ UPGRADE_DDL = [
     # Page de confiance (3.11)
     "ALTER TABLE documents ADD COLUMN IF NOT EXISTS trust_visibility VARCHAR(12) NULL",
     "ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS trust_public BOOLEAN NOT NULL DEFAULT false",
+    # Actifs (3.13) : besoins DIC+T, cycle de vie (dépendances : table créée par create_all)
+    "ALTER TABLE assets ADD COLUMN IF NOT EXISTS need_c INTEGER NULL",
+    "ALTER TABLE assets ADD COLUMN IF NOT EXISTS need_i INTEGER NULL",
+    "ALTER TABLE assets ADD COLUMN IF NOT EXISTS need_a INTEGER NULL",
+    "ALTER TABLE assets ADD COLUMN IF NOT EXISTS need_t INTEGER NULL",
+    "ALTER TABLE assets ADD COLUMN IF NOT EXISTS acquired_on DATE NULL",
+    "ALTER TABLE assets ADD COLUMN IF NOT EXISTS end_of_support DATE NULL",
+    "ALTER TABLE assets ADD COLUMN IF NOT EXISTS holder_id INTEGER NULL REFERENCES users(id) ON DELETE SET NULL",
+    "ALTER TABLE assets ADD COLUMN IF NOT EXISTS disposed_on DATE NULL",
+    "ALTER TABLE assets ADD COLUMN IF NOT EXISTS disposal_method VARCHAR(20) NULL",
+    "ALTER TABLE assets ADD COLUMN IF NOT EXISTS disposal_proof VARCHAR(300) NULL",
+    "ALTER TABLE assets ALTER COLUMN category TYPE VARCHAR(16)",
 ]
 
 # Tables rattachées à une organisation (voir TenantMixin)

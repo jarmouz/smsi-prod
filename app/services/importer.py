@@ -575,6 +575,8 @@ def _show(k, val, ctx):
 
 # --------------------------------------------------------------- Actifs
 CATEGORY_TABLE = [
+    (AssetCategory.PROCESSUS, ["processus", "processus metier", "activite", "activites", "activite metier",
+                               "valeur metier", "bien essentiel", "business process", "process"]),
     (AssetCategory.PERSONNEL, ["personnel", "personne", "personnes", "humain", "humains", "rh", "ressource humaine",
                                "ressources humaines", "people", "collaborateur", "collaborateurs", "employe", "equipe"]),
     (AssetCategory.SITE, ["site", "sites", "local", "locaux", "batiment", "bureau", "bureaux", "salle", "datacenter",
@@ -623,6 +625,40 @@ def _conf_level(value, top):
             3: Classification.CONFIDENTIEL}.get(n, Classification.SECRET if n >= 4 else None)
 
 
+NEED_TABLE = [(4, ["critique", "tres fort", "tres eleve", "vital", "maximal", "critical"]),
+              (3, ["fort", "eleve", "important", "high", "strict"]),
+              (2, ["modere", "moyen", "medium", "standard", "normal"]),
+              (1, ["faible", "bas", "low", "mineur", "aucun"])]
+NEED_FIELDS = (("confidentiality", "need_c"), ("integrity", "need_i"), ("availability", "need_a"),
+               ("traceability", "need_t"))
+
+
+def _need_tops(rows):
+    """Échelle de chaque colonne DIC+T du fichier : maximum numérique rencontré (échelle 4 si le
+    maximum est inférieur à 3, ce qui ne permet pas de la déduire)."""
+    tops = {}
+    for col, _ in NEED_FIELDS:
+        nums = [int(float(x.replace(",", "."))) for _, r in rows for x in [r.get(col, "") or ""]
+                if re.fullmatch(r"\d+([.,]0+)?", x)]
+        top = max(nums) if nums else 4
+        tops[col] = top if top >= 3 else 4
+    return tops
+
+
+def _need(value, top):
+    """Niveau 1..4 depuis un chiffre (sur l'échelle du fichier) ou un libellé."""
+    from app.services.risk_criteria import convert
+    v = (value or "").strip()
+    if not v:
+        return None
+    if re.fullmatch(r"\d+([.,]0+)?", v):
+        n = int(float(v.replace(",", ".")))
+        if n <= 0:
+            return None
+        return max(1, min(4, convert(n, max(top, 2), 4) if top != 4 else n))
+    return match_table(v, NEED_TABLE)
+
+
 def _asset_plan(rows, ctx):
     from app.services.refs import next_ref
     existing = Asset.query.all()
@@ -634,6 +670,7 @@ def _asset_plan(rows, ctx):
     conf_vals = [r.get("confidentiality", "") for _, r in rows]
     nums = [int(float(x.replace(",", "."))) for x in conf_vals if re.fullmatch(r"\d+([.,]0+)?", x or "")]
     conf_top = max(nums) if nums else 4
+    need_tops = _need_tops(rows)
     seen_ref, seen_name, new_refs = {}, {}, set()
     gen_base = next_ref(Asset, "ACT")
     m = re.match(r"(.*-)(\d+)$", gen_base)
@@ -697,6 +734,20 @@ def _asset_plan(rows, ctx):
         for k, lim in (("description", None), ("custodian", 255), ("location", 255)):
             if g(k, "").strip():
                 v[k] = g(k).strip()[:lim] if lim else g(k).strip()
+        for col, attr in NEED_FIELDS:
+            if g(col, "").strip():
+                lv = _need(g(col), need_tops[col])
+                if lv is None:
+                    res["warnings"].append(f"Besoin « {g(col)} » ({col}) non reconnu.")
+                else:
+                    v[attr] = lv
+        for col in ("acquired_on", "end_of_support"):
+            if g(col, "").strip():
+                d = parse_date(g(col))
+                if d:
+                    v[col] = d
+                else:
+                    res["warnings"].append(f"Date « {g(col)} » non reconnue.")
         if g("owner", "").strip():
             u = match_user(g("owner"), users)
             if u:
@@ -713,7 +764,8 @@ def _asset_plan(rows, ctx):
             res["label"] = f"{target.ref} {name}"[:90]
             labels = {"name": "Nom", "category": "Catégorie", "classification": "Classification", "status": "Statut",
                       "description": "Description", "custodian": "Dépositaire", "location": "Localisation",
-                      "owner_id": "Propriétaire"}
+                      "owner_id": "Propriétaire", "need_c": "Besoin C", "need_i": "Besoin I", "need_a": "Besoin D",
+                      "need_t": "Besoin T", "acquired_on": "Mise en service", "end_of_support": "Fin de support"}
             for k, new in v.items():
                 old = getattr(target, k)
                 if old != new:
@@ -1373,7 +1425,17 @@ SPECS = {
                                                     "label", "marquage"], hint="Public, Interne, Confidentiel, Secret, C0…C3"),
             F("confidentiality", "Confidentialité (C du DIC)", ["c", "confidentialité", "conf", "conf.", "c dic",
                                                                 "besoin en confidentialité", "niveau c"],
-              hint="utilisée si la classification est vide"),
+              hint="besoin C ; déduit la classification si elle est vide"),
+            F("integrity", "Intégrité (I du DIC)", ["i", "intégrité", "integ", "besoin en intégrité", "niveau i", "integrity"],
+              hint="1 à 4 (ou faible… critique)"),
+            F("availability", "Disponibilité (D du DIC)", ["d", "disponibilité", "dispo", "besoin en disponibilité", "niveau d",
+                                                           "availability", "a"], hint="1 à 4 (ou faible… critique)"),
+            F("traceability", "Traçabilité (T)", ["t", "traçabilité", "preuve", "besoin en traçabilité", "niveau t",
+                                                  "traceability"], hint="1 à 4 (ou faible… critique)"),
+            F("acquired_on", "Mise en service", ["date d'acquisition", "acquisition", "date d'achat", "mise en service",
+                                                 "date de mise en service"]),
+            F("end_of_support", "Fin de support", ["fin de support", "fin de garantie", "fin de vie", "eol", "eos",
+                                                   "end of support", "fin de maintenance", "obsolescence"]),
             F("location", "Localisation", ["emplacement", "lieu", "site", "location", "hébergement", "localisation physique",
                                            "salle"]),
             F("status", "Statut", ["état", "status", "cycle de vie", "statut de l'actif", "en service"],

@@ -118,6 +118,12 @@ def toggle_user(user_id):
         u.is_active_flag = not u.is_active_flag
         db.session.commit()
         flash(f"{u.name} : {'activé' if u.is_active_flag else 'désactivé'}.", "success")
+        if not u.is_active_flag:
+            from app.models import Asset
+            held = [a for a in Asset.query.filter_by(holder_id=u.id).all() if a.in_service]
+            if held:
+                flash(f"{u.name} détient {len(held)} actif(s) à restituer : "
+                      f"{', '.join(a.ref + ' ' + a.name for a in held[:5])}{'…' if len(held) > 5 else ''} (A.5.11).", "warning")
     return redirect(url_for("admin.users"))
 
 

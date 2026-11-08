@@ -30,6 +30,8 @@
           <div><span>Normes concernées</span><b>{% for f in fw_active() if f.code in r.framework_codes %}<span class="chip">{{ f.short_name }}</span> {% else %}-{% endfor %}</b></div>
           <div><span>Événement redouté</span><b>{{ r.description or '-' }}</b></div>
           <div><span>Conséquences</span><b>{{ r.consequence or '-' }}</b></div>
+          {%- set _crit = r.assets|map(attribute='criticality')|reject('none')|list %}
+          {% if _crit %}<div><span>Sensibilité des actifs</span><b>{% for a in r.assets if a.criticality %}<a class="chip" href="{{ url_for('assets.detail', asset_id=a.id) }}" title="{{ a.name }}">{{ a.ref }} {{ a.dict_label }}</a> {% endfor %}<span class="muted" style="font-size:11.5px;">- niveau maximal {{ _crit|max }}/4 : à refléter dans l'impact</span></b></div>{% endif %}
           <div><span>Actif / périmètre</span><b>{{ r.asset or '-' }}{% for a in r.assets %} <a class="chip" href="{{ url_for('assets.detail', asset_id=a.id) }}">{{ a.ref }}</a>{% endfor %}</b></div>
           <div><span>Menace ou cause</span><b>{{ r.threat or '-' }}</b></div>
           <div><span>Vulnérabilité ou facteur aggravant</span><b>{{ r.vulnerability or '-' }}</b></div>

@@ -116,6 +116,20 @@ def attention(pilot):
     ps = policies.summary()
     add(1, "Acceptations de politiques hors délai", ps["overdue"], url_for("documents.acceptances"))
     add(2, "Acceptations de politiques en attente", ps["pending"] - ps["overdue"], url_for("documents.acceptances"))
+    from app.models import Asset
+    assets = Asset.query.all()
+    add(1, "Actifs détenus par des comptes désactivés, à restituer", sum(a.to_recover for a in assets),
+        url_for("assets.index", cycle="a_restituer"))
+    add(1, "Actifs en fin de support dépassée", sum(a.eos_state == "depassee" for a in assets),
+        url_for("assets.index", cycle="fin_support"))
+    add(2, "Actifs en fin de support dans les 6 mois", sum(a.eos_state == "proche" for a in assets),
+        url_for("assets.index", cycle="fin_proche"))
+    add(2, "Matériels retirés sans preuve d'élimination sécurisée", sum(a.disposal_missing for a in assets),
+        url_for("assets.index", cycle="elimination"))
+    add(2, "Actifs sans propriétaire", sum(a.in_service and not a.owner_id for a in assets),
+        url_for("assets.index", cycle="sans_proprietaire"))
+    add(3, "Valeurs métier sans cotation DIC", sum(a.is_business and a.in_service and a.criticality is None for a in assets),
+        url_for("assets.index", cycle="sans_dic"))
     from app.models import TrustRequest
     add(2, "Demandes d'accès à la page de confiance", TrustRequest.query.filter_by(status="EN_ATTENTE").count(),
         url_for("trust.manage") + "#demandes")

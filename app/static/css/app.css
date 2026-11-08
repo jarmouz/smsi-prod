@@ -835,3 +835,7 @@ table.grid tbody tr.imp-row--error td { background: #fdf6f4; }
 .sev-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
 .sev-dot--0 { background: #C0392B; } .sev-dot--1 { background: #B4532C; } .sev-dot--2 { background: #E8B04A; } .sev-dot--3 { background: #5B6676; }
 @media (max-width: 640px) { .norm-cards { grid-template-columns: 1fr; } }
+
+/* ------------------------------------------------------------ Besoins DIC+T (3.13) */
+.need { display: inline-block; min-width: 18px; text-align: center; font-size: 11px; font-weight: 700; padding: 1px 4px; border-radius: 3px; color: #fff; }
+.need--1 { background: #2A7E4F; } .need--2 { background: #E8B04A; color: var(--ink-900); } .need--3 { background: #B4532C; } .need--4 { background: #C0392B; }
