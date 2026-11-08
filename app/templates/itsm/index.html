@@ -10,7 +10,7 @@
   <div class="kpi kpi--bientot"><div class="kpi__label">Problèmes ouverts</div><div class="kpi__value">{{ stats.problems }}</div></div>
 </div>
 <div class="panel"><div class="panel__body--flush"><div class="table-wrap">
-  <table class="grid"{% if current_user.can_edit %} data-bulk="services"{% endif %}>
+  <table class="grid" data-search{% if current_user.can_edit %} data-bulk="services"{% endif %}>
     <thead><tr><th style="width:80px;">Réf.</th><th>Service</th><th style="width:150px;">Disponibilité</th><th style="width:150px;">Dernière mesure</th><th style="width:240px;">Points à traiter</th></tr></thead>
     <tbody>
     {% for s in services %}{% set m = s.last_measure %}

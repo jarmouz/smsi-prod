@@ -4,7 +4,7 @@
 {% block topactions %}{% if current_user.can_edit %}<a href="{{ url_for('itsm.release_create') }}" class="btn btn--primary btn--sm">+ Mise en production</a>{% endif %}{% endblock %}
 {% block content %}
 <div class="panel"><div class="panel__body--flush"><div class="table-wrap">
-  <table class="grid"{% if current_user.can_edit %} data-bulk="mises-en-production"{% endif %}>
+  <table class="grid" data-search{% if current_user.can_edit %} data-bulk="mises-en-production"{% endif %}>
     <thead><tr><th style="width:120px;">Réf.</th><th>Mise en production</th><th style="width:150px;">Statut</th><th style="width:120px;">Date</th><th style="width:240px;">Points à traiter</th></tr></thead>
     <tbody>
     {% for r in items %}

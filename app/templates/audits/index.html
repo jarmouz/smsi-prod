@@ -9,7 +9,7 @@
   <div class="panel">
     <div class="panel__head"><h2>Audits</h2><span class="rail__badge">{{ audits|length }}</span></div>
     <div class="panel__body--flush"><div class="table-wrap">
-      <table class="grid"{% if current_user.can_edit %} data-bulk="audits"{% endif %}>
+      <table class="grid" data-search{% if current_user.can_edit %} data-bulk="audits"{% endif %}>
         <thead><tr><th style="width:110px;">Réf.</th><th>Objet</th><th style="width:90px;">Date</th><th style="width:80px;text-align:center;">Constats</th><th style="width:100px;">Statut</th></tr></thead>
         <tbody>
           {% for a in audits %}
@@ -32,7 +32,7 @@
     <div class="panel__head"><h2>Actions correctives ouvertes</h2><span class="rail__badge">{{ open_actions|length }}</span></div>
     <div class="panel__body--flush">
       {% if open_actions %}
-      <div class="table-wrap"><table class="grid"><tbody>
+      <div class="table-wrap"><table class="grid" data-search><tbody>
         {% for ac in open_actions %}
         <tr class="row-link" onclick="window.location='{{ url_for('audits.detail', audit_id=ac.finding.audit_id) }}'">
           <td class="subj">{{ ac.description|truncate(60) }}<div class="muted" style="font-size:11px;">{{ ac.finding.audit.ref }} - {{ ac.finding.ref }}</div></td>

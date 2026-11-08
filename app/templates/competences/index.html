@@ -11,7 +11,7 @@
   <div class="kpi kpi--sla"><div class="kpi__label">Expirent sous 60 jours</div><div class="kpi__value">{{ stats.soon }}</div></div>
 </div>
 <div class="panel"><div class="panel__head"><h2>Compétences requises et couverture</h2></div><div class="panel__body--flush"><div class="table-wrap">
-  <table class="grid"{% if current_user.can_edit %} data-bulk="competences"{% endif %}>
+  <table class="grid" data-search{% if current_user.can_edit %} data-bulk="competences"{% endif %}>
     <thead><tr><th style="width:280px;">Compétence</th><th>Personnes concernées</th>{% if current_user.can_edit %}<th style="width:80px;"></th>{% endif %}</tr></thead>
     <tbody>
     {% for r in reqs %}
@@ -26,7 +26,7 @@
   </table>
 </div></div></div>
 <div class="panel" style="margin-top:16px;"><div class="panel__head"><h2>Preuves de compétence</h2><span class="rail__badge">{{ records|length }}</span></div><div class="panel__body--flush"><div class="table-wrap">
-  <table class="grid"{% if current_user.can_edit %} data-bulk="preuves-competence"{% endif %}>
+  <table class="grid" data-search{% if current_user.can_edit %} data-bulk="preuves-competence"{% endif %}>
     <thead><tr><th style="width:170px;">Personne</th><th>Preuve</th><th style="width:120px;">Type</th><th style="width:110px;">Obtenue</th><th style="width:130px;">Validité</th>{% if current_user.can_edit %}<th style="width:80px;"></th>{% endif %}</tr></thead>
     <tbody>
     {% for rec in records %}

@@ -20,7 +20,7 @@
   <div class="panel__head"><h2>Enjeux internes et externes (4.1)</h2><span class="rail__badge">{{ issues|length }}</span><div class="spacer"></div>
     {% if current_user.can_edit %}<a class="btn btn--primary btn--sm" href="{{ url_for('context.create_issue') }}">+ Enjeu</a>{% endif %}</div>
   <div class="panel__body--flush"><div class="table-wrap">
-    <table class="grid"{% if current_user.can_edit %} data-bulk="enjeux"{% endif %}>
+    <table class="grid" data-search{% if current_user.can_edit %} data-bulk="enjeux"{% endif %}>
       <thead><tr><th style="width:80px;">Réf.</th><th style="width:110px;">Type</th><th>Enjeu</th><th>Effet sur le système de management et prise en compte</th><th style="width:140px;">Risques liés</th>{% if current_user.can_edit %}<th style="width:80px;"></th>{% endif %}</tr></thead>
       <tbody>
       {% for i in issues %}
@@ -44,7 +44,7 @@
   <div class="panel__head"><h2>Parties intéressées et exigences (4.2)</h2><span class="rail__badge">{{ parties|length }}</span><div class="spacer"></div>
     {% if current_user.can_edit %}<a class="btn btn--primary btn--sm" href="{{ url_for('context.create_party') }}">+ Partie intéressée</a>{% endif %}</div>
   <div class="panel__body--flush"><div class="table-wrap">
-    <table class="grid"{% if current_user.can_edit %} data-bulk="parties"{% endif %}>
+    <table class="grid" data-search{% if current_user.can_edit %} data-bulk="parties"{% endif %}>
       <thead><tr><th style="width:80px;">Réf.</th><th style="width:220px;">Partie intéressée</th><th>Besoins et attentes</th><th>Réponse du système de management</th><th style="width:110px;">Exigences</th>{% if current_user.can_edit %}<th style="width:80px;"></th>{% endif %}</tr></thead>
       <tbody>
       {% for p in parties %}

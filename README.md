@@ -57,7 +57,7 @@ communs (audits, revues, documents, objectifs, non-conformités) peuvent être
 rattachés à une ou plusieurs normes. Les écrans historiques restent limités à
 l'ISO 27001 (`Control.of()`).
 
-Normes disponibles (3.19) :
+Normes disponibles (3.20) :
 
 | Norme | Type | Module propre |
 |---|---|---|
@@ -377,6 +377,20 @@ ouvre directement sa fiche. La bibliothèque est aussi proposée depuis
 **Ajouter des scénarios** : il suffit de compléter un module du paquet. Toutes
 les références sont contrôlées par les tests contre les catalogues de
 l'application.
+
+### Recherche libre dans les filtres (3.20)
+
+- Un champ « Rechercher dans le tableau… » dans la barre de filtres des listes, ou
+  au-dessus du tableau pour celles qui n'ont pas de filtres (`data-search`) :
+  résultat instantané, sans accents ni casse, tous les mots saisis doivent figurer
+  sur la ligne, toutes colonnes et toutes pages confondues. Il se combine aux filtres.
+- Le texte est conservé au retour d'une fiche et au changement de filtre, effacé
+  par Échap, la croix du champ ou « Réinitialiser ».
+- La sélection en masse suit la recherche ; les lignes cochées puis écartées restent
+  sélectionnées et sont signalées (« dont N non affiché(s) »). L'impression sort les
+  lignes retenues. Les exports du menu Exporter restent complets.
+- Déclaration d'applicabilité, journal d'activité et bibliothèque de risques gardent
+  leur recherche côté serveur.
 
 ### Pagination des tableaux (3.19)
 

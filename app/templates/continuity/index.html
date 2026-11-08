@@ -12,7 +12,7 @@
   <div class="kpi kpi--sla"><div class="kpi__label">RTO > DMIA</div><div class="kpi__value">{{ stats.incoherent }}</div><div class="kpi__sub">stratégie incohérente</div></div>
 </div>
 <div class="panel"><div class="panel__head"><h2>Analyse d'impact sur l'activité (BIA)</h2><span class="rail__badge">{{ processes|length }}</span></div><div class="panel__body--flush"><div class="table-wrap">
-  <table class="grid"{% if current_user.can_edit %} data-bulk="activites"{% endif %}>
+  <table class="grid" data-search{% if current_user.can_edit %} data-bulk="activites"{% endif %}>
     <thead><tr><th style="width:90px;">Réf.</th><th>Activité</th><th style="width:90px;">Criticité</th><th style="width:70px;" title="Durée maximale d'interruption admissible">DMIA</th><th style="width:60px;">RTO</th><th style="width:60px;">RPO</th><th style="width:170px;">Dernier test</th>{% if current_user.can_edit %}<th style="width:80px;"></th>{% endif %}</tr></thead>
     <tbody>
     {% for p in processes %}
@@ -32,7 +32,7 @@
   </table>
 </div></div></div>
 <div class="panel" style="margin-top:16px;"><div class="panel__head"><h2>Exercices et tests</h2><span class="rail__badge">{{ tests|length }}</span></div><div class="panel__body--flush"><div class="table-wrap">
-  <table class="grid"{% if current_user.can_edit %} data-bulk="exercices"{% endif %}>
+  <table class="grid" data-search{% if current_user.can_edit %} data-bulk="exercices"{% endif %}>
     <thead><tr><th style="width:110px;">Réf.</th><th>Exercice</th><th style="width:150px;">Type</th><th style="width:100px;">Date</th><th style="width:90px;">RTO atteint</th><th style="width:140px;">Résultat</th></tr></thead>
     <tbody>
     {% for t in tests %}

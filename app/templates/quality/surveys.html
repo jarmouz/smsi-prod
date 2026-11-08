@@ -10,7 +10,7 @@
   <div class="kpi kpi--bientot"><div class="kpi__label">Mesures</div><div class="kpi__value">{{ stats.count }}</div></div>
 </div>
 <div class="panel"><div class="panel__body--flush"><div class="table-wrap">
-  <table class="grid"{% if current_user.can_edit %} data-bulk="satisfaction"{% endif %}>
+  <table class="grid" data-search{% if current_user.can_edit %} data-bulk="satisfaction"{% endif %}>
     <thead><tr><th style="width:110px;">Réf.</th><th>Mesure</th><th style="width:110px;">Date</th><th style="width:120px;">Résultat</th><th style="width:110px;">Répondants</th></tr></thead>
     <tbody>
     {% for s in items %}

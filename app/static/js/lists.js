@@ -1,4 +1,4 @@
-/* Listes : tri par colonne, sélection et actions en masse, ouverture dans un nouvel onglet (3.18), pagination (3.19). */
+/* Listes : tri par colonne, sélection et actions en masse, ouverture dans un nouvel onglet (3.18), pagination (3.19), recherche libre (3.20). */
 (function () {
   var csrf = (document.querySelector('meta[name=csrf-token]') || {}).content;
   function cellKey(row, i) {
@@ -78,19 +78,21 @@
       else if (a === 'status') post(base + 'statut', ids, { status: val.value });
       else if (a === 'delete') post(base + 'supprimer', ids);
     });
-    b.querySelector('.bulk-bar__more').addEventListener('click', function () { boxes(kind).forEach(function (c) { c.checked = true; }); sync(kind); });
+    b.querySelector('.bulk-bar__more').addEventListener('click', function () { boxes(kind).filter(inSearch).forEach(function (c) { c.checked = true; }); sync(kind); });
     b.querySelector('.bulk-bar__clear').addEventListener('click', function () { boxes(kind).forEach(function (c) { c.checked = false; }); sync(kind); });
     return (bars[kind] = b);
   }
   function boxes(kind) { return Array.prototype.slice.call(document.querySelectorAll('input.bulk-cb[data-kind="' + kind + '"]')); }
   function selected(kind) { return boxes(kind).filter(function (c) { return c.checked; }).map(function (c) { return c.value; }); }
   function isChecked(c) { return c.checked; }
-  function pageBoxes(root) { return Array.prototype.slice.call(root.querySelectorAll('tbody tr:not(.pg-off) input.bulk-cb')); }
+  function inSearch(c) { return !c.closest('tr.q-off'); }
+  function pageBoxes(root) { return Array.prototype.slice.call(root.querySelectorAll('tbody tr:not(.pg-off):not(.q-off) input.bulk-cb')); }
   function sync(kind) {
-    var n = selected(kind).length, b = barFor(kind), total = boxes(kind).length;
-    var vis = boxes(kind).filter(function (c) { return !c.closest('tr.pg-off'); }), off = n - vis.filter(isChecked).length, more = b.querySelector('.bulk-bar__more');
-    b.hidden = !n; b.querySelector('.bulk-bar__n').textContent = n + ' sélectionné(s)' + (off ? ', dont ' + off + ' sur d\'autres pages' : '');
-    more.hidden = !(n < total && vis.length < total && vis.every(isChecked)); more.textContent = 'Sélectionner les ' + total;
+    var n = selected(kind).length, b = barFor(kind), all = boxes(kind), found = all.filter(inSearch), total = found.length;
+    var vis = found.filter(function (c) { return !c.closest('tr.pg-off'); }), off = n - vis.filter(isChecked).length, more = b.querySelector('.bulk-bar__more');
+    var masked = all.some(function (c) { return c.checked && !inSearch(c); });   // cochés puis écartés par la recherche : à signaler
+    b.hidden = !n; b.querySelector('.bulk-bar__n').textContent = n + ' sélectionné(s)' + (off ? ', dont ' + off + (masked ? ' non affiché(s)' : ' sur d\'autres pages') : '');
+    more.hidden = !(found.filter(isChecked).length < total && vis.length < total && vis.every(isChecked)); more.textContent = 'Sélectionner les ' + total;
     (document.querySelector('.content') || document.body).style.paddingBottom = b.hidden ? '' : (b.offsetHeight + 28) + 'px';
     document.querySelectorAll('input.bulk-all[data-kind="' + kind + '"]').forEach(function (a) { var t = pageBoxes(a.closest('table')), c = t.filter(isChecked).length; a.checked = c > 0 && c === t.length; a.indeterminate = c > 0 && c < t.length; });
   }
@@ -144,9 +146,11 @@
       return '<button type="button" class="pager__btn' + (current ? ' is-on' : '') + '" data-go="' + go + '"' + (disabled ? ' disabled' : '') + (current ? ' aria-current="page"' : '') + (aria ? ' aria-label="' + aria + '"' : '') + '>' + label + '</button>';
     }
     function render(focus) {
-      var rows = Array.prototype.slice.call(body.rows), total = rows.length, per = size || total, pages = Math.max(1, Math.ceil(total / per));
+      var all = Array.prototype.slice.call(body.rows), rows = all.filter(function (r) { return !r.classList.contains('q-off'); });
+      var total = rows.length, per = size || total || 1, pages = Math.max(1, Math.ceil(total / per));
       p = Math.min(Math.max(p, 1), pages);
       var from = (p - 1) * per, to = Math.min(from + per, total);
+      all.forEach(function (r) { r.classList.remove('pg-off'); });
       rows.forEach(function (r, i) { r.classList.toggle('pg-off', i < from || i >= to); });
       var html = '<span class="pager__info" aria-live="polite">' + (from + 1) + '–' + to + ' sur ' + total + '</span><span class="pager__pages">' + button('prev', '‹', p === 1, false, 'Page précédente');
       var prev = 0;
@@ -156,7 +160,7 @@
         html += button(x, x, false, x === p, 'Page ' + x); prev = x;
       });
       html += button('next', '›', p === pages, false, 'Page suivante') + '</span><label class="pager__size">Lignes par page <select>' + SIZES.concat(0).map(function (v) { return '<option value="' + v + '"' + (v === size ? ' selected' : '') + '>' + (v || 'Tout') + '</option>'; }).join('') + '</select></label>';
-      nav.innerHTML = html;
+      nav.innerHTML = html; nav.style.display = total ? '' : 'none';
       if (focus) (nav.querySelector('button[data-go="' + focus + '"]:not(:disabled)') || nav.querySelector('[aria-current]')).focus();
       save();
       if (table.dataset.bulk && bars[table.dataset.bulk]) sync(table.dataset.bulk);
@@ -176,8 +180,61 @@
     var th = st.c != null && table.tHead && table.tHead.rows[0].cells[st.c];
     if (th && th._sort) { th._sort(!!st.d); col = st.c; dir = !!st.d; }
     table._pgSorted = function (c, asc) { col = c; dir = asc; p = 1; render(); };
+    table._pgFilter = function () { p = 1; render(); };
     render();
   }
+  // Recherche libre dans les filtres : instantanée, sur toutes les lignes du tableau, sans recharger la page.
+  function fold(s) { return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/œ/gi, 'oe').replace(/’/g, "'").toLowerCase(); }
+  function nodeText(n) {
+    if (n.nodeType === 3) return n.data;
+    if (n.nodeType !== 1 || /^(BUTTON|INPUT|SCRIPT|STYLE|TEMPLATE)$/.test(n.tagName)) return '';
+    if (n.tagName === 'SELECT') return n.selectedOptions.length ? n.selectedOptions[0].textContent : '';   // la valeur choisie, pas toute la liste
+    return Array.prototype.map.call(n.childNodes, nodeText).join(' ');
+  }
+  var grids = Array.prototype.slice.call(document.querySelectorAll('table.grid'));
+  function searchable(table, form) {
+    var body = table && table.tBodies[0];
+    if (!body || !Array.prototype.some.call(body.rows, function (r) { return r.cells.length > 1; })) return;
+    var key = 'integra.recherche:' + location.pathname + ':' + grids.indexOf(table), timer = null, wrap = table.closest('.table-wrap') || table;
+    var bar = form;                                                                                       // liste sans barre de filtres : barre propre, au-dessus de son tableau
+    if (!bar) { bar = document.createElement('div'); bar.className = 'toolbar q-bar'; wrap.insertAdjacentElement('beforebegin', bar); }
+    var input = document.createElement('input');                                                          // sans « name » : jamais envoyé avec les filtres
+    input.type = 'search'; input.className = 'q-input'; input.placeholder = 'Rechercher dans le tableau…'; input.autocomplete = 'off'; input.setAttribute('aria-label', 'Rechercher dans le tableau');
+    var count = document.createElement('span'); count.className = 'q-count'; count.setAttribute('aria-live', 'polite');
+    var none = document.createElement('div'); none.className = 'empty q-none'; none.style.display = 'none';
+    none.innerHTML = '<h3>Aucun résultat</h3><p>Aucune ligne ne correspond à cette recherche.</p>';
+    bar.insertBefore(count, bar.firstChild); bar.insertBefore(input, count); wrap.insertAdjacentElement('afterend', none);
+    function text(r) { if (r._q === undefined) r._q = fold(nodeText(r)); return r._q; }
+    function apply() {
+      var words = fold(input.value).split(/\s+/).filter(Boolean), hits = 0, total = 0, head = null, headHit = false;
+      function closeGroup() { if (head) head.classList.toggle('q-off', words.length > 0 && !headHit); }
+      Array.prototype.forEach.call(body.rows, function (r) {
+        if (r.cells.length < 2) { closeGroup(); head = r; headHit = false; return; }                     // ligne de regroupement : suit ses lignes
+        var hit = words.every(function (w) { return text(r).indexOf(w) !== -1; });
+        total++; r.classList.toggle('q-off', !hit); if (hit) { hits++; headHit = true; }
+      });
+      closeGroup();
+      count.textContent = words.length ? hits + ' sur ' + total : '';
+      none.style.display = words.length && !hits ? '' : 'none';
+      mem('sessionStorage', key, input.value);
+      if (table._pgFilter) table._pgFilter();
+      else if (table.dataset.bulk && bars[table.dataset.bulk]) sync(table.dataset.bulk);
+    }
+    input.addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(apply, 120); });
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') e.preventDefault();                                                          // Entrée ne recharge pas la page
+      if (e.key === 'Escape' && input.value) { e.preventDefault(); e.stopPropagation(); input.value = ''; clearTimeout(timer); apply(); }   // ne vide pas la sélection
+    });
+    bar.querySelectorAll('a[href]').forEach(function (a) { a.addEventListener('click', function () { mem('sessionStorage', key, ''); }); });    // Réinitialiser
+    input.value = mem('sessionStorage', key) || '';                                                       // conservée au retour d'une fiche et au changement de filtre
+    if (input.value) apply();
+  }
+  // Avant la pagination : la page mémorisée reste valable.
+  Array.prototype.forEach.call(document.querySelectorAll('form.toolbar'), function (form) {
+    if (form.querySelector('input[type=search], input[name=q], input[name=search]')) return;              // recherche serveur déjà présente
+    searchable(grids.filter(function (t) { return form.compareDocumentPosition(t) & Node.DOCUMENT_POSITION_FOLLOWING; })[0], form);
+  });
+  grids.forEach(function (t) { if (t.hasAttribute('data-search')) searchable(t); });
   Array.prototype.forEach.call(document.querySelectorAll('table.grid'), paginate);
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') Object.keys(bars).forEach(function (k) { if (!bars[k].hidden) { boxes(k).forEach(function (c) { c.checked = false; }); sync(k); } }); });
 })();

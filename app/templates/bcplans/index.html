@@ -11,7 +11,7 @@
 </div>
 {% if stats.uncovered %}<div class="flash flash--warning" style="margin:0 0 14px;">Activités critiques non couvertes par un plan : {% for pr in stats.uncovered %}{{ pr.ref }} {{ pr.name }}{{ ', ' if not loop.last }}{% endfor %}.</div>{% endif %}
 <div class="panel"><div class="panel__body--flush"><div class="table-wrap">
-  <table class="grid"{% if current_user.can_edit %} data-bulk="plans-continuite"{% endif %}>
+  <table class="grid" data-search{% if current_user.can_edit %} data-bulk="plans-continuite"{% endif %}>
     <thead><tr><th style="width:90px;">Réf.</th><th>Plan</th><th style="width:120px;">Statut</th><th style="width:150px;">Dernier exercice</th><th style="width:260px;">Points à traiter</th></tr></thead>
     <tbody>
     {% for p in plans %}{% set ex = p.last_exercise %}
