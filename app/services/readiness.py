@@ -126,6 +126,8 @@ def attention(pilot):
         url_for("assets.index", cycle="fin_proche"))
     add(2, "Matériels retirés sans preuve d'élimination sécurisée", sum(a.disposal_missing for a in assets),
         url_for("assets.index", cycle="elimination"))
+    add(2, "Actifs absents de leur outil source, à vérifier", sum(a.in_service and a.source_missing_since is not None for a in assets),
+        url_for("assets.index", cycle="absent_source"))
     add(2, "Actifs sans propriétaire", sum(a.in_service and not a.owner_id for a in assets),
         url_for("assets.index", cycle="sans_proprietaire"))
     add(3, "Valeurs métier sans cotation DIC", sum(a.is_business and a.in_service and a.criticality is None for a in assets),

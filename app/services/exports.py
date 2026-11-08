@@ -356,13 +356,14 @@ DOCS.update({
 _ASSET_IMPORT_KEYS = ("ref", "name", "category", "description", "owner", "custodian", "classification", "confidentiality",
                       "integrity", "availability", "traceability", "acquired_on", "end_of_support", "location", "status")
 _ASSET_INFO_HEADS = ["Rôle", "Besoins retenus", "Criticité", "Nom du propriétaire", "Détenteur", "Dépendances", "Alertes",
-                     "Éliminé le", "Méthode d'élimination", "Preuve d'élimination", "Modifié le"]
+                     "Éliminé le", "Méthode d'élimination", "Preuve d'élimination", "Modifié le", "Source"]
 
 
 def _asset_alerts(a):
     return "; ".join(t for t, on in (("Fin de support dépassée", a.eos_state == "depassee"),
                                      ("Fin de support proche", a.eos_state == "proche"),
-                                     ("À restituer", a.to_recover), ("Élimination à prouver", a.disposal_missing)) if on)
+                                     ("À restituer", a.to_recover), ("Élimination à prouver", a.disposal_missing),
+                                     ("Absent de la source", a.in_service and a.source_missing_since is not None)) if on)
 
 
 def asset_rows():
@@ -378,7 +379,7 @@ def asset_rows():
                      _d(a.acquired_on), _d(a.end_of_support), a.location or "", a.status.label,
                      "Valeur métier" if a.is_business else "Bien support", a.dict_label, a.criticality_label,
                      a.owner.name if a.owner else "", a.holder.name if a.holder else "", "; ".join(x.ref for x in deps),
-                     _asset_alerts(a), _d(a.disposed_on), a.disposal_label, a.disposal_proof or "", _d(a.updated_at)])
+                     _asset_alerts(a), _d(a.disposed_on), a.disposal_label, a.disposal_proof or "", _d(a.updated_at), a.connector.name if a.connector else ""])
     return rows
 
 

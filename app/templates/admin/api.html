@@ -20,6 +20,7 @@
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="field" style="flex:1;margin:0;"><label for="tok-name">Nom (outil ou usage)</label><input id="tok-name" type="text" name="name" required maxlength="120" placeholder="Power BI - tableau de bord du parc"></div>
       <div class="field" style="margin:0;"><label for="tok-days">Validité</label><select id="tok-days" name="days">{% for d, l in durations.items() %}<option value="{{ d }}" {{ 'selected' if d == 90 }}>{{ l }}</option>{% endfor %}</select></div>
+      <div class="field" style="margin:0;"><label for="tok-scope">Portée</label><select id="tok-scope" name="scope">{% for s, l in scopes.items() %}<option value="{{ s }}">{{ l }}</option>{% endfor %}</select></div>
       <button class="btn btn--primary" type="submit">Créer</button>
     </form>
   </div>
@@ -51,6 +52,7 @@
   <div class="panel__head"><h2>Utilisation</h2><a class="btn btn--ghost btn--sm" href="{{ url_for('api.openapi') }}" target="_blank" rel="noopener">Description OpenAPI</a></div>
   <div class="panel__body">
     <p style="font-size:13px;margin:0 0 8px;">Adresse de l'inventaire : <span class="mono">{{ base_url }}/api/v1/actifs</span>. Filtres : <span class="mono">role, categorie, classification, statut, criticite, cycle, reference, modifie_depuis</span>, et pagination avec <span class="mono">page</span> et <span class="mono">par_page</span> (500 au maximum). Limite : 120 appels par minute et par jeton.</p>
+    <p style="font-size:13px;margin:0 0 12px;">Un outil peut aussi pousser ses actifs, avec un jeton « Lecture et synchronisation » : <span class="mono">POST /api/v1/actifs/synchronisation</span>. Les besoins DIC+T, la classification, le propriétaire et les dépendances ne sont jamais modifiés. Pour GLPI, Intune, Entra ID, Azure ou AWS, utilisez les <a href="{{ url_for('connectors.index') }}">connecteurs</a>.</p>
     <div class="section-title">curl</div>
     <pre class="mono" style="{{ code_style }}">curl -H "Authorization: Bearer VOTRE_JETON" "{{ base_url }}/api/v1/actifs?role=support&amp;cycle=fin_support"</pre>
     <div class="section-title">PowerShell</div>

@@ -194,6 +194,13 @@ UPGRADE_DDL = [
     "ALTER TABLE assets ADD COLUMN IF NOT EXISTS disposal_method VARCHAR(20) NULL",
     "ALTER TABLE assets ADD COLUMN IF NOT EXISTS disposal_proof VARCHAR(300) NULL",
     "ALTER TABLE assets ALTER COLUMN category TYPE VARCHAR(16)",
+    # Connecteurs (3.15) : tables créées par create_all
+    "ALTER TABLE assets ADD COLUMN IF NOT EXISTS connector_id INTEGER NULL REFERENCES connectors(id) ON DELETE SET NULL",
+    "ALTER TABLE assets ADD COLUMN IF NOT EXISTS external_id VARCHAR(255) NULL",
+    "ALTER TABLE assets ADD COLUMN IF NOT EXISTS source_seen_at TIMESTAMP NULL",
+    "ALTER TABLE assets ADD COLUMN IF NOT EXISTS source_missing_since TIMESTAMP NULL",
+    "CREATE INDEX IF NOT EXISTS ix_assets_connector_id ON assets (connector_id)",
+    "CREATE UNIQUE INDEX IF NOT EXISTS uq_assets_connector_ext ON assets (connector_id, external_id) WHERE connector_id IS NOT NULL",
 ]
 
 # Tables rattachées à une organisation (voir TenantMixin)
@@ -395,6 +402,14 @@ def register_seed_command(app):
         base = current_app.config.get("APP_BASE_URL") or "http://localhost"
         with current_app.test_request_context("/", base_url=base):
             stats = reminders.run(dry_run=dry_run, org_slug=org_slug, force=force, log=click.echo)
+        click.echo(f"{datetime.utcnow():%Y-%m-%d %H:%M} UTC - " + ", ".join(f"{k} : {v}" for k, v in stats.items()))
+
+    @app.cli.command("sync-connectors")
+    @click.option("--org", "org_slug", default=None, help="Limiter à une organisation (slug).")
+    def sync_connectors(org_slug):
+        """Lance les connecteurs en mode automatique (à planifier chaque nuit par cron)."""
+        from app.services import connectors
+        stats = connectors.run_scheduled(log=click.echo, org_slug=org_slug)
         click.echo(f"{datetime.utcnow():%Y-%m-%d %H:%M} UTC - " + ", ".join(f"{k} : {v}" for k, v in stats.items()))
 
     @app.cli.command("make-superadmin")

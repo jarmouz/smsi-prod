@@ -5,6 +5,7 @@ class Config:
     """Configuration de base, surchargée par les variables d'environnement."""
 
     SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-a-changer")
+    CONNECTORS_ALLOW_PRIVATE = os.environ.get("CONNECTORS_ALLOW_PRIVATE") == "1"  # GLPI du réseau local (sur site)
 
     # Sécurité des cookies de session (SECURE=1 en prod HTTPS ; 0 en dev HTTP local)
     SESSION_COOKIE_HTTPONLY = True

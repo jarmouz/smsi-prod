@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block title %}Connecteurs - {{ APP_NAME }}{% endblock %}
+{% block heading %}Connecteurs d'inventaire{% endblock %}
+{% block content %}
+<p class="muted" style="font-size:12.5px;margin:0 0 14px;">Alimentez l'inventaire depuis vos outils. La source met à jour les faits techniques (nom, localisation, détenteur, dates). Les besoins DIC+T, la classification, le propriétaire et les dépendances restent vos décisions : ils ne sont jamais modifiés. Un actif disparu de la source est signalé, jamais supprimé.</p>
+<div class="panel" style="margin-bottom:16px;">
+  <div class="panel__head"><h2>Connecteurs configurés</h2><span class="rail__badge">{{ items|length }}</span></div>
+  <div class="panel__body--flush"><div class="table-wrap"><table class="grid">
+    <thead><tr><th>Nom</th><th>Source</th><th>Actifs</th><th>Mode</th><th>Dernier passage</th><th>Bilan</th></tr></thead>
+    <tbody>
+    {% for c in items %}
+      <tr class="row-link" onclick="window.location='{{ url_for('connectors.edit', cid=c.id) }}'">
+        <td class="subj"><a href="{{ url_for('connectors.edit', cid=c.id) }}">{{ c.name }}</a></td>
+        <td class="muted">{{ kinds[c.kind].label if c.kind in kinds else 'API' }}</td>
+        <td class="mono">{{ counts[c.id] }}</td>
+        <td class="muted">{% if c.kind == 'api' %}Poussé par l'outil{% elif c.auto %}Automatique{% else %}Manuel{% endif %}</td>
+        <td class="muted">{{ c.last_run_at|dt if c.last_run_at else 'Jamais' }}</td>
+        <td>{% if c.last_status == 'ok' %}<span class="appl appl--in">Réussi</span>{% elif c.last_status %}<span class="appl appl--out">Erreur</span>{% endif %}<div class="muted" style="font-size:11px;">{{ c.last_summary or '' }}</div></td>
+      </tr>
+    {% else %}
+      <tr><td colspan="6"><div class="empty" style="padding:30px;"><h3>Aucun connecteur</h3><p>Choisissez une source ci-dessous.</p></div></td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div></div>
+</div>
+<div class="panel"><div class="panel__head"><h2>Ajouter une source</h2></div><div class="panel__body--flush"><div class="table-wrap"><table class="grid">
+  <tbody>
+  {% for k in kinds.values() %}
+    <tr><td class="subj" style="width:190px;"><b>{{ k.label }}</b></td><td class="muted">{{ k.summary }}</td><td style="width:110px;"><a class="btn btn--subtle btn--sm" href="{{ url_for('connectors.create', kind=k.key) }}">Configurer</a></td></tr>
+  {% endfor %}
+    <tr><td class="subj"><b>Autre outil</b></td><td class="muted">Tout autre outil peut pousser ses actifs par l'API d'écriture (script, n8n, Power Automate). Voir API et intégrations.</td><td><a class="btn btn--subtle btn--sm" href="{{ url_for('admin.api_page') }}">Voir l'API</a></td></tr>
+  </tbody>
+</table></div></div></div>
+{% endblock %}

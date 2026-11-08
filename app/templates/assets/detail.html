@@ -8,6 +8,7 @@
 {% elif a.eos_state == 'proche' %}<div class="flash flash--warning" style="margin-bottom:12px;">Fin de support le {{ a.end_of_support|d }} : anticipez le renouvellement.</div>{% endif %}
 {% if a.to_recover %}<div class="flash flash--warning" style="margin-bottom:12px;">Détenu par {{ a.holder.name }}, dont le compte est désactivé : à restituer (A.5.11).</div>{% endif %}
 {% if a.disposal_missing %}<div class="flash flash--warning" style="margin-bottom:12px;">Actif retiré sans preuve d'élimination sécurisée des données (A.7.14).</div>{% endif %}
+{% if a.in_service and a.source_missing_since %}<div class="flash flash--warning" style="margin-bottom:12px;">Absent de la source {{ a.connector.name if a.connector else '' }} depuis le {{ a.source_missing_since|d }} : vérifiez s'il faut le retirer de l'inventaire.</div>{% endif %}
 {% set n = a.needs() %}
 <div class="detail-grid">
   <div class="stack">
@@ -49,6 +50,7 @@
       <div><span>Dépositaire</span><b>{{ a.custodian or '-' }}</b></div>
       <div><span>Emplacement</span><b>{{ a.location or '-' }}</b></div>
       <div><span>Statut</span><b>{{ a.status.label }}</b></div>
+      {% if a.connector %}<div><span>Source</span><b>{{ a.connector.name }}{% if a.source_seen_at %}, vu le {{ a.source_seen_at|d }}{% endif %}</b></div>{% endif %}
       {% if a.description %}<div><span>Description</span><b>{{ a.description }}</b></div>{% endif %}
     </div></div></div>
     <div class="panel"><div class="panel__head"><h2>Cycle de vie</h2></div><div class="panel__body"><div class="meta-list">

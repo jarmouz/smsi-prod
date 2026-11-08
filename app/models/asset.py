@@ -33,7 +33,9 @@ class Asset(TenantMixin, db.Model):
     (dépendances, besoins hérités), cycle de vie (acquisition, fin de support, détenteur, élimination)."""
 
     __tablename__ = "assets"
-    __table_args__ = (db.UniqueConstraint("organization_id", "ref", name="uq_assets_org_ref"),)
+    __table_args__ = (db.UniqueConstraint("organization_id", "ref", name="uq_assets_org_ref"),
+                      db.Index("uq_assets_connector_ext", "connector_id", "external_id", unique=True,
+                               postgresql_where=db.text("connector_id IS NOT NULL")),)
 
     id = db.Column(db.Integer, primary_key=True)
     ref = db.Column(db.String(24), nullable=False, index=True)  # ACT-2026-0001
@@ -58,6 +60,11 @@ class Asset(TenantMixin, db.Model):
     disposed_on = db.Column(db.Date, nullable=True)
     disposal_method = db.Column(db.String(20), nullable=True)
     disposal_proof = db.Column(db.String(300), nullable=True)   # n° de certificat, PV, référence de preuve
+    # Synchronisation avec un outil externe (3.15)
+    connector_id = db.Column(db.Integer, db.ForeignKey("connectors.id", ondelete="SET NULL"), nullable=True, index=True)
+    external_id = db.Column(db.String(255), nullable=True)
+    source_seen_at = db.Column(db.DateTime, nullable=True)
+    source_missing_since = db.Column(db.DateTime, nullable=True)
     status = db.Column(db.Enum(AssetStatus, native_enum=False),
                        default=AssetStatus.ACTIF, nullable=False, index=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
@@ -65,6 +72,7 @@ class Asset(TenantMixin, db.Model):
 
     owner = db.relationship("User", foreign_keys=[owner_id])
     holder = db.relationship("User", foreign_keys=[holder_id])
+    connector = db.relationship("Connector")
     supports = db.relationship("Asset", secondary=asset_dependencies,
                                primaryjoin=lambda: Asset.id == asset_dependencies.c.business_id,
                                secondaryjoin=lambda: Asset.id == asset_dependencies.c.support_id,

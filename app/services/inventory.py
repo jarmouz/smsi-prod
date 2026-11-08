@@ -7,7 +7,8 @@ from app.models.asset import NEED_LEVELS
 CYCLE = {"fin_support": lambda a: a.eos_state == "depassee", "fin_proche": lambda a: a.eos_state == "proche",
          "a_restituer": lambda a: a.to_recover, "elimination": lambda a: a.disposal_missing,
          "sans_dic": lambda a: a.is_business and a.in_service and a.criticality is None,
-         "sans_proprietaire": lambda a: a.in_service and not a.owner_id}
+         "sans_proprietaire": lambda a: a.in_service and not a.owner_id,
+         "absent_source": lambda a: a.in_service and a.source_missing_since is not None}
 ROLES = ("metier", "support")
 FILTER_NAMES = ("role", "categorie", "criticite", "classification", "statut", "cycle")
 
@@ -47,7 +48,7 @@ def filter_assets(args, strict=False, eager=False):
     q = Asset.query
     if eager:
         q = q.options(selectinload(Asset.owner), selectinload(Asset.holder), selectinload(Asset.supports),
-                      selectinload(Asset.supported), selectinload(Asset.risks))
+                      selectinload(Asset.supported), selectinload(Asset.risks), selectinload(Asset.connector))
     if "categorie" in f:
         q = q.filter(Asset.category == AssetCategory(f["categorie"]))
     if "classification" in f:

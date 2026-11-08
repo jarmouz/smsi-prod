@@ -2,8 +2,9 @@
 
 Seul l'en-tête « Authorization: Bearer <jeton> » donne accès : un cookie de session ne suffit pas.
 Chaque appel authentifié est inscrit au journal d'activité de l'organisation."""
+import re
 import time
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from functools import wraps
 from types import SimpleNamespace
 
@@ -11,10 +12,10 @@ from flask import Blueprint, current_app, g, jsonify, request
 from sqlalchemy import case
 
 from app.extensions import db
-from app.models import ApiToken, Asset, Organization
-from app.models.api_token import SCOPE_ASSETS_READ, hash_token
+from app.models import ApiToken, Asset, AssetCategory, AssetStatus, Connector, Organization
+from app.models.api_token import SCOPE_ASSETS_READ, SCOPE_ASSETS_WRITE, hash_token
 from app.models.asset import NEED_KEYS, NEED_LEVELS
-from app.services import inventory, tenancy
+from app.services import connectors, inventory, tenancy
 from app.services.audit_trail import _ip, log_event
 
 bp = Blueprint("api", __name__, url_prefix="/api/v1")
@@ -22,6 +23,7 @@ bp = Blueprint("api", __name__, url_prefix="/api/v1")
 RATE_LIMIT = 120           # appels par minute et par jeton
 DEFAULT_PER_PAGE = 100
 MAX_PER_PAGE = 500
+MAX_PUSH = 1000
 
 
 @bp.after_request
@@ -123,6 +125,8 @@ def serialize(a):
             "etat_support": a.eos_state, "a_restituer": a.to_recover,
             "elimination": {"date": _iso(a.disposed_on), "methode": a.disposal_method, "preuve": a.disposal_proof,
                             "preuve_manquante": a.disposal_missing}},
+        "source": {"connecteur": a.connector.name, "id_externe": a.external_id, "vu_le": _iso(a.source_seen_at),
+                   "absent_depuis": _iso(a.source_missing_since)} if a.connector else None,
         "cree_le": _iso(a.created_at), "modifie_le": _iso(a.updated_at),
     }
 
@@ -179,6 +183,63 @@ def asset(asset_id):
         return _error(404, "introuvable", "Actif introuvable.")
     g.api_detail = f" ({a.ref})"
     return jsonify(serialize(a))
+
+
+def _push_item(n, x):
+    """Élément reçu -> format du rapprochement ; ValueError avec un message si invalide."""
+    if not isinstance(x, dict) or not x.get("id_externe") or not x.get("nom"):
+        raise ValueError(f"actifs[{n}] : id_externe et nom sont requis.")
+    item = {"external_id": str(x["id_externe"]), "name": str(x["nom"]), "category": AssetCategory.SERVICE}
+    if x.get("categorie"):
+        if x["categorie"] not in [c.value for c in AssetCategory]:
+            raise ValueError(f"actifs[{n}] : categorie inconnue.")
+        item["category"] = AssetCategory(x["categorie"])
+    if x.get("statut"):
+        if x["statut"] not in [c.value for c in AssetStatus]:
+            raise ValueError(f"actifs[{n}] : statut inconnu.")
+        item["status"] = AssetStatus(x["statut"])
+    for src, dst in (("description", "description"), ("localisation", "location"), ("detenteur", "holder")):
+        if x.get(src):
+            item[dst] = str(x[src])
+    for src, dst in (("mise_en_service", "acquired_on"), ("fin_de_support", "end_of_support")):
+        if x.get(src):
+            try:
+                item[dst] = date.fromisoformat(str(x[src]))
+            except ValueError:
+                raise ValueError(f"actifs[{n}] : {src} doit être une date AAAA-MM-JJ.")
+    return item
+
+
+@bp.route("/actifs/synchronisation", methods=["POST"])
+@token_required(SCOPE_ASSETS_WRITE)
+def push():
+    """Création et mise à jour par un outil, selon les mêmes règles que les connecteurs."""
+    body = request.get_json(silent=True)
+    if not isinstance(body, dict):
+        return _error(400, "corps_invalide", "Corps JSON attendu.")
+    source, rows = str(body.get("source") or ""), body.get("actifs")
+    if not re.fullmatch(r"[\w.-]{1,60}", source):
+        return _error(400, "parametre_invalide", "source : 1 à 60 lettres, chiffres, points ou tirets.")
+    if not isinstance(rows, list) or len(rows) > MAX_PUSH:
+        return _error(400, "parametre_invalide", f"actifs : liste de {MAX_PUSH} éléments au maximum.")
+    try:
+        items = [_push_item(n, x) for n, x in enumerate(rows)]
+    except ValueError as e:
+        return _error(400, "parametre_invalide", str(e))
+    simulate = body.get("simulation") is True
+    c = Connector.query.filter_by(kind="api", name=source).first()
+    if c is None:
+        c = Connector(kind="api", name=source)
+        db.session.add(c)
+        db.session.commit()
+    try:
+        res = connectors.execute(c, items, apply=not simulate, complete=body.get("complet") is True)
+    except connectors.ConnectorError as e:
+        return _error(409, "synchronisation_impossible", str(e))
+    g.api_detail = f" ({connectors.summary(res)})"
+    return jsonify({"simulation": simulate, "creations": len(res["create"]), "mises_a_jour": len(res["update"]),
+                    "rapproches": len(res["adopt"]), "inchanges": res["same"], "doublons": len(res["duplicate"]),
+                    "absents": len(res["missing"]), "avertissement": res["warning"]})
 
 
 @bp.route("/openapi.json")

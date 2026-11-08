@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}Connecteur - {{ APP_NAME }}{% endblock %}
+{% block heading %}{{ c.name if c else 'Nouveau connecteur' }}{% endblock %}
+{% block topactions %}<a href="{{ url_for('connectors.index') }}" class="btn btn--ghost btn--sm">Retour</a>{% endblock %}
+{% block content %}
+<div class="detail-grid">
+  <div class="stack">
+    {% if kind %}
+    <form method="post" class="panel"><div class="panel__head"><h2>{{ kind.label }}</h2></div><div class="panel__body">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <p class="muted" style="font-size:12.5px;margin:0 0 14px;"><b>Droits à accorder :</b> {{ kind.access }}</p>
+      <div class="field"><label>Nom *</label><input type="text" name="name" required maxlength="120" value="{{ c.name if c else kind.label }}"></div>
+      {% for p in kind.params %}
+      <div class="field"><label>{{ p.label }}{{ ' *' if p.required }}</label>
+        {% if p.secret %}<input type="password" name="{{ p.key }}" autocomplete="new-password" {% if c %}placeholder="Laisser vide pour conserver"{% endif %}>
+        {% else %}<input type="text" name="{{ p.key }}" value="{{ (c.config or {}).get(p.key, '') if c else '' }}">{% endif %}
+        {% if p.hint %}<div class="hint">{{ p.hint }}</div>{% endif %}</div>
+      {% endfor %}
+      <label class="remember" style="display:block;margin-bottom:14px;"><input type="checkbox" name="auto" {{ 'checked' if c and c.auto }}> Synchronisation automatique (chaque nuit, si la tâche planifiée est en place)</label>
+      <button class="btn btn--primary" type="submit">Enregistrer</button>
+    </div></form>
+    {% else %}
+    <div class="panel"><div class="panel__body"><p class="muted" style="margin:0;">Connecteur alimenté par l'API d'écriture : l'outil pousse ses actifs lui-même.</p></div></div>
+    {% endif %}
+    {% if c %}
+    <div class="panel"><div class="panel__head"><h2>Historique</h2></div><div class="panel__body--flush"><div class="table-wrap"><table class="grid">
+      <tbody>{% for r in c.runs[:15] %}<tr><td class="muted" style="width:140px;">{{ r.created_at|dt }}</td><td style="width:90px;">{% if r.status == 'ok' %}<span class="appl appl--in">Réussi</span>{% else %}<span class="appl appl--out">Erreur</span>{% endif %}</td><td class="muted" style="font-size:12px;">{{ r.summary }}</td></tr>{% else %}<tr><td class="muted" style="padding:14px;">Aucun passage.</td></tr>{% endfor %}</tbody>
+    </table></div></div></div>
+    {% endif %}
+  </div>
+  <div class="stack">
+    {% if c %}
+    <div class="panel"><div class="panel__head"><h2>Actions</h2></div><div class="panel__body stack">
+      <p class="muted" style="font-size:12px;margin:0;">{{ count }} actif(s) suivi(s) par ce connecteur.</p>
+      {% if kind %}
+      <form method="post" action="{{ url_for('connectors.test', cid=c.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn--subtle" style="width:100%;" type="submit">Tester la connexion</button></form>
+      <form method="post" action="{{ url_for('connectors.preview', cid=c.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn--primary" style="width:100%;" type="submit">Aperçu de la synchronisation</button></form>
+      {% endif %}
+      <form method="post" action="{{ url_for('connectors.delete', cid=c.id) }}" onsubmit="return confirm('Supprimer ce connecteur ? Les actifs restent dans l\'inventaire, sans lien avec la source.');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn--ghost" style="width:100%;" type="submit">Supprimer</button></form>
+    </div></div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

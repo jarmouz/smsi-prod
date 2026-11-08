@@ -38,6 +38,8 @@ def document():
             "a_restituer": {"type": "boolean"},
             "elimination": {"type": "object", "properties": {
                 "date": day, "methode": text, "preuve": text, "preuve_manquante": {"type": "boolean"}}}}},
+        "source": {"type": "object", "nullable": True, "properties": {"connecteur": {"type": "string"}, "id_externe": {"type": "string"},
+                                                                      "vu_le": {"type": "string", "nullable": True}, "absent_depuis": {"type": "string", "nullable": True}}},
         "cree_le": {"type": "string", "format": "date-time"}, "modifie_le": {"type": "string", "format": "date-time", "nullable": True},
     }}
     refused = {"401": _err("Jeton absent, invalide, expiré ou révoqué"), "403": _err("Portée insuffisante ou organisation désactivée"),
@@ -70,6 +72,17 @@ def document():
                         "page": {"type": "integer"}, "par_page": {"type": "integer"}, "total": {"type": "integer"},
                         "pages": {"type": "integer"}, "suivante": {"type": "integer", "nullable": True}}}}}}}},
                 "400": _err("Paramètre invalide"), **refused}}},
+            "/actifs/synchronisation": {"post": {"summary": "Pousser des actifs depuis un outil (portée actifs:ecriture)", "operationId": "synchroniserActifs",
+                "description": "Crée ou met à jour selon id_externe. Nom, localisation, statut, détenteur et dates sont actualisés ; besoins DIC+T, classification, "
+                               "propriétaire et dépendances ne sont jamais modifiés. Avec complet=true, les actifs de la source non reçus sont signalés absents, jamais supprimés.",
+                "requestBody": {"required": True, "content": {"application/json": {"schema": {"type": "object", "required": ["source", "actifs"], "properties": {
+                    "source": {"type": "string"}, "simulation": {"type": "boolean"}, "complet": {"type": "boolean"},
+                    "actifs": {"type": "array", "maxItems": 1000, "items": {"type": "object", "required": ["id_externe", "nom"], "properties": {
+                        "id_externe": {"type": "string"}, "nom": {"type": "string"}, "categorie": {"type": "string", "enum": [x.value for x in AssetCategory]},
+                        "statut": {"type": "string", "enum": [x.value for x in AssetStatus]}, "description": {"type": "string"}, "localisation": {"type": "string"},
+                        "detenteur": {"type": "string", "description": "E-mail ou nom d'un utilisateur"}, "mise_en_service": {"type": "string", "format": "date"},
+                        "fin_de_support": {"type": "string", "format": "date"}}}}}}}}},
+                "responses": {"200": {"description": "Bilan"}, "400": _err("Corps invalide"), "409": _err("Synchronisation impossible"), **refused}}},
             "/actifs/{id}": {"get": {"summary": "Fiche d'un actif", "operationId": "lireActif", "parameters": [
                 {"name": "id", "in": "path", "required": True, "schema": {"type": "integer"}}], "responses": {
                 "200": {"description": "Actif", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Actif"}}}},

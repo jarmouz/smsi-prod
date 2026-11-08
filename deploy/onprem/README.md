@@ -82,6 +82,12 @@ section « Sauvegardes » ci-dessous.
   ```
   0 6 * * * cd /opt/smsi && docker compose exec -T web flask send-reminders >> backups/reminders.log 2>&1
   ```
+- **Connecteurs d'inventaire** (GLPI, Intune, Entra ID, Azure, AWS) : le RSSI les
+  configure dans Administration › Connecteurs. Pour un GLPI du réseau local, ajoutez
+  `CONNECTORS_ALLOW_PRIVATE=1` dans `.env`. Pour la synchronisation automatique :
+  ```
+  15 3 * * * cd /opt/smsi && docker compose exec -T web flask sync-connectors >> backups/connectors.log 2>&1
+  ```
 - **Autres normes** : le RSSI peut activer l'**ISO/IEC 27701** (vie privée :
   registre des traitements, demandes des personnes, annexes A et B) et
   l'**ISO/IEC 42001** (intelligence artificielle : inventaire des systèmes d'IA,

@@ -22,7 +22,7 @@
   <select name="classification" onchange="this.form.submit()"><option value="">Toutes classifications</option>{% for x in Classification %}<option value="{{ x.value }}" {{ 'selected' if f_cls==x.value }}>{{ x.label }}</option>{% endfor %}</select>
   <select name="statut" onchange="this.form.submit()"><option value="">Tous statuts</option>{% for x in AssetStatus %}<option value="{{ x.value }}" {{ 'selected' if f_st==x.value }}>{{ x.label }}</option>{% endfor %}</select>
   <select name="cycle" onchange="this.form.submit()"><option value="">Cycle de vie : tout</option>
-    {% for k, l in [('fin_support', 'Fin de support dépassée'), ('fin_proche', 'Fin de support dans 6 mois'), ('a_restituer', 'À restituer (compte désactivé)'), ('elimination', 'Retirés sans preuve d\'élimination'), ('sans_dic', 'Valeurs métier sans cotation'), ('sans_proprietaire', 'Sans propriétaire')] %}<option value="{{ k }}" {{ 'selected' if f_cycle==k }}>{{ l }} ({{ stats[k] }})</option>{% endfor %}</select>
+    {% for k, l in [('fin_support', 'Fin de support dépassée'), ('fin_proche', 'Fin de support dans 6 mois'), ('a_restituer', 'À restituer (compte désactivé)'), ('elimination', 'Retirés sans preuve d\'élimination'), ('sans_dic', 'Valeurs métier sans cotation'), ('sans_proprietaire', 'Sans propriétaire'), ('absent_source', 'Absents de leur outil source')] %}<option value="{{ k }}" {{ 'selected' if f_cycle==k }}>{{ l }} ({{ stats[k] }})</option>{% endfor %}</select>
   {% if f_cat or f_cls or f_st or f_role or f_crit or f_cycle %}<a href="{{ url_for('assets.index') }}" class="btn btn--ghost btn--sm">Réinitialiser</a>{% endif %}
 </form>
 <div class="panel" style="margin-top:16px;"><div class="panel__body--flush"><div class="table-wrap">
@@ -42,7 +42,8 @@
         <td class="muted">{{ a.status.label }}
           {% if a.eos_state == 'depassee' %}<div style="font-size:11px;color:var(--red-600);">fin de support dépassée</div>{% elif a.eos_state == 'proche' %}<div style="font-size:11px;color:#B4532C;">fin de support {{ a.end_of_support|d }}</div>{% endif %}
           {% if a.to_recover %}<div style="font-size:11px;color:var(--red-600);">à restituer</div>{% endif %}
-          {% if a.disposal_missing %}<div style="font-size:11px;color:var(--red-600);">élimination à prouver</div>{% endif %}</td>
+          {% if a.disposal_missing %}<div style="font-size:11px;color:var(--red-600);">élimination à prouver</div>{% endif %}
+          {% if a.in_service and a.source_missing_since %}<div style="font-size:11px;color:var(--red-600);">absent de la source</div>{% endif %}</td>
       </tr>
       {% else %}
       <tr><td colspan="7"><div class="empty" style="padding:30px;"><h3>Aucun actif</h3><p>Recensez vos valeurs métier (informations, processus) puis les biens supports qui les portent (mesure A.5.9).</p></div></td></tr>

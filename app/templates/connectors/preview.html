@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}Aperçu - {{ APP_NAME }}{% endblock %}
+{% block heading %}Aperçu : {{ c.name }}{% endblock %}
+{% block topactions %}<a href="{{ url_for('connectors.edit', cid=c.id) }}" class="btn btn--ghost btn--sm">Retour</a>{% endblock %}
+{% block content %}
+{% if res.warning %}<div class="flash flash--warning" style="margin-bottom:12px;">{{ res.warning }}</div>{% endif %}
+<p class="muted" style="font-size:12.5px;margin:0 0 14px;">Rien n'a encore été modifié dans l'inventaire.</p>
+<div class="kpis" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px;">
+  <div class="kpi kpi--total"><div class="kpi__label">À créer</div><div class="kpi__value">{{ res.create|length }}</div></div>
+  <div class="kpi kpi--sla"><div class="kpi__label">À mettre à jour</div><div class="kpi__value">{{ res['update']|length }}</div></div>
+  <div class="kpi kpi--ouvert"><div class="kpi__label">Rapprochés par le nom</div><div class="kpi__value">{{ res.adopt|length }}</div></div>
+  <div class="kpi kpi--retard"><div class="kpi__label">Absents de la source</div><div class="kpi__value">{{ res.missing|length }}</div></div>
+</div>
+<div class="stack">
+{% for title, rows in [('À créer', res.create), ('À mettre à jour', res['update']), ('Rapprochés avec un actif existant', res.adopt), ('Absents de la source (signalés, jamais supprimés)', res.missing), ('Déjà suivis par un autre connecteur (ignorés)', res.duplicate)] if rows %}
+  <div class="panel"><div class="panel__head"><h2>{{ title }}</h2><span class="rail__badge">{{ rows|length }}</span></div><div class="panel__body"><p style="margin:0;font-size:13px;">{{ rows[:40]|join(', ') }}{% if rows|length > 40 %}, et {{ rows|length - 40 }} autres{% endif %}</p></div></div>
+{% endfor %}
+  <p class="muted" style="font-size:12.5px;margin:0;">{{ res.same }} actif(s) inchangé(s).</p>
+  <form method="post" action="{{ url_for('connectors.sync', cid=c.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn--primary" type="submit">Appliquer la synchronisation</button></form>
+</div>
+{% endblock %}

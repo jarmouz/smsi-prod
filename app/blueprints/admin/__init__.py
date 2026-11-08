@@ -366,9 +366,9 @@ def journal_export():
 # --- Maintenance ---------------------------------------------------------
 def _api_page(new_token=None):
     from app.models import ApiToken
-    from app.models.api_token import TOKEN_DURATIONS
+    from app.models.api_token import TOKEN_DURATIONS, TOKEN_SCOPES
     tokens = ApiToken.query.order_by(ApiToken.created_at.desc(), ApiToken.id.desc()).all()
-    resp = make_response(render_template("admin/api.html", tokens=tokens, durations=TOKEN_DURATIONS, new_token=new_token,
+    resp = make_response(render_template("admin/api.html", tokens=tokens, durations=TOKEN_DURATIONS, scopes=TOKEN_SCOPES, new_token=new_token,
                                          base_url=request.url_root.rstrip("/")))
     resp.headers["Cache-Control"] = "no-store"
     return resp
@@ -384,14 +384,15 @@ def api_page():
 @rssi_required
 def api_token_create():
     from app.models import ApiToken
-    from app.models.api_token import TOKEN_DURATIONS, PREFIX, hash_token, new_token
+    from app.models.api_token import TOKEN_DURATIONS, TOKEN_SCOPES, PREFIX, hash_token, new_token
     name = (request.form.get("name") or "").strip()[:120]
     days = request.form.get("days", type=int)
-    if not name or days not in TOKEN_DURATIONS:
-        flash("Indiquez un nom et une durée de validité.", "danger")
+    scope = request.form.get("scope") or next(iter(TOKEN_SCOPES))
+    if not name or days not in TOKEN_DURATIONS or scope not in TOKEN_SCOPES:
+        flash("Indiquez un nom, une portée et une durée de validité.", "danger")
         return redirect(url_for("admin.api_page"))
     raw = new_token()
-    db.session.add(ApiToken(name=name, token_prefix=raw[:len(PREFIX) + 8], token_hash=hash_token(raw),
+    db.session.add(ApiToken(name=name, token_prefix=raw[:len(PREFIX) + 8], token_hash=hash_token(raw), scopes=scope,
                             created_by_id=current_user.id, expires_at=datetime.utcnow() + timedelta(days=days)))
     db.session.commit()
     return _api_page(new_token=raw)

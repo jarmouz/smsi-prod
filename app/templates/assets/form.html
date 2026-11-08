@@ -4,6 +4,7 @@
 {% block topactions %}<a href="{{ url_for('assets.detail', asset_id=a.id) if a else url_for('assets.index') }}" class="btn btn--ghost btn--sm">Retour</a>{% endblock %}
 {% block content %}
 {% set dep_ids = ((a.supports if a.is_business else a.supported)|map(attribute='id')|list) if a else [] %}
+{% if a and a.connector %}<div class="flash flash--warning" style="margin-bottom:12px;">Actif suivi par {{ a.connector.name }} : le nom, la localisation, le statut, le détenteur et les dates peuvent être mis à jour par la source. Vos besoins DIC+T, la classification, le propriétaire et les dépendances ne le sont jamais.</div>{% endif %}
 <form method="post" class="detail-grid">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <div class="stack">

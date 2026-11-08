@@ -7,6 +7,8 @@ from app.extensions import db
 from app.models.organization import TenantMixin
 
 SCOPE_ASSETS_READ = "actifs:lecture"
+SCOPE_ASSETS_WRITE = "actifs:ecriture"
+TOKEN_SCOPES = {SCOPE_ASSETS_READ: "Lecture de l'inventaire", f"{SCOPE_ASSETS_READ} {SCOPE_ASSETS_WRITE}": "Lecture et synchronisation"}
 TOKEN_DURATIONS = {30: "30 jours", 90: "90 jours", 180: "180 jours", 365: "1 an"}
 PREFIX = "itg_"
 

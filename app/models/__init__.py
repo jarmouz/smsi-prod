@@ -18,6 +18,7 @@ from app.models.review import ManagementReview, ReviewAction
 from app.models.evidence import Document, DocumentVersion, Evidence, PolicyAcceptance
 from app.models.trust import TrustRequest
 from app.models.api_token import ApiToken
+from app.models.connector import Connector, ConnectorRun
 from app.models.attachment import Attachment
 from app.models.asset import Asset, Incident, AwarenessAction
 from app.models.activity import ActivityLog

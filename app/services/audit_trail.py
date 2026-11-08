@@ -18,14 +18,15 @@ from app.models import ActivityLog, TenantMixin, User
 
 # Champs techniques ou secrets : jamais journalisés en clair
 IGNORED = {"updated_at", "created_at", "failed_logins", "locked_until", "totp_last_step", "password_changed_at",
-           "last_digest_at", "token_hash", "last_used_at", "last_used_ip", "window_minute", "window_count"}
+           "last_digest_at", "token_hash", "last_used_at", "last_used_ip", "window_minute", "window_count", "source_seen_at", "secret_enc",
+           "last_run_at", "last_status", "last_summary"}
 SECRET = {"password_hash": "mot de passe modifié", "totp_secret": "double authentification modifiée",
           "recovery_codes": "codes de secours régénérés"}
 MAX_LEN = 400
 
 ENTITY_LABELS = {
     "Risk": "Risque", "RiskAction": "Action de traitement", "RiskLink": "Lien d'un risque", "PolicyAcceptance": "Acceptation d'une politique",
-    "ApiToken": "Jeton d'API", "TrustRequest": "Demande d'accès (page de confiance)", "Control": "Mesure", "Audit": "Audit", "Finding": "Constat",
+    "ApiToken": "Jeton d'API", "Connector": "Connecteur", "ConnectorRun": "Passage de connecteur", "TrustRequest": "Demande d'accès (page de confiance)", "Control": "Mesure", "Audit": "Audit", "Finding": "Constat",
     "CorrectiveAction": "Action corrective", "ManagementReview": "Revue de direction",
     "ReviewAction": "Action de revue", "Document": "Document", "DocumentVersion": "Version de document",
     "Evidence": "Preuve", "Attachment": "Pièce jointe", "Asset": "Actif", "Incident": "Incident",
@@ -51,7 +52,8 @@ FIELD_LABELS = {
     "note": "Note", "progress": "Avancement (%)", "entity_type": "Type d'élément", "entity_id": "Élément",
     "reassess_at": "Réévaluation demandée le", "ack_required": "Acceptation requise", "ack_roles": "Rôles concernés",
     "ack_days": "Délai d'acceptation (jours)", "trust_visibility": "Page de confiance", "trust_public": "Affiché sur la page de confiance",
-    "token_prefix": "Préfixe du jeton", "scopes": "Portée", "revoked_at": "Révoqué le", "revoked_by_id": "Révoqué par",
+    "connector_id": "Connecteur", "external_id": "Identifiant dans la source", "source_missing_since": "Absent de la source depuis",
+    "auto": "Synchronisation automatique", "config": "Paramètres", "summary": "Bilan", "token_prefix": "Préfixe du jeton", "scopes": "Portée", "revoked_at": "Révoqué le", "revoked_by_id": "Révoqué par",
     "expires_at": "Accès jusqu'au", "decided_by_id": "Décidé par",
     "need_c": "Besoin en confidentialité", "need_i": "Besoin en intégrité", "need_a": "Besoin en disponibilité",
     "need_t": "Besoin en traçabilité", "acquired_on": "Mise en service", "end_of_support": "Fin de support",

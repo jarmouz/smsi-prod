@@ -57,7 +57,7 @@ communs (audits, revues, documents, objectifs, non-conformités) peuvent être
 rattachés à une ou plusieurs normes. Les écrans historiques restent limités à
 l'ISO 27001 (`Control.of()`).
 
-Normes disponibles (3.14) :
+Normes disponibles (3.15) :
 
 | Norme | Type | Module propre |
 |---|---|---|
@@ -377,6 +377,25 @@ ouvre directement sa fiche. La bibliothèque est aussi proposée depuis
 **Ajouter des scénarios** : il suffit de compléter un module du paquet. Toutes
 les références sont contrôlées par les tests contre les catalogues de
 l'application.
+
+### Connecteurs d'inventaire (3.15)
+
+Administration > Connecteurs (RSSI) : GLPI, Microsoft Intune, Entra ID (applications
+SaaS), Azure et AWS (`app/services/connectors/`). Tout autre outil peut pousser ses
+actifs avec `POST /api/v1/actifs/synchronisation` (portée `actifs:ecriture`).
+
+- **Règles** : la source actualise nom, localisation, statut, détenteur et dates.
+  Besoins DIC+T, classification, propriétaire et dépendances ne sont jamais modifiés.
+  Un actif retiré dans Integra le reste. Un actif disparu de la source est signalé
+  (`source_missing_since`, filtre « Absents de leur outil source »), jamais supprimé.
+- **Rapprochement** : identifiant externe, puis nom unique parmi les actifs sans source.
+  Un nom déjà suivi par un autre connecteur n'est pas dupliqué.
+- **Parcours** : tester, aperçu sans écriture, puis synchroniser. Mode automatique :
+  planifier `flask sync-connectors` chaque nuit.
+- **Sécurité** : secrets chiffrés (Fernet, clé dérivée de `SECRET_KEY`) ; changer
+  l'adresse GLPI impose de ressaisir les secrets ; adresses internes refusées et
+  redirections bloquées, sauf `CONNECTORS_ALLOW_PRIVATE=1` dans `.env` pour un GLPI
+  du réseau local (installation sur site à organisation unique).
 
 ### Export de l'inventaire et API (3.14)
 
