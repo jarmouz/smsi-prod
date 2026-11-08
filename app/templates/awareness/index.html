@@ -14,11 +14,11 @@
   {% if f_type or f_status %}<a href="{{ url_for('awareness.index') }}" class="btn btn--ghost btn--sm">Réinitialiser</a>{% endif %}
 </form>
 <div class="panel" style="margin-top:16px;"><div class="panel__body--flush"><div class="table-wrap">
-  <table class="grid">
+  <table class="grid"{% if current_user.can_edit %} data-bulk="sensibilisation"{% endif %}>
     <thead><tr><th style="width:120px;">Réf.</th><th>Action</th><th style="width:150px;">Type</th><th style="width:100px;">Date</th><th style="width:90px;text-align:center;">Taux</th><th style="width:100px;">Statut</th>{% if current_user.can_edit %}<th style="width:96px;"></th>{% endif %}</tr></thead>
     <tbody>
       {% for a in actions %}
-      <tr>
+      <tr data-id="{{ a.id }}">
         <td class="ref">{{ a.ref }}</td>
         <td class="subj">{{ a.title }}{% if a.audience %}<div class="muted" style="font-size:11px;">{{ a.audience }}{% if a.participants %} - {{ a.participants }} participants{% endif %}</div>{% endif %}</td>
         <td class="muted">{{ a.atype.label }}</td>

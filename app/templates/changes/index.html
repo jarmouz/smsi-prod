@@ -15,11 +15,11 @@
   {% if f_status %}<a href="{{ url_for('changes.index') }}" class="btn btn--ghost btn--sm">Réinitialiser</a>{% endif %}
 </form>
 <div class="panel" style="margin-top:16px;"><div class="panel__body--flush"><div class="table-wrap">
-  <table class="grid">
+  <table class="grid"{% if current_user.can_edit %} data-bulk="changements"{% endif %}>
     <thead><tr><th style="width:120px;">Réf.</th><th>Changement</th><th style="width:170px;">Type</th><th style="width:80px;">Risque</th><th style="width:100px;">Prévu</th><th style="width:140px;">Statut</th></tr></thead>
     <tbody>
     {% for c in changes %}
-      <tr class="row-link" onclick="window.location='{{ url_for('changes.detail', change_id=c.id) }}'"><td class="ref">{{ c.ref }}</td>
+      <tr data-id="{{ c.id }}" class="row-link" onclick="window.location='{{ url_for('changes.detail', change_id=c.id) }}'"><td class="ref">{{ c.ref }}</td>
         <td class="subj">{{ c.title }}{% if c.emergency %} <span class="appl appl--out">Urgent</span>{% endif %}<div class="muted" style="font-size:11px;">{{ c.requested_by.name if c.requested_by else '' }}{% if c.assets %} - {{ c.assets|map(attribute='ref')|join(', ') }}{% endif %}</div></td>
         <td class="muted">{{ c.kind.label }}</td>
         <td>{% if c.risk_level.value == 'ELEVE' %}<span class="appl appl--out">Élevé</span>{% else %}<span class="muted">{{ c.risk_level.label }}</span>{% endif %}</td>

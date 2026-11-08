@@ -33,7 +33,7 @@
 
 <div class="panel" style="margin-top:16px;">
   <div class="panel__body--flush"><div class="table-wrap">
-    <table class="grid">
+    <table class="grid"{% if current_user.can_edit %} data-bulk="risques"{% endif %}>
       <thead><tr>
         <th style="width:96px;">Réf.</th><th>Risque</th><th style="width:130px;">Traitement</th>
         <th style="width:80px;text-align:center;">Inhérent</th><th style="width:80px;text-align:center;">Résiduel</th>
@@ -41,7 +41,7 @@
       </tr></thead>
       <tbody>
         {% for r in risks %}
-        <tr class="row-link" onclick="window.location='{{ url_for('risks.detail', risk_id=r.id) }}'">
+        <tr data-id="{{ r.id }}" class="row-link" onclick="window.location='{{ url_for('risks.detail', risk_id=r.id) }}'">
           <td class="ref">{{ r.ref }}</td>
           <td class="subj">{{ r.title }}{% if r.reassess_at %} <span class="appl appl--out" title="{{ r.reassess_reason }}">À réévaluer</span>{% endif %}{% if r.is_opportunity %} <span class="tag-opp">Opportunité</span>{% endif %}{% if r.risk_domain %} <span class="tag-q">{{ r.domain_label }}</span>{% endif %}
             {% if r.controls %}<span class="muted" style="font-size:11px;"> - {{ r.controls|length }} mesure(s)</span>{% endif %}

@@ -15,11 +15,11 @@
 
 <div class="panel" style="margin-top:16px;">
   <div class="panel__body--flush"><div class="table-wrap">
-    <table class="grid">
+    <table class="grid"{% if current_user.can_edit %} data-bulk="preuves"{% endif %}>
       <thead><tr><th style="width:90px;">Réf.</th><th>Preuve</th><th style="width:100px;">Recueil</th><th>Mesures</th><th style="width:96px;"></th></tr></thead>
       <tbody>
         {% for e in evidences %}
-        <tr>
+        <tr data-id="{{ e.id }}">
           <td class="ref">{{ e.ref }}</td>
           <td class="subj">{{ e.title }}
             {% if e.location %}<a href="{{ e.location }}" target="_blank" class="muted" style="font-size:11px;"> </a>{% endif %}

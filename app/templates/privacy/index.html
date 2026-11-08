@@ -15,11 +15,11 @@
   {% if f_status or f_gap %}<a href="{{ url_for('privacy.index') }}" class="btn btn--ghost btn--sm">Réinitialiser</a>{% endif %}
 </form>
 <div class="panel" style="margin-top:16px;"><div class="panel__body--flush"><div class="table-wrap">
-  <table class="grid">
+  <table class="grid"{% if current_user.can_edit %} data-bulk="traitements"{% endif %}>
     <thead><tr><th style="width:80px;">Réf.</th><th>Traitement</th><th style="width:170px;">Base juridique</th><th style="width:150px;">Analyse d'impact</th><th style="width:260px;">Points à traiter</th></tr></thead>
     <tbody>
     {% for p in items %}
-      <tr class="row-link" onclick="window.location='{{ url_for('privacy.detail', pid=p.id) }}'" style="{{ 'opacity:.5' if p.status.value == 'ARRETE' }}">
+      <tr data-id="{{ p.id }}" class="row-link" onclick="window.location='{{ url_for('privacy.detail', pid=p.id) }}'" style="{{ 'opacity:.5' if p.status.value == 'ARRETE' }}">
         <td class="ref">{{ p.ref }}</td>
         <td class="subj">{{ p.name }}<div class="muted" style="font-size:11px;">{{ p.role.label }}{{ ' - ' + p.status.label if p.status.value != 'ACTIF' }}{{ ' - données sensibles' if p.sensitive_data }}{{ ' - transferts hors du pays' if p.transfers }}</div></td>
         <td class="muted">{{ p.legal_basis.label }}</td>

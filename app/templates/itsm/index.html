@@ -10,11 +10,11 @@
   <div class="kpi kpi--bientot"><div class="kpi__label">Problèmes ouverts</div><div class="kpi__value">{{ stats.problems }}</div></div>
 </div>
 <div class="panel"><div class="panel__body--flush"><div class="table-wrap">
-  <table class="grid">
+  <table class="grid"{% if current_user.can_edit %} data-bulk="services"{% endif %}>
     <thead><tr><th style="width:80px;">Réf.</th><th>Service</th><th style="width:150px;">Disponibilité</th><th style="width:150px;">Dernière mesure</th><th style="width:240px;">Points à traiter</th></tr></thead>
     <tbody>
     {% for s in services %}{% set m = s.last_measure %}
-      <tr class="row-link" onclick="window.location='{{ url_for('itsm.detail', sid=s.id) }}'" style="{{ 'opacity:.5' if s.status.value == 'RETIRE' }}">
+      <tr data-id="{{ s.id }}" class="row-link" onclick="window.location='{{ url_for('itsm.detail', sid=s.id) }}'" style="{{ 'opacity:.5' if s.status.value == 'RETIRE' }}">
         <td class="ref">{{ s.ref }}</td>
         <td class="subj">{{ s.name }}<div class="muted" style="font-size:11px;">{{ s.status.label }} - criticité {{ s.criticality }}/4{{ ' - ' + s.support_hours if s.support_hours }}</div></td>
         <td class="muted">{{ 'objectif ' ~ s.availability_target ~ ' %' if s.availability_target is not none else '-' }}</td>

@@ -57,7 +57,7 @@ communs (audits, revues, documents, objectifs, non-conformités) peuvent être
 rattachés à une ou plusieurs normes. Les écrans historiques restent limités à
 l'ISO 27001 (`Control.of()`).
 
-Normes disponibles (3.17) :
+Normes disponibles (3.18) :
 
 | Norme | Type | Module propre |
 |---|---|---|
@@ -377,6 +377,18 @@ ouvre directement sa fiche. La bibliothèque est aussi proposée depuis
 **Ajouter des scénarios** : il suffit de compléter un module du paquet. Toutes
 les références sont contrôlées par les tests contre les catalogues de
 l'application.
+
+### Listes et actions en masse (3.18)
+
+- **Sur 28 listes** : cases à cocher (Maj + clic pour une plage), export CSV de la
+  sélection, attribution d'un responsable (contributeurs et RSSI), changement de
+  statut (actifs, fournisseurs).
+- **Suppression en masse** (RSSI) : écran de confirmation, mot SUPPRIMER à saisir.
+  Bloqués : éléments encore utilisés, actifs suivis par un connecteur. Protégés sauf
+  décision explicite : enregistrements clos (ISO 7.5.3), risques acceptés, documents
+  approuvés. Copie de chaque fiche au journal d'activité (`app/services/bulk.py`).
+- **Partout** : tri par colonne, Ctrl + clic ou clic molette pour ouvrir une ligne
+  dans un nouvel onglet.
 
 ### Écrans denses (3.17)
 

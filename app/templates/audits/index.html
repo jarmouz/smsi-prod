@@ -9,11 +9,11 @@
   <div class="panel">
     <div class="panel__head"><h2>Audits</h2><span class="rail__badge">{{ audits|length }}</span></div>
     <div class="panel__body--flush"><div class="table-wrap">
-      <table class="grid">
+      <table class="grid"{% if current_user.can_edit %} data-bulk="audits"{% endif %}>
         <thead><tr><th style="width:110px;">Réf.</th><th>Objet</th><th style="width:90px;">Date</th><th style="width:80px;text-align:center;">Constats</th><th style="width:100px;">Statut</th></tr></thead>
         <tbody>
           {% for a in audits %}
-          <tr class="row-link" onclick="window.location='{{ url_for('audits.detail', audit_id=a.id) }}'">
+          <tr data-id="{{ a.id }}" class="row-link" onclick="window.location='{{ url_for('audits.detail', audit_id=a.id) }}'">
             <td class="ref">{{ a.ref }}</td>
             <td class="subj">{{ a.title }}{% if a.nc_count %}<span class="muted" style="font-size:11px;"> - {{ a.nc_count }} NC</span>{% endif %}</td>
             <td class="muted">{{ a.planned_date|d }}</td>

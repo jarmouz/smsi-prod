@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}Confirmer la suppression - {{ APP_NAME }}{% endblock %}
+{% block heading %}Supprimer des {{ spec.label }}{% endblock %}
+{% block topactions %}<a href="{{ back }}" class="btn btn--ghost btn--sm">Annuler</a>{% endblock %}
+{% macro lines(rows) %}<ul style="margin:0;padding-left:18px;font-size:13px;">{% for r in rows[:100] %}<li>{{ label_of(r[0]) }}{% if r[1] and r[1] is string %} <span class="muted">: {{ r[1] }}</span>{% endif %}{% set fx = r[-1] if r[-1] is not string else [] %}{% if fx %}<div class="muted" style="font-size:11.5px;">{{ fx|join(' · ') }}</div>{% endif %}</li>{% endfor %}{% if rows|length > 100 %}<li class="muted">et {{ rows|length - 100 }} autres</li>{% endif %}</ul>{% endmacro %}
+{% block content %}
+<div class="flash flash--warning" style="margin-bottom:14px;">Cette suppression est définitive. Une copie de chaque fiche est conservée au journal d'activité, mais elle ne se restaure pas automatiquement.</div>
+<div class="stack">
+  {% if deletable %}<div class="panel"><div class="panel__head"><h2>Seront supprimés</h2><span class="rail__badge">{{ deletable|length }}</span></div><div class="panel__body">{{ lines(deletable) }}</div></div>{% endif %}
+  {% if blocked %}<div class="panel"><div class="panel__head"><h2>Ne peuvent pas être supprimés</h2><span class="rail__badge">{{ blocked|length }}</span></div><div class="panel__body">{{ lines(blocked) }}</div></div>{% endif %}
+  <form method="post" action="{{ url_for('bulk.apply', kind=kind) }}" class="stack">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="next" value="{{ back }}">
+    {% for o, _ in deletable %}<input type="hidden" name="ids" value="{{ o.id }}">{% endfor %}
+    {% for o, _, _x in protected %}<input type="hidden" name="ids" value="{{ o.id }}">{% endfor %}
+    {% if protected %}<div class="panel"><div class="panel__head"><h2>Enregistrements à conserver</h2><span class="rail__badge">{{ protected|length }}</span></div><div class="panel__body">{{ lines(protected) }}
+      <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin-top:12px;"><input type="checkbox" name="include_protected" value="1" style="width:auto;"> Les supprimer aussi : je confirme que leur durée de conservation est dépassée</label></div></div>{% endif %}
+    {% if deletable or protected %}
+    <div class="panel"><div class="panel__body"><div class="field" style="margin:0 0 10px;"><label for="bulk-word">Saisissez {{ word }} pour confirmer</label><input id="bulk-word" type="text" name="confirm" required autocomplete="off" style="max-width:240px;"></div>
+      <button class="btn btn--danger" type="submit">Supprimer définitivement</button> <a href="{{ back }}" class="btn btn--ghost">Annuler</a></div></div>
+    {% else %}<p class="muted" style="margin:0;">Aucun élément de la sélection ne peut être supprimé.</p>{% endif %}
+  </form>
+</div>
+{% endblock %}

@@ -11,11 +11,11 @@
   <div class="kpi kpi--sla"><div class="kpi__label">Expirent sous 60 jours</div><div class="kpi__value">{{ stats.soon }}</div></div>
 </div>
 <div class="panel"><div class="panel__head"><h2>Compétences requises et couverture</h2></div><div class="panel__body--flush"><div class="table-wrap">
-  <table class="grid">
+  <table class="grid"{% if current_user.can_edit %} data-bulk="competences"{% endif %}>
     <thead><tr><th style="width:280px;">Compétence</th><th>Personnes concernées</th>{% if current_user.can_edit %}<th style="width:80px;"></th>{% endif %}</tr></thead>
     <tbody>
     {% for r in reqs %}
-      <tr><td class="subj">{{ r.title }}<div class="muted" style="font-size:11px;">{{ r.description or '' }}{{ ' - renouvellement : %d mois'|format(r.validity_months) if r.validity_months }}</div></td>
+      <tr data-id="{{ r.id }}"><td class="subj">{{ r.title }}<div class="muted" style="font-size:11px;">{{ r.description or '' }}{{ ' - renouvellement : %d mois'|format(r.validity_months) if r.validity_months }}</div></td>
         <td style="font-size:12px;">{% for u in r.users %}{% set rec = r.valid_record(u.id) %}
           <span style="display:inline-block;margin:2px 10px 2px 0;">{% if rec %}<span style="color:var(--sig-green);">✓</span> {{ u.name }}<span class="muted">{{ ' (jusqu\'au ' ~ (rec.expires_at|d) ~ ')' if rec.expires_at }}</span>
           {% else %}<span class="due-cell">✗ {{ u.name }}</span>{% if current_user.can_edit %} <a class="muted" href="{{ url_for('competences.create_record', user=u.id, exigence=r.id) }}">+ preuve</a>{% endif %}{% endif %}</span>
@@ -26,11 +26,11 @@
   </table>
 </div></div></div>
 <div class="panel" style="margin-top:16px;"><div class="panel__head"><h2>Preuves de compétence</h2><span class="rail__badge">{{ records|length }}</span></div><div class="panel__body--flush"><div class="table-wrap">
-  <table class="grid">
+  <table class="grid"{% if current_user.can_edit %} data-bulk="preuves-competence"{% endif %}>
     <thead><tr><th style="width:170px;">Personne</th><th>Preuve</th><th style="width:120px;">Type</th><th style="width:110px;">Obtenue</th><th style="width:130px;">Validité</th>{% if current_user.can_edit %}<th style="width:80px;"></th>{% endif %}</tr></thead>
     <tbody>
     {% for rec in records %}
-      <tr><td>{{ rec.user.name }}</td><td class="subj">{{ rec.title }}<div class="muted" style="font-size:11px;">{{ rec.provider or '' }}{{ ' - ' + rec.requirement.title if rec.requirement }}</div></td>
+      <tr data-id="{{ rec.id }}"><td>{{ rec.user.name }}</td><td class="subj">{{ rec.title }}<div class="muted" style="font-size:11px;">{{ rec.provider or '' }}{{ ' - ' + rec.requirement.title if rec.requirement }}</div></td>
         <td class="muted">{{ rec.ctype.label }}</td><td class="muted">{{ rec.obtained_at|d }}</td>
         <td>{% if rec.expired %}<span class="appl appl--out">Expirée {{ rec.expires_at|d }}</span>{% elif rec.expires_soon %}<span class="due-cell">{{ rec.expires_at|d }}</span>{% else %}<span class="muted">{{ rec.expires_at|d if rec.expires_at else 'Permanente' }}</span>{% endif %}</td>
         {% if current_user.can_edit %}<td><a class="btn btn--ghost btn--sm" href="{{ url_for('competences.edit_record', rec_id=rec.id) }}">Modifier</a></td>{% endif %}</tr>

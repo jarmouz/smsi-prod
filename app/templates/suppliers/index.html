@@ -16,11 +16,11 @@
   {% if f_crit or f_gap %}<a href="{{ url_for('suppliers.index') }}" class="btn btn--ghost btn--sm">Réinitialiser</a>{% endif %}
 </form>
 <div class="panel" style="margin-top:16px;"><div class="panel__body--flush"><div class="table-wrap">
-  <table class="grid">
+  <table class="grid"{% if current_user.can_edit %} data-bulk="fournisseurs"{% endif %}>
     <thead><tr><th style="width:90px;">Réf.</th><th>Fournisseur</th><th style="width:100px;">Criticité</th><th style="width:150px;">Accès aux données</th><th style="width:150px;">Évaluation</th><th style="width:230px;">Écarts</th></tr></thead>
     <tbody>
     {% for s in suppliers %}
-      <tr class="row-link" onclick="window.location='{{ url_for('suppliers.detail', sup_id=s.id) }}'" style="{{ 'opacity:.5' if s.status.value != 'ACTIF' }}">
+      <tr data-id="{{ s.id }}" class="row-link" onclick="window.location='{{ url_for('suppliers.detail', sup_id=s.id) }}'" style="{{ 'opacity:.5' if s.status.value != 'ACTIF' }}">
         <td class="ref">{{ s.ref }}</td>
         <td class="subj">{{ s.name }}<div class="muted" style="font-size:11px;">{{ s.category.label }}{{ ' - ' + s.status.label if s.status.value != 'ACTIF' }}</div></td>
         <td>{% if s.criticality.value == 'CRITIQUE' %}<span class="appl appl--out">Critique</span>{% else %}<span class="muted">{{ s.criticality.label }}</span>{% endif %}</td>

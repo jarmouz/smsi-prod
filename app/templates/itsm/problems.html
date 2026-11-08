@@ -5,11 +5,11 @@
 {% block content %}
 <form class="toolbar" method="get"><select name="ouverts" onchange="this.form.submit()"><option value="1" {{ 'selected' if f_open=='1' }}>Problèmes ouverts</option><option value="0" {{ 'selected' if f_open=='0' }}>Tous les problèmes</option></select></form>
 <div class="panel" style="margin-top:16px;"><div class="panel__body--flush"><div class="table-wrap">
-  <table class="grid">
+  <table class="grid"{% if current_user.can_edit %} data-bulk="problemes"{% endif %}>
     <thead><tr><th style="width:120px;">Réf.</th><th>Problème</th><th style="width:120px;">Priorité</th><th style="width:200px;">Statut</th><th style="width:100px;">Incidents</th></tr></thead>
     <tbody>
     {% for p in items %}
-      <tr {% if current_user.can_edit %}class="row-link" onclick="window.location='{{ url_for('itsm.problem_edit', pid=p.id) }}'"{% endif %}>
+      <tr data-id="{{ p.id }}" {% if current_user.can_edit %}class="row-link" onclick="window.location='{{ url_for('itsm.problem_edit', pid=p.id) }}'"{% endif %}>
         <td class="ref">{{ p.ref }}</td>
         <td class="subj">{{ p.title }}<div class="muted" style="font-size:11px;">{{ p.service.name if p.service else 'service non précisé' }} - ouvert le {{ p.opened_on|d }}{{ ' - contournement disponible' if p.workaround }}</div></td>
         <td>{% if p.priority.value in ('P1', 'P2') %}<span class="appl appl--out">{{ p.priority.label }}</span>{% else %}<span class="muted">{{ p.priority.label }}</span>{% endif %}</td>

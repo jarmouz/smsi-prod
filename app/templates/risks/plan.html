@@ -23,11 +23,11 @@
 </form>
 
 <div class="panel" style="margin-top:16px;"><div class="panel__body--flush"><div class="table-wrap">
-  <table class="grid">
+  <table class="grid"{% if current_user.can_edit %} data-bulk="actions-risque"{% endif %}>
     <thead><tr><th style="width:110px;">Risque</th><th>Action</th><th style="width:140px;">Responsable</th><th style="width:100px;">Échéance</th><th style="width:90px;">Avancement</th><th style="width:140px;">Statut</th></tr></thead>
     <tbody>
     {% for a in acts %}
-      <tr>
+      <tr data-id="{{ a.id }}">
         <td class="ref"><a href="{{ url_for('risks.detail', risk_id=a.risk_id) }}#plan">{{ a.risk.ref }}</a><div>{{ risk_chip(a.risk.display_level) }}</div></td>
         <td class="subj">{% if current_user.can_edit %}<a href="{{ url_for('risks.edit_action', action_id=a.id, next=here) }}">{{ a.title }}</a>{% else %}{{ a.title }}{% endif %}
           {% if a.control %}<span class="chip" style="font-size:11px;">{{ (a.control.framework.short_name ~ ' ') if a.control.framework.code != 'ISO27001' }}{{ a.control.annex_ref }}</span>{% endif %}

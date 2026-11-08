@@ -16,11 +16,11 @@
   {% if f_status or f_source %}<a href="{{ url_for('nonconformities.index') }}" class="btn btn--ghost btn--sm">Réinitialiser</a>{% endif %}
 </form>
 <div class="panel" style="margin-top:16px;"><div class="panel__body--flush"><div class="table-wrap">
-  <table class="grid">
+  <table class="grid"{% if current_user.can_edit %} data-bulk="non-conformites"{% endif %}>
     <thead><tr><th style="width:110px;">Réf.</th><th>Non-conformité</th><th style="width:170px;">Origine</th><th style="width:90px;">Gravité</th><th style="width:90px;">Actions</th><th style="width:150px;">Statut</th></tr></thead>
     <tbody>
     {% for n in ncs %}
-      <tr class="row-link" onclick="window.location='{{ url_for('nonconformities.detail', nc_id=n.id) }}'">
+      <tr data-id="{{ n.id }}" class="row-link" onclick="window.location='{{ url_for('nonconformities.detail', nc_id=n.id) }}'">
         <td class="ref">{{ n.ref }}</td>
         <td class="subj">{{ n.title }}{% if n.nc_kind %} <span class="tag-q">Produit / service</span>{% endif %}<div class="muted" style="font-size:11px;">{{ n.detected_at|d }}{{ ' - ' + n.owner.name if n.owner }}{% if n.control %} - {{ n.control.annex_ref }}{% elif n.clause %} - clause {{ n.clause }}{% endif %}</div></td>
         <td class="muted">{{ n.source.label }}</td>

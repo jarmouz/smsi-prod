@@ -15,12 +15,12 @@
   {% if f_risk or f_gap %}<a href="{{ url_for('aisystems.index') }}" class="btn btn--ghost btn--sm">Réinitialiser</a>{% endif %}
 </form>
 <div class="panel" style="margin-top:16px;"><div class="panel__body--flush"><div class="table-wrap">
-  <table class="grid">
+  <table class="grid"{% if current_user.can_edit %} data-bulk="systemes-ia"{% endif %}>
     <thead><tr><th style="width:80px;">Réf.</th><th>Système</th><th style="width:110px;">Risque</th><th style="width:170px;">Étude d'impact</th><th style="width:260px;">Points à traiter</th></tr></thead>
     <tbody>
     {% for s in items %}
       {% set la = s.last_assessment %}
-      <tr class="row-link" onclick="window.location='{{ url_for('aisystems.detail', sid=s.id) }}'" style="{{ 'opacity:.5' if s.lifecycle.value == 'RETIRE' }}">
+      <tr data-id="{{ s.id }}" class="row-link" onclick="window.location='{{ url_for('aisystems.detail', sid=s.id) }}'" style="{{ 'opacity:.5' if s.lifecycle.value == 'RETIRE' }}">
         <td class="ref">{{ s.ref }}</td>
         <td class="subj">{{ s.name }}<div class="muted" style="font-size:11px;">{{ s.ai_type.label }} - {{ s.role.label }} - {{ s.lifecycle.label }}{{ ' - ' + s.provider if s.provider }}</div></td>
         <td>{% if s.risk_level.value in ('ELEVE', 'INACCEPTABLE') %}<span class="appl appl--out">{{ s.risk_level.label }}</span>{% else %}<span class="muted">{{ s.risk_level.label }}</span>{% endif %}</td>

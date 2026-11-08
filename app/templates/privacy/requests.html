@@ -13,11 +13,11 @@
   <select name="ouvertes" onchange="this.form.submit()"><option value="1" {{ 'selected' if f_open=='1' }}>Demandes en cours</option><option value="0" {{ 'selected' if f_open=='0' }}>Toutes les demandes</option></select>
 </form>
 <div class="panel" style="margin-top:16px;"><div class="panel__body--flush"><div class="table-wrap">
-  <table class="grid">
+  <table class="grid"{% if current_user.can_edit %} data-bulk="demandes-personnes"{% endif %}>
     <thead><tr><th style="width:120px;">Réf.</th><th>Demande</th><th style="width:110px;">Reçue le</th><th style="width:110px;">Échéance</th><th style="width:170px;">Statut</th></tr></thead>
     <tbody>
     {% for r in items %}
-      <tr {% if current_user.can_edit %}class="row-link" onclick="window.location='{{ url_for('privacy.request_edit', rid=r.id) }}'"{% endif %}>
+      <tr data-id="{{ r.id }}" {% if current_user.can_edit %}class="row-link" onclick="window.location='{{ url_for('privacy.request_edit', rid=r.id) }}'"{% endif %}>
         <td class="ref">{{ r.ref }}</td>
         <td class="subj">{{ r.request_type.label }} - {{ r.requester }}<div class="muted" style="font-size:11px;">{{ r.processing.ref + ' ' + r.processing.name if r.processing else 'traitement non précisé' }}{{ ' - identité non vérifiée' if not r.identity_verified and not r.status.closed }}</div></td>
         <td class="muted">{{ r.received_on|d }}</td>

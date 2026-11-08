@@ -10,11 +10,11 @@
   <div class="kpi kpi--bientot"><div class="kpi__label">Mesures</div><div class="kpi__value">{{ stats.count }}</div></div>
 </div>
 <div class="panel"><div class="panel__body--flush"><div class="table-wrap">
-  <table class="grid">
+  <table class="grid"{% if current_user.can_edit %} data-bulk="satisfaction"{% endif %}>
     <thead><tr><th style="width:110px;">Réf.</th><th>Mesure</th><th style="width:110px;">Date</th><th style="width:120px;">Résultat</th><th style="width:110px;">Répondants</th></tr></thead>
     <tbody>
     {% for s in items %}
-      <tr {% if current_user.can_edit %}class="row-link" onclick="window.location='{{ url_for('quality.survey_edit', sid=s.id) }}'"{% endif %}>
+      <tr data-id="{{ s.id }}" {% if current_user.can_edit %}class="row-link" onclick="window.location='{{ url_for('quality.survey_edit', sid=s.id) }}'"{% endif %}>
         <td class="ref nowrap">{{ s.ref }}</td>
         <td class="subj">{{ s.title }}<div class="muted" style="font-size:11px;">{{ s.method.label }}{{ ' - ' + s.improvements|truncate(80) if s.improvements }}</div></td>
         <td class="muted">{{ s.conducted_on|d }}</td>

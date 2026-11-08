@@ -12,11 +12,11 @@
   <div class="kpi kpi--sla"><div class="kpi__label">RTO > DMIA</div><div class="kpi__value">{{ stats.incoherent }}</div><div class="kpi__sub">stratégie incohérente</div></div>
 </div>
 <div class="panel"><div class="panel__head"><h2>Analyse d'impact sur l'activité (BIA)</h2><span class="rail__badge">{{ processes|length }}</span></div><div class="panel__body--flush"><div class="table-wrap">
-  <table class="grid">
+  <table class="grid"{% if current_user.can_edit %} data-bulk="activites"{% endif %}>
     <thead><tr><th style="width:90px;">Réf.</th><th>Activité</th><th style="width:90px;">Criticité</th><th style="width:70px;" title="Durée maximale d'interruption admissible">DMIA</th><th style="width:60px;">RTO</th><th style="width:60px;">RPO</th><th style="width:170px;">Dernier test</th>{% if current_user.can_edit %}<th style="width:80px;"></th>{% endif %}</tr></thead>
     <tbody>
     {% for p in processes %}
-      <tr><td class="ref">{{ p.ref }}</td>
+      <tr data-id="{{ p.id }}"><td class="ref">{{ p.ref }}</td>
         <td class="subj">{{ p.name }}<div class="muted" style="font-size:11px;">{{ p.owner.name if p.owner else '' }}{% if p.assets %} - {{ p.assets|map(attribute='ref')|join(', ') }}{% endif %}{% if p.plan %} - plan : <a href="{{ url_for('documents.detail', doc_id=p.plan.id) }}">{{ p.plan.ref }}</a>{% endif %}</div></td>
         <td>{% if p.criticality >= 3 %}<span class="appl appl--out">{{ p.criticality_label }}</span>{% else %}<span class="muted">{{ p.criticality_label }}</span>{% endif %}</td>
         <td class="mono">{{ h(p.mtpd_hours) }}</td>
@@ -32,11 +32,11 @@
   </table>
 </div></div></div>
 <div class="panel" style="margin-top:16px;"><div class="panel__head"><h2>Exercices et tests</h2><span class="rail__badge">{{ tests|length }}</span></div><div class="panel__body--flush"><div class="table-wrap">
-  <table class="grid">
+  <table class="grid"{% if current_user.can_edit %} data-bulk="exercices"{% endif %}>
     <thead><tr><th style="width:110px;">Réf.</th><th>Exercice</th><th style="width:150px;">Type</th><th style="width:100px;">Date</th><th style="width:90px;">RTO atteint</th><th style="width:140px;">Résultat</th></tr></thead>
     <tbody>
     {% for t in tests %}
-      <tr class="row-link" onclick="window.location='{{ url_for('continuity.test_detail', test_id=t.id) }}'"><td class="ref">{{ t.ref }}</td>
+      <tr data-id="{{ t.id }}" class="row-link" onclick="window.location='{{ url_for('continuity.test_detail', test_id=t.id) }}'"><td class="ref">{{ t.ref }}</td>
         <td class="subj">{{ t.title }}<div class="muted" style="font-size:11px;">{{ t.processes|map(attribute='ref')|join(', ') }}</div></td>
         <td class="muted">{{ t.ttype.label }}</td><td class="muted">{{ t.test_date|d }}</td><td class="mono">{{ h(t.achieved_rto_hours) }}</td>
         <td>{% if t.result.value == 'REUSSI' %}<span class="appl appl--in">✓ Réussi</span>{% elif t.result.value == 'ECHEC' %}<span class="appl appl--out">✗ Échec</span>{% elif t.result.value == 'PARTIEL' %}<span class="appl" style="background:#FDF3E1;color:#7A5300;">! Partiel</span>{% else %}<span class="muted">Planifié</span>{% endif %}</td></tr>

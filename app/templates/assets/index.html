@@ -26,11 +26,11 @@
   {% if f_cat or f_cls or f_st or f_role or f_crit or f_cycle %}<a href="{{ url_for('assets.index') }}" class="btn btn--ghost btn--sm">Réinitialiser</a>{% endif %}
 </form>
 <div class="panel" style="margin-top:16px;"><div class="panel__body--flush"><div class="table-wrap">
-  <table class="grid">
+  <table class="grid"{% if current_user.can_edit %} data-bulk="actifs"{% endif %}>
     <thead><tr><th style="width:110px;">Réf.</th><th>Actif</th><th style="width:150px;">Catégorie</th><th style="width:150px;" title="Confidentialité, Intégrité, Disponibilité, Traçabilité (besoins effectifs)">C · I · D · T</th><th style="width:110px;">Classification</th><th style="width:130px;">Propriétaire</th><th style="width:110px;">Statut</th></tr></thead>
     <tbody>
       {% for a in assets %}{% set n = a.needs() %}
-      <tr>
+      <tr data-id="{{ a.id }}">
         <td class="ref">{{ a.ref }}</td>
         <td class="subj"><a href="{{ url_for('assets.detail', asset_id=a.id) }}">{{ a.name }}</a>
           {% if a.is_business %}<span class="tag-q">Valeur métier</span>{% endif %}

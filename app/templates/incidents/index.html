@@ -15,11 +15,11 @@
   {% if f_status or f_sev %}<a href="{{ url_for('incidents.index') }}" class="btn btn--ghost btn--sm">Réinitialiser</a>{% endif %}
 </form>
 <div class="panel" style="margin-top:16px;"><div class="panel__body--flush"><div class="table-wrap">
-  <table class="grid">
+  <table class="grid"{% if current_user.can_edit %} data-bulk="incidents"{% endif %}>
     <thead><tr><th style="width:120px;">Réf.</th><th>Incident</th><th style="width:100px;">Gravité</th><th style="width:100px;">Détecté</th><th style="width:110px;">Statut</th></tr></thead>
     <tbody>
       {% for i in incidents %}
-      <tr class="row-link" onclick="window.location='{{ url_for('incidents.detail', incident_id=i.id) }}'">
+      <tr data-id="{{ i.id }}" class="row-link" onclick="window.location='{{ url_for('incidents.detail', incident_id=i.id) }}'">
         <td class="ref">{{ i.ref }}</td>
         <td class="subj">{{ i.title }}<div class="muted" style="font-size:11px;">{{ i.category.label }}{% if i.assignee %} - {{ i.assignee.name }}{% endif %}</div></td>
         <td>{{ severity(i.severity) }}</td>

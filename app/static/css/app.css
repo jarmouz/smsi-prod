@@ -915,3 +915,16 @@ h2.section-title { margin: 0 0 10px; }
 .picker--wide .ctrl-picker { max-height: 170px; }
 .picker--wide .ctrl-picker .ref { flex: 0 0 104px; }
 @media (max-width: 760px) { .form-grid--3, .form-grid--score { grid-template-columns: 1fr; } }
+
+/* ------------------------------------------------------------ Listes et actions en masse (3.18) */
+th.is-sortable { cursor: pointer; user-select: none; }
+th.is-sortable:hover { text-decoration: underline; }
+th[aria-sort=ascending]::after { content: " ▲"; font-size: 9px; }
+th[aria-sort=descending]::after { content: " ▼"; font-size: 9px; }
+.bulk-col { width: 34px; text-align: center; padding-left: 10px !important; padding-right: 2px !important; cursor: default; }
+.bulk-col input { width: auto; margin: 0; }
+.bulk-bar { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 40; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; max-width: calc(100vw - 32px); background: var(--surface); border: 1px solid var(--line-strong); box-shadow: var(--shadow-md); padding: 10px 14px; font-size: 13px; }
+.bulk-bar[hidden] { display: none; }
+.bulk-bar select { width: auto; max-width: 220px; padding: 5px 8px; font-size: 12.5px; }
+.bulk-bar select[hidden] { display: none; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }

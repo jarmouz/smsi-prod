@@ -16,11 +16,11 @@
 
 <div class="panel" style="margin-top:16px;">
   <div class="panel__body--flush"><div class="table-wrap">
-    <table class="grid">
+    <table class="grid"{% if current_user.can_edit %} data-bulk="documents"{% endif %}>
       <thead><tr><th style="width:90px;">Réf.</th><th>Titre</th><th style="width:110px;">Type</th><th style="width:60px;">Version</th><th style="width:100px;">Statut</th><th style="width:110px;">Revue</th><th style="width:96px;"></th></tr></thead>
       <tbody>
         {% for d in docs %}
-        <tr>
+        <tr data-id="{{ d.id }}">
           <td class="ref">{{ d.ref }}</td>
           <td class="subj"><a href="{{ url_for('documents.detail', doc_id=d.id) }}">{{ d.title }}</a>{% if d.location %} <a href="{{ d.location }}" target="_blank" class="muted" style="font-size:11px;">lien</a>{% endif %}{% if att_counts.get(d.id) %} <span class="muted" style="font-size:11px;">- {{ att_counts[d.id] }} PJ</span>{% endif %}</td>
           <td class="muted">{{ d.doc_type.label }}</td>
