@@ -928,3 +928,19 @@ th[aria-sort=descending]::after { content: " ▼"; font-size: 9px; }
 .bulk-bar select { width: auto; max-width: 220px; padding: 5px 8px; font-size: 12.5px; }
 .bulk-bar select[hidden] { display: none; }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+/* ------------------------------------------------------------ Pagination des tableaux (3.19) */
+@media screen { tr.pg-off { display: none !important; } }
+.table-wrap { scroll-margin-top: 76px; }
+.bulk-bar__more[hidden] { display: none; }
+.pager { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; padding: 10px 14px; border-top: 1px solid var(--line); font-size: 12.5px; }
+.pager__info { color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.pager__pages { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; }
+.pager__btn { min-width: 30px; height: 30px; padding: 0 8px; background: transparent; border: 1px solid transparent; border-radius: 0; color: inherit; font: inherit; cursor: pointer; font-variant-numeric: tabular-nums; }
+.pager__btn:hover:not(:disabled) { border-color: var(--line); }
+.pager__btn.is-on { background: var(--teal-600); border-color: var(--teal-600); color: #fff; font-weight: 600; }
+.pager__btn:disabled { opacity: .35; cursor: not-allowed; }
+.pager__gap { padding: 0 4px; color: var(--text-dim); }
+.pager__size { display: inline-flex; align-items: center; gap: 8px; margin: 0; color: var(--text-dim); font-size: 12.5px; font-weight: 400; white-space: nowrap; }
+.pager__size select { width: auto; padding: 4px 8px; font-size: 12.5px; }
+@media print { .pager { display: none; } }

@@ -2,6 +2,7 @@ from datetime import datetime
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
 from flask_login import login_required
+from sqlalchemy.orm import selectinload
 
 from app.extensions import db
 from app.models import Asset, User, AssetCategory, Classification, AssetStatus
@@ -22,8 +23,8 @@ def index():
     f_role = request.args.get("role")
     f_crit = request.args.get("criticite", type=int)
     f_cycle = request.args.get("cycle")
-    allassets = Asset.query.all()
-    assets = inventory.filter_assets(request.args)
+    allassets = Asset.query.options(selectinload(Asset.supported)).all()    # sans une requête par ligne
+    assets = inventory.filter_assets(request.args, eager=True)
     live = [a for a in allassets if a.in_service]
     stats = {"total": len(allassets), "actifs": sum(a.status == AssetStatus.ACTIF for a in allassets),
              "metier": sum(a.is_business for a in live), "support": sum(not a.is_business for a in live),

@@ -53,7 +53,7 @@
 <div class="panel" style="margin-top:14px;">
   <div class="panel__head"><h2>{{ theme|grp }}</h2><span class="rail__badge">{{ controls|length }}</span></div>
   <div class="panel__body--flush"><div class="table-wrap">
-    <table class="grid">
+    <table class="grid" data-nopage>
       <thead><tr><th style="width:70px;">Réf.</th><th>Intitulé</th><th style="width:90px;">Applicab.</th><th style="width:130px;">Statut</th><th style="width:130px;">Responsable</th>{% if can_edit %}<th style="width:80px;"></th>{% endif %}</tr></thead>
       <tbody>
         {% for c in controls %}

@@ -57,7 +57,7 @@ communs (audits, revues, documents, objectifs, non-conformités) peuvent être
 rattachés à une ou plusieurs normes. Les écrans historiques restent limités à
 l'ISO 27001 (`Control.of()`).
 
-Normes disponibles (3.18) :
+Normes disponibles (3.19) :
 
 | Norme | Type | Module propre |
 |---|---|---|
@@ -377,6 +377,16 @@ ouvre directement sa fiche. La bibliothèque est aussi proposée depuis
 **Ajouter des scénarios** : il suffit de compléter un module du paquet. Toutes
 les références sont contrôlées par les tests contre les catalogues de
 l'application.
+
+### Pagination des tableaux (3.19)
+
+- Au-delà de 25 lignes : page par page, 25, 50, 100 lignes ou tout (choix mémorisé).
+- Le tri, l'export et la sélection portent sur toutes les pages ; l'impression sort
+  toutes les lignes. La case d'en-tête coche la page affichée, puis la barre d'actions
+  propose de sélectionner tout le tableau.
+- Retour depuis une fiche : même page et même tri. Pagination faite dans le navigateur
+  (`static/js/lists.js`) ; exclus avec `data-nopage` ou automatiquement : tableaux dans
+  un formulaire, lignes de regroupement, journal d'activité (paginé par le serveur).
 
 ### Listes et actions en masse (3.18)
 
