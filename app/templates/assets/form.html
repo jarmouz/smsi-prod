@@ -46,14 +46,14 @@
     </div></div>
 
     <div class="panel"><div class="panel__head"><h2>Cycle de vie</h2></div><div class="panel__body stack">
-      <div class="form-grid">
+      <div class="form-grid form-grid--single">
         <div class="field"><label>Mise en service / acquisition</label><input type="date" name="acquired_on" value="{{ a.acquired_on.isoformat() if a and a.acquired_on else '' }}"></div>
         <div class="field"><label>Fin de support / garantie</label><input type="date" name="end_of_support" value="{{ a.end_of_support.isoformat() if a and a.end_of_support else '' }}"><div class="hint">Alerte 180 jours avant (obsolescence, A.8.8).</div></div>
       </div>
       <div class="field"><label>Détenteur (matériel affecté)</label><select name="holder_id"><option value="">-</option>{% for u in users if u.is_active_flag or (a and a.holder_id == u.id) %}<option value="{{ u.id }}" {{ 'selected' if a and a.holder_id==u.id }}>{{ u.name }}{{ ' (compte désactivé)' if not u.is_active_flag }}</option>{% endfor %}</select>
         <div class="hint">À restituer si le compte est désactivé (départ, A.5.11).</div></div>
       <div class="section-title" style="margin-top:4px;">Élimination (actif retiré)</div>
-      <div class="form-grid">
+      <div class="form-grid form-grid--single">
         <div class="field"><label>Date</label><input type="date" name="disposed_on" value="{{ a.disposed_on.isoformat() if a and a.disposed_on else '' }}"></div>
         <div class="field"><label>Méthode</label><select name="disposal_method"><option value="">-</option>{% for k, l in DISPOSAL_METHODS.items() %}<option value="{{ k }}" {{ 'selected' if a and a.disposal_method == k }}>{{ l }}</option>{% endfor %}</select></div>
       </div>

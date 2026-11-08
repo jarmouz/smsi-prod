@@ -328,6 +328,8 @@ input:focus, select:focus, textarea:focus {
 }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 32px; }
 .form-grid > .field { margin-bottom: 22px; }
+.form-grid > * { min-width: 0; } /* un champ date ne doit pas élargir sa colonne */
+.form-grid--single { grid-template-columns: 1fr; } /* colonnes latérales étroites */
 .form-row { display: flex; gap: 20px; align-items: flex-end; }
 
 /* ------------------------------------------------------------ Toolbar / filters */
