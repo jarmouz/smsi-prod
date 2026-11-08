@@ -122,7 +122,7 @@
 {# Menu d'export des livrables (DdA, registre, plan de traitement) #}
 {%- macro export_menu(items, params={}) -%}
 <details style="display:inline-block;position:relative;"><summary class="btn btn--subtle btn--sm" style="list-style:none;">Exporter</summary>
-  <div style="position:absolute;right:0;z-index:20;background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow-lg);padding:8px;min-width:250px;">
+  <div class="export-pop" style="background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow-lg);padding:8px;min-width:250px;">
   {%- for kind, label in items %}
     <div style="font-size:11px;font-weight:700;color:var(--text-dim);padding:6px 6px 2px;">{{ label }}</div>
     <div style="display:flex;gap:6px;padding:0 6px 6px;">

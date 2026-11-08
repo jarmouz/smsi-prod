@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block title %}API et intégrations - {{ APP_NAME }}{% endblock %}
+{% block heading %}API et intégrations{% endblock %}
+{% set code_style = 'background:var(--surface-2,#F4F5F7);border:1px solid var(--line);border-radius:6px;padding:10px 12px;font-size:12px;overflow-x:auto;margin:0 0 12px;white-space:pre-wrap;word-break:break-all;' %}
+{% block content %}
+<p class="muted" style="font-size:12.5px;margin:0 0 14px;">Donnez à vos outils (Power BI, Excel, n8n, scripts) un accès en lecture à l'inventaire des actifs. Un jeton donne accès aux données de cette organisation uniquement, et chaque appel est inscrit au journal d'activité.</p>
+{% if new_token %}
+<div class="panel" style="margin-bottom:16px;border-color:var(--teal-500);">
+  <div class="panel__head"><h2>Jeton créé : copiez-le maintenant</h2></div>
+  <div class="panel__body">
+    <p style="margin:0 0 8px;font-size:13px;">Il ne sera plus jamais affiché. Conservez-le dans un coffre-fort de mots de passe.</p>
+    <pre id="new-token" class="mono" style="{{ code_style }}">{{ new_token }}</pre>
+  </div>
+</div>
+{% endif %}
+<div class="panel" style="margin-bottom:16px;">
+  <div class="panel__head"><h2>Nouveau jeton</h2></div>
+  <div class="panel__body">
+    <form method="post" action="{{ url_for('admin.api_token_create') }}" class="form-row" style="flex-wrap:wrap;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="field" style="flex:1;margin:0;"><label for="tok-name">Nom (outil ou usage)</label><input id="tok-name" type="text" name="name" required maxlength="120" placeholder="Power BI - tableau de bord du parc"></div>
+      <div class="field" style="margin:0;"><label for="tok-days">Validité</label><select id="tok-days" name="days">{% for d, l in durations.items() %}<option value="{{ d }}" {{ 'selected' if d == 90 }}>{{ l }}</option>{% endfor %}</select></div>
+      <button class="btn btn--primary" type="submit">Créer</button>
+    </form>
+  </div>
+</div>
+<div class="panel" style="margin-bottom:16px;">
+  <div class="panel__head"><h2>Jetons</h2><span class="rail__badge">{{ tokens|length }}</span></div>
+  <div class="panel__body--flush"><div class="table-wrap">
+    <table class="grid">
+      <thead><tr><th>Nom</th><th>Préfixe</th><th>Créé par</th><th>Expire le</th><th>Dernier appel</th><th>État</th><th></th></tr></thead>
+      <tbody>
+      {% for t in tokens %}
+        <tr>
+          <td class="subj">{{ t.name }}<div class="muted" style="font-size:11px;">{{ t.scopes }}</div></td>
+          <td class="mono">{{ t.token_prefix }}…</td>
+          <td class="muted">{{ t.created_by.name if t.created_by else '-' }}{% if t.created_by and not t.created_by.is_active_flag and t.state == 'actif' %}<div style="font-size:11px;color:var(--red-600);">compte désactivé : à révoquer ou renouveler</div>{% endif %}</td>
+          <td class="muted">{{ t.expires_at|dt }}</td>
+          <td class="muted">{% if t.last_used_at %}{{ t.last_used_at|dt }}<div style="font-size:11px;">{{ t.last_used_ip or '' }}</div>{% else %}Jamais{% endif %}</td>
+          <td>{% if t.state == 'actif' %}<span class="appl appl--in">Actif</span>{% elif t.state == 'expire' %}<span class="appl appl--out">Expiré</span>{% else %}<span class="appl appl--out">Révoqué</span>{% endif %}</td>
+          <td>{% if t.state == 'actif' %}<form method="post" action="{{ url_for('admin.api_token_revoke', token_id=t.id) }}" onsubmit="return confirm('Révoquer ce jeton ? Les outils qui l\'utilisent perdront leur accès.');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn--ghost btn--sm" type="submit">Révoquer</button></form>{% endif %}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="7"><div class="empty" style="padding:30px;"><h3>Aucun jeton</h3><p>Créez un jeton pour connecter un premier outil.</p></div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div></div>
+</div>
+<div class="panel">
+  <div class="panel__head"><h2>Utilisation</h2><a class="btn btn--ghost btn--sm" href="{{ url_for('api.openapi') }}" target="_blank" rel="noopener">Description OpenAPI</a></div>
+  <div class="panel__body">
+    <p style="font-size:13px;margin:0 0 8px;">Adresse de l'inventaire : <span class="mono">{{ base_url }}/api/v1/actifs</span>. Filtres : <span class="mono">role, categorie, classification, statut, criticite, cycle, reference, modifie_depuis</span>, et pagination avec <span class="mono">page</span> et <span class="mono">par_page</span> (500 au maximum). Limite : 120 appels par minute et par jeton.</p>
+    <div class="section-title">curl</div>
+    <pre class="mono" style="{{ code_style }}">curl -H "Authorization: Bearer VOTRE_JETON" "{{ base_url }}/api/v1/actifs?role=support&amp;cycle=fin_support"</pre>
+    <div class="section-title">PowerShell</div>
+    <pre class="mono" style="{{ code_style }}">Invoke-RestMethod -Uri "{{ base_url }}/api/v1/actifs?par_page=500" -Headers @{ Authorization = "Bearer VOTRE_JETON" }</pre>
+    <div class="section-title">Power BI ou Excel (Power Query)</div>
+    <pre class="mono" style="{{ code_style }}">let r = Json.Document(Web.Contents("{{ base_url }}/api/v1/actifs", [Headers=[Authorization="Bearer VOTRE_JETON"], Query=[par_page="500"]]))
+in Table.FromRecords(r[donnees])</pre>
+  </div>
+</div>
+{% endblock %}

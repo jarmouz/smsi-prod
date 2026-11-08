@@ -23,7 +23,7 @@ def enforce():
     if not current_user.is_authenticated or current_user.is_readonly:
         return None
     ep = request.endpoint or ""
-    if ep.startswith("account.") or ep in ("auth.logout", "static"):
+    if ep.startswith(("account.", "api.")) or ep in ("auth.logout", "static"):
         return None
     if current_user.must_change_password:
         flash("Veuillez définir votre propre mot de passe avant de continuer.", "warning")

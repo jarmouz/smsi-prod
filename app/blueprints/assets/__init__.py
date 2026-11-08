@@ -6,6 +6,7 @@ from flask_login import login_required
 from app.extensions import db
 from app.models import Asset, User, AssetCategory, Classification, AssetStatus
 from app.models.asset import NEED_LEVELS, NEED_KEYS, DISPOSAL_METHODS
+from app.services import inventory
 from app.services.access import editor_required
 from app.services.refs import next_ref
 
@@ -21,37 +22,34 @@ def index():
     f_role = request.args.get("role")
     f_crit = request.args.get("criticite", type=int)
     f_cycle = request.args.get("cycle")
-    q = Asset.query
-    if f_cat in [x.value for x in AssetCategory]:
-        q = q.filter(Asset.category == AssetCategory(f_cat))
-    if f_cls in [x.value for x in Classification]:
-        q = q.filter(Asset.classification == Classification(f_cls))
-    if f_st in [x.value for x in AssetStatus]:
-        q = q.filter(Asset.status == AssetStatus(f_st))
     allassets = Asset.query.all()
-    assets = q.order_by(Asset.ref).all()
-    if f_role == "metier":
-        assets = [a for a in assets if a.is_business]
-    elif f_role == "support":
-        assets = [a for a in assets if not a.is_business]
-    if f_crit:
-        assets = [a for a in assets if a.criticality == f_crit]
-    cycle = {"fin_support": lambda a: a.eos_state == "depassee", "fin_proche": lambda a: a.eos_state == "proche",
-             "a_restituer": lambda a: a.to_recover, "elimination": lambda a: a.disposal_missing,
-             "sans_dic": lambda a: a.is_business and a.in_service and a.criticality is None,
-             "sans_proprietaire": lambda a: a.in_service and not a.owner_id}
-    if f_cycle in cycle:
-        assets = [a for a in assets if cycle[f_cycle](a)]
+    assets = inventory.filter_assets(request.args)
     live = [a for a in allassets if a.in_service]
     stats = {"total": len(allassets), "actifs": sum(a.status == AssetStatus.ACTIF for a in allassets),
              "metier": sum(a.is_business for a in live), "support": sum(not a.is_business for a in live),
              "critiques": sum(a.criticality == 4 for a in live),
              "sensibles": sum(a.classification in (Classification.CONFIDENTIEL, Classification.SECRET) for a in live),
-             **{k: sum(1 for a in allassets if fn(a)) for k, fn in cycle.items()}}
+             **{k: sum(1 for a in allassets if fn(a)) for k, fn in inventory.CYCLE.items()}}
     return render_template("assets/index.html", assets=assets, stats=stats,
                            f_cat=f_cat, f_cls=f_cls, f_st=f_st, f_role=f_role, f_crit=f_crit, f_cycle=f_cycle,
                            AssetCategory=AssetCategory, Classification=Classification, AssetStatus=AssetStatus,
                            NEED_LEVELS=NEED_LEVELS)
+
+
+@bp.route("/export.<fmt>")
+@login_required
+def export(fmt):
+    """Inventaire aux filtres de l'écran : xlsx | csv | docx | pdf."""
+    from app.services import exports
+    if fmt == "csv":
+        return exports.assets_csv_response()
+    if fmt not in exports.MIMES:
+        abort(404)
+    try:
+        return exports.response("inventaire-actifs", fmt)
+    except RuntimeError as e:
+        flash(f"Export PDF indisponible ({e}). Utilisez l'export Word ou Excel.", "danger")
+        return redirect(url_for("assets.index", **request.args))
 
 
 @bp.route("/<int:asset_id>")

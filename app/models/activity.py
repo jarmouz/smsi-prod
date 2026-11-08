@@ -28,7 +28,7 @@ class ActivityLog(TenantMixin, db.Model):
         "create": "Création", "update": "Modification", "delete": "Suppression",
         "login": "Connexion", "login_failed": "Échec de connexion", "logout": "Déconnexion",
         "mfa": "Double authentification", "password": "Mot de passe", "export": "Export",
-        "workflow": "Circuit d'approbation", "accept": "Acceptation de risque", "admin": "Administration",
+        "workflow": "Circuit d'approbation", "accept": "Acceptation de risque", "admin": "Administration", "api": "Appel d'API",
     }
 
     @property

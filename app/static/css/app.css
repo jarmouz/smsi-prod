@@ -841,3 +841,7 @@ table.grid tbody tr.imp-row--error td { background: #fdf6f4; }
 /* ------------------------------------------------------------ Besoins DIC+T (3.13) */
 .need { display: inline-block; min-width: 18px; text-align: center; font-size: 11px; font-weight: 700; padding: 1px 4px; border-radius: 3px; color: #fff; }
 .need--1 { background: #2A7E4F; } .need--2 { background: #E8B04A; color: var(--ink-900); } .need--3 { background: #B4532C; } .need--4 { background: #C0392B; }
+
+/* ------------------------------------------------------------ Menus d'export (3.14) */
+.export-pop { position: absolute; right: 0; z-index: 20; }
+@media (max-width: 640px) { .export-pop { position: fixed; left: 16px; right: 16px; } }

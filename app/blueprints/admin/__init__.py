@@ -1,4 +1,6 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
+from datetime import datetime, timedelta
+
+from flask import Blueprint, make_response, render_template, request, redirect, url_for, flash, abort
 from flask_login import login_required, current_user
 
 from app.extensions import db
@@ -362,6 +364,51 @@ def journal_export():
 
 
 # --- Maintenance ---------------------------------------------------------
+def _api_page(new_token=None):
+    from app.models import ApiToken
+    from app.models.api_token import TOKEN_DURATIONS
+    tokens = ApiToken.query.order_by(ApiToken.created_at.desc(), ApiToken.id.desc()).all()
+    resp = make_response(render_template("admin/api.html", tokens=tokens, durations=TOKEN_DURATIONS, new_token=new_token,
+                                         base_url=request.url_root.rstrip("/")))
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
+
+
+@bp.route("/api")
+@rssi_required
+def api_page():
+    return _api_page()
+
+
+@bp.route("/api/jetons", methods=["POST"])
+@rssi_required
+def api_token_create():
+    from app.models import ApiToken
+    from app.models.api_token import TOKEN_DURATIONS, PREFIX, hash_token, new_token
+    name = (request.form.get("name") or "").strip()[:120]
+    days = request.form.get("days", type=int)
+    if not name or days not in TOKEN_DURATIONS:
+        flash("Indiquez un nom et une durée de validité.", "danger")
+        return redirect(url_for("admin.api_page"))
+    raw = new_token()
+    db.session.add(ApiToken(name=name, token_prefix=raw[:len(PREFIX) + 8], token_hash=hash_token(raw),
+                            created_by_id=current_user.id, expires_at=datetime.utcnow() + timedelta(days=days)))
+    db.session.commit()
+    return _api_page(new_token=raw)
+
+
+@bp.route("/api/jetons/<int:token_id>/revoquer", methods=["POST"])
+@rssi_required
+def api_token_revoke(token_id):
+    from app.models import ApiToken
+    t = db.session.get(ApiToken, token_id) or abort(404)
+    if not t.revoked_at:
+        t.revoked_at, t.revoked_by_id = datetime.utcnow(), current_user.id
+        db.session.commit()
+        flash(f"Jeton « {t.name} » révoqué.", "success")
+    return redirect(url_for("admin.api_page"))
+
+
 @bp.route("/maintenance")
 @rssi_required
 def maintenance():

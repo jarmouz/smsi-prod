@@ -1,14 +1,17 @@
 """Exports des livrables du système de management pour l'auditeur : Déclaration d'applicabilité,
 registre des risques, plan de traitement des risques (Excel, Word, PDF).
 Chaque export porte l'organisation, la date, l'auteur et un cadre d'approbation."""
+import csv
+import io
 import re
 from datetime import date, datetime
+from urllib.parse import quote
 
-from flask import Response
+from flask import Response, request
 from flask_login import current_user
 
 from app.models import Control, Risk
-from app.services import docgen, risk_criteria
+from app.services import docgen, importer, inventory, risk_criteria
 from app.services import onlyoffice as oo
 from app.services.audit_trail import log_event
 from app.services.tenancy import current_org
@@ -349,6 +352,66 @@ DOCS.update({
 })
 
 
+# --- Inventaire des actifs (3.14) : colonnes importables d'abord, pour pouvoir réimporter le fichier
+_ASSET_IMPORT_KEYS = ("ref", "name", "category", "description", "owner", "custodian", "classification", "confidentiality",
+                      "integrity", "availability", "traceability", "acquired_on", "end_of_support", "location", "status")
+_ASSET_INFO_HEADS = ["Rôle", "Besoins retenus", "Criticité", "Nom du propriétaire", "Détenteur", "Dépendances", "Alertes",
+                     "Éliminé le", "Méthode d'élimination", "Preuve d'élimination", "Modifié le"]
+
+
+def _asset_alerts(a):
+    return "; ".join(t for t, on in (("Fin de support dépassée", a.eos_state == "depassee"),
+                                     ("Fin de support proche", a.eos_state == "proche"),
+                                     ("À restituer", a.to_recover), ("Élimination à prouver", a.disposal_missing)) if on)
+
+
+def asset_rows():
+    """Lignes de l'inventaire aux filtres de la requête courante."""
+    from app.models.asset import NEED_LEVELS
+    labels = {f["key"]: f["label"] for f in importer.SPECS["actifs"]["fields"]}
+    rows = [[labels[k] for k in _ASSET_IMPORT_KEYS] + _ASSET_INFO_HEADS]
+    for a in inventory.filter_assets(request.args, eager=True):
+        deps = a.supports if a.is_business else a.supported
+        rows.append([a.ref, a.name, a.category.label, a.description or "", a.owner.email if a.owner else "", a.custodian or "",
+                     a.classification.label,
+                     *[NEED_LEVELS.get(getattr(a, f"need_{k}"), "") for k in "ciat"],
+                     _d(a.acquired_on), _d(a.end_of_support), a.location or "", a.status.label,
+                     "Valeur métier" if a.is_business else "Bien support", a.dict_label, a.criticality_label,
+                     a.owner.name if a.owner else "", a.holder.name if a.holder else "", "; ".join(x.ref for x in deps),
+                     _asset_alerts(a), _d(a.disposed_on), a.disposal_label, a.disposal_proof or "", _d(a.updated_at)])
+    return rows
+
+
+def _asset_meta():
+    title = "Inventaire des actifs"
+    return (f"{title} (filtré)" if inventory.has_filters(request.args) else title), "ISO/IEC 27001 A.5.9"
+
+
+DOCS["inventaire-actifs"] = {
+    "title": "Inventaire des actifs", "meta": _asset_meta, "clause": "ISO/IEC 27001 A.5.9", "approver": "RSSI", "criteria": False,
+    "rows": asset_rows, "widths": None,
+    "pdf_keep": ((0, 1, 15, 16, 17, 6, 18, 14, 12, 21), [1300, 3200, 1200, 1500, 900, 1200, 1700, 900, 1100, 1570]),
+}
+
+
+def _csv_safe(v):
+    """Une cellule commençant par =, +, -, @ serait exécutée comme formule à l'ouverture dans un tableur."""
+    s = str(v)
+    return "'" + s if s[:1] in ("=", "+", "-", "@", "\t", "\r") else s
+
+
+def assets_csv_response():
+    """CSV séparé par des points-virgules, avec BOM : s'ouvre directement dans Excel en français."""
+    buf = io.StringIO()
+    csv.writer(buf, delimiter=";").writerows([_csv_safe(c) for c in row] for row in asset_rows())
+    org = current_org()
+    title = _asset_meta()[0]
+    name = f"{title} - {org.slug if org else ''} - {datetime.utcnow():%Y-%m-%d}.csv"
+    log_event("export", f"Export {title} (CSV)")
+    return Response(("\ufeff" + buf.getvalue()).encode("utf-8"), mimetype="text/csv; charset=utf-8",
+                    headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(name)}"})
+
+
 def _sections(spec, for_pdf):
     """Liste (titre, lignes, largeurs) ; les registres P1 n'ont qu'une section."""
     if "sections" in spec:
@@ -402,7 +465,7 @@ def build(kind, fmt):
 
 def response(kind, fmt):
     data, name = build(kind, fmt)
-    log_event("export", f"Export {_dda_meta()[0] if kind == 'dda' else DOCS[kind]['title']} ({fmt.upper()})")
-    from urllib.parse import quote
+    spec = DOCS[kind]
+    log_event("export", f"Export {spec['meta']()[0] if 'meta' in spec else spec['title']} ({fmt.upper()})")
     return Response(data, mimetype=MIMES[fmt],
                     headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(name)}"})

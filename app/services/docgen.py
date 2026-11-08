@@ -110,6 +110,9 @@ def xlsx(sheets):
         ws = wb.create_sheet(name[:31])
         for row in rows:
             ws.append(list(row))
+            for cell in ws[ws.max_row]:     # une donnée commençant par « = » reste du texte, jamais une formule
+                if cell.data_type == "f":
+                    cell.data_type = "s"
         for cell in ws[1]:
             cell.font = Font(bold=True, color="FFFFFF")
             cell.fill = PatternFill("solid", fgColor=_BLUE)

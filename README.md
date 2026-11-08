@@ -57,7 +57,7 @@ communs (audits, revues, documents, objectifs, non-conformités) peuvent être
 rattachés à une ou plusieurs normes. Les écrans historiques restent limités à
 l'ISO 27001 (`Control.of()`).
 
-Normes disponibles (3.13) :
+Normes disponibles (3.14) :
 
 | Norme | Type | Module propre |
 |---|---|---|
@@ -377,6 +377,22 @@ ouvre directement sa fiche. La bibliothèque est aussi proposée depuis
 **Ajouter des scénarios** : il suffit de compléter un module du paquet. Toutes
 les références sont contrôlées par les tests contre les catalogues de
 l'application.
+
+### Export de l'inventaire et API (3.14)
+
+- **Export** depuis l'inventaire, aux filtres de l'écran : Excel, CSV (`;`, UTF-8
+  avec BOM), Word, et PDF si OnlyOffice est configuré. Les 15 premières colonnes
+  reprennent le modèle d'import : un fichier exporté se réimporte sans changement.
+  Les formules présentes dans les données sont neutralisées.
+- **API REST en lecture seule** : `GET /api/v1/actifs` (filtres de l'inventaire,
+  `reference`, `modifie_depuis`, pagination) et `GET /api/v1/actifs/<id>`, décrites
+  dans `/api/v1/openapi.json`. Seul l'en-tête `Authorization: Bearer <jeton>` donne
+  accès, un cookie de session ne suffit pas.
+- **Jetons** (Administration > API et intégrations, RSSI) : par organisation, durée
+  de 30 jours à 1 an, révocables. Seule l'empreinte SHA-256 est stockée (`api_tokens`).
+- **Maîtrise** : 120 appels par minute et par jeton (429 et `Retry-After`), chaque
+  appel authentifié inscrit au journal (action `api`), `Cache-Control: no-store`.
+- Filtres communs à l'écran, aux exports et à l'API : `app/services/inventory.py`.
 
 ### Actifs : valeurs métier, besoins DIC+T, cycle de vie (3.13)
 
