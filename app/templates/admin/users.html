@@ -7,7 +7,7 @@
     <div class="panel__head"><h2>Comptes</h2><span class="rail__badge">{{ people|length }}</span></div>
     <div class="panel__body--flush"><div class="table-wrap">
       <table class="grid">
-        <thead><tr><th>Nom</th><th>Rôle</th><th style="width:70px;">2FA</th><th style="width:80px;">État</th><th style="width:200px;"></th></tr></thead>
+        <thead><tr><th>Nom</th><th>Rôle</th><th style="width:70px;">2FA</th><th style="width:80px;">État</th><th style="width:290px;">Actions</th></tr></thead>
         <tbody>
           {% for u in people %}
           <tr>
@@ -15,7 +15,7 @@
             <td class="muted">{{ u.role_label }}{{ ' (lecture seule)' if u.is_readonly }}{% if u.must_change_password %}<div style="font-size:10.5px;">mot de passe à changer</div>{% endif %}</td>
             <td>{% if u.mfa_enabled %}<span class="appl appl--in">Oui</span>{% else %}<span class="muted">Non</span>{% endif %}</td>
             <td>{% if u.is_active_flag %}<span class="appl appl--in">Actif</span>{% else %}<span class="appl appl--out">Inactif</span>{% endif %}</td>
-            <td>
+            <td><div class="row-actions">
               <details style="display:inline;"><summary class="btn btn--ghost btn--sm" style="list-style:none;">Modifier</summary>
                 <form method="post" action="{{ url_for('admin.update_user', user_id=u.id) }}" class="stack" style="position:absolute;z-index:5;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;box-shadow:var(--shadow-lg);width:260px;margin-top:6px;">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -27,9 +27,10 @@
                 </form>
               </details>
               <form method="post" action="{{ url_for('admin.reset_access', user_id=u.id) }}" style="display:inline;" onsubmit="return confirm('Générer un mot de passe temporaire et supprimer la double authentification de {{ u.name }} ?');">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn--ghost btn--sm" type="submit" title="Mot de passe temporaire et double authentification à reconfigurer">Réinitialiser l'accès</button></form>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn--ghost btn--sm" type="submit" title="Mot de passe temporaire et double authentification à reconfigurer">Réinitialiser</button></form>
               <form method="post" action="{{ url_for('admin.toggle_user', user_id=u.id) }}" style="display:inline;">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn--ghost btn--sm" type="submit">{{ 'Désactiver' if u.is_active_flag else 'Activer' }}</button></form>
+            </div>
             </td>
           </tr>
           {% endfor %}

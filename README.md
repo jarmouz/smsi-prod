@@ -57,7 +57,7 @@ communs (audits, revues, documents, objectifs, non-conformités) peuvent être
 rattachés à une ou plusieurs normes. Les écrans historiques restent limités à
 l'ISO 27001 (`Control.of()`).
 
-Normes disponibles (3.15) :
+Normes disponibles (3.16) :
 
 | Norme | Type | Module propre |
 |---|---|---|
@@ -377,6 +377,18 @@ ouvre directement sa fiche. La bibliothèque est aussi proposée depuis
 **Ajouter des scénarios** : il suffit de compléter un module du paquet. Toutes
 les références sont contrôlées par les tests contre les catalogues de
 l'application.
+
+### Ergonomie (3.16)
+
+- **Référentiels** : cartes compactes, activation en un clic sur un seul écran.
+- **Densité** : champs et lignes de tableau resserrés, dates et nombres à largeur
+  utile, filtres sur une ligne.
+- **Navigation** : recherche de page dans le menu (Ctrl K).
+- **Formulaires** : bouton d'enregistrement toujours visible sur les formulaires
+  longs, alerte avant de quitter avec des modifications non enregistrées, envoi
+  protégé contre le double clic.
+- **Accessibilité** : libellés des filtres pour les lecteurs d'écran, contrastes
+  corrigés. **Téléphone** : plus de débordement horizontal.
 
 ### Connecteurs d'inventaire (3.15)
 

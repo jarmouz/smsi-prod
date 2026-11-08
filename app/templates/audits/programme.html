@@ -10,7 +10,7 @@
 {% if conflicts %}<div class="flash flash--warning" style="margin-bottom:12px;">Indépendance à vérifier : {{ conflicts|length }} case(s) où l'auditeur est responsable de mesures du thème audité (9.2.2 : les auditeurs ne doivent pas auditer leur propre travail).</div>{% endif %}
 <div class="panel"><div class="panel__body--flush"><div class="table-wrap">
   <table class="grid">
-    <thead><tr><th style="width:240px;">Domaine</th>{% for y in years %}<th style="text-align:center;{{ 'background:var(--teal-050);' if y in window }}">{{ y }}</th>{% endfor %}</tr></thead>
+    <thead><tr><th style="width:240px;">Domaine</th>{% for y in years %}<th style="text-align:center;{{ 'background:var(--teal-050);color:var(--teal-700);' if y in window }}">{{ y }}</th>{% endfor %}</tr></thead>
     <tbody>
     {% for code, label in domains %}
       <tr>

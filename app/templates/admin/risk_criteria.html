@@ -66,7 +66,7 @@
         <div class="panel__body">
           <table style="border-collapse:collapse;font-size:11px;margin:auto;">
             {% for l in range(nl, 0, -1) %}<tr><td class="muted" style="padding:2px 6px;">V{{ l }}</td>
-              {% for i in range(1, ni + 1) %}{% set sc = l * i %}<td style="width:38px;height:28px;text-align:center;color:#fff;background:{{ score_color(risk_level(sc)) }};{{ 'outline:2px solid #111;outline-offset:-2px;' if sc <= crit.acceptance }}">{{ sc }}</td>{% endfor %}</tr>{% endfor %}
+              {% for i in range(1, ni + 1) %}{% set sc = l * i %}{% set bg = score_color(risk_level(sc)) %}<td style="width:38px;height:28px;text-align:center;color:{{ '#1F2937' if bg|upper == '#E8B04A' else '#fff' }};background:{{ bg }};{{ 'outline:2px solid #111;outline-offset:-2px;' if sc <= crit.acceptance }}">{{ sc }}</td>{% endfor %}</tr>{% endfor %}
             <tr><td></td>{% for i in range(1, ni + 1) %}<td class="muted" style="text-align:center;">I{{ i }}</td>{% endfor %}</tr>
           </table>
           <p class="muted" style="font-size:11px;text-align:center;margin:8px 0 0;">Cases encadrées : acceptables selon le seuil d'acceptation.</p>

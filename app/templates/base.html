@@ -99,6 +99,8 @@
       </div>
       {% endif %}
     </div>
+    <div class="rail__search"><input type="search" id="rail-q" placeholder="Rechercher une page (Ctrl K)" aria-label="Rechercher une page" autocomplete="off"></div>
+    <div class="rail__results" id="rail-results" hidden></div>
     <nav class="rail__nav" id="rail-nav" aria-label="Navigation principale">
       {{ nav_link('dashboard.home', 'grid', 'Tableau de bord') }}
       {{ nav_group('pilotage', 'Pilotage', [
@@ -252,6 +254,73 @@
   var rail = document.getElementById('rail');
   nav.addEventListener('click', function (e) { if (e.target.closest('a')) rail.classList.remove('open'); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') rail.classList.remove('open'); });
+})();
+</script>
+<script>
+(function () {
+  // Recherche dans le menu : Ctrl K, Entrée pour ouvrir, Échap pour effacer
+  var q = document.getElementById('rail-q'), res = document.getElementById('rail-results'), nav = document.getElementById('rail-nav');
+  if (q && nav) {
+    var fold = function (s) { return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); };
+    var links = Array.prototype.slice.call(nav.querySelectorAll('a.rail__link'));
+    var render = function () {
+      var v = fold(q.value.trim());
+      res.innerHTML = '';
+      res.hidden = !v; nav.hidden = !!v;
+      if (!v) return;
+      var hits = links.filter(function (a) { return fold(a.textContent).indexOf(v) !== -1; });
+      hits.forEach(function (a) { res.appendChild(a.cloneNode(true)); });
+      if (!hits.length) { var e = document.createElement('div'); e.className = 'empty-hit'; e.textContent = 'Aucune page trouvée'; res.appendChild(e); }
+    };
+    q.addEventListener('input', render);
+    q.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { var a = res.querySelector('a'); if (a) window.location = a.href; }
+      if (e.key === 'Escape') { q.value = ''; render(); q.blur(); e.stopPropagation(); }
+    });
+    document.addEventListener('keydown', function (e) {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        var rail = document.getElementById('rail'); if (rail) rail.classList.add('open');
+        q.focus(); q.select();
+      }
+    });
+  }
+  var content = document.querySelector('.content');
+  if (!content) return;
+  var visible = function (e) { return e.getClientRects().length > 0; };
+  // Accessibilité : un nom pour chaque champ de filtre sans libellé
+  content.querySelectorAll('select, input:not([type=hidden]), textarea').forEach(function (el) {
+    if (el.getAttribute('aria-label') || (el.labels && el.labels.length)) return;
+    var name = el.title || el.placeholder || (el.tagName === 'SELECT' && el.options.length ? el.options[0].textContent.trim() : '');
+    if (name) el.setAttribute('aria-label', name);
+  });
+  // Formulaires longs : le bouton d'enregistrement reste visible
+  content.querySelectorAll('form[method=post], form[method=POST]').forEach(function (f) {
+    if (!visible(f) || f.getBoundingClientRect().height < window.innerHeight * 0.85) return;
+    var subs = Array.prototype.filter.call(f.querySelectorAll('button:not([type=button])'), visible);
+    if (subs.length < 1 || subs.length > 3) return;
+    var el = subs[subs.length - 1];
+    while (el.parentElement !== f && el.parentElement.getBoundingClientRect().height < el.getBoundingClientRect().height + 40) el = el.parentElement;
+    el.classList.add('sticky-submit');
+  });
+  // Modifications non enregistrées : prévenir avant de quitter la page
+  var dirty = false;
+  content.querySelectorAll('form[method=post], form[method=POST]').forEach(function (f) {
+    var n = Array.prototype.filter.call(f.querySelectorAll('input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=file]), textarea, select'), visible).length;
+    if (n < 3) return;
+    f.addEventListener('input', function () { dirty = true; });
+    f.addEventListener('change', function () { dirty = true; });
+  });
+  window.addEventListener('beforeunload', function (e) { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+  // À l'envoi : plus d'alerte, et pas de double envoi
+  document.addEventListener('submit', function (e) {
+    if (e.defaultPrevented) return;
+    dirty = false;
+    var b = e.submitter;
+    if (!b || !/post/i.test(e.target.method)) return;
+    setTimeout(function () { b.disabled = true; b.classList.add('is-busy'); }, 0);
+    setTimeout(function () { b.disabled = false; b.classList.remove('is-busy'); }, 6000);
+  });
 })();
 </script>
 </body>

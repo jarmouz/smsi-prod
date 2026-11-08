@@ -1,37 +1,49 @@
 {% extends 'base.html' %}
 {% block title %}Référentiels - {{ APP_NAME }}{% endblock %}
 {% block heading %}Référentiels{% endblock %}
+{% macro counts(r) -%}
+{% if r.fw.kind == 'controls' %}{{ r.n_controls }} mesures{% if r.n_clauses %} + {{ r.n_clauses }} exigences{% endif %}{% else %}{{ r.n_clauses or r.n_controls }} exigences{% endif %}
+{%- endmacro %}
 {% block content %}
-<p class="muted" style="font-size:12.5px;margin:0 0 14px;max-width:860px;">Normes de systèmes de management pilotées par l'organisation. Activer une norme ajoute son catalogue (mesures ou exigences) ; la désactiver masque ses écrans sans rien supprimer. Les éléments communs (audits, revues de direction, documents, objectifs, non-conformités) peuvent être rattachés à une ou plusieurs normes dès que plusieurs sont actives.</p>
-{% for r in rows %}
-<div class="panel" style="margin-bottom:16px;">
-  <div class="panel__head"><h2>{{ r.fw.name }}</h2><span class="muted" style="font-size:12px;margin-left:8px;">{{ r.fw.domain }} - {% if r.fw.kind == 'controls' %}{{ r.n_controls }} mesures{% if r.n_clauses %} + {{ r.n_clauses }} exigences (chapitres 4 à 10){% endif %}{% else %}{{ r.n_items }} exigences (chapitres 4 à 10){% endif %}</span><div class="spacer"></div>
-    {% if r.on %}<span class="appl appl--in">Active</span>{% else %}<span class="appl appl--out">Inactive</span>{% endif %}</div>
-  <div class="panel__body">
-    {% if r.on %}
-    <form method="post" class="stack" style="gap:12px;">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="code" value="{{ r.fw.code }}"><input type="hidden" name="action" value="save">
-      <div class="field" style="margin:0;"><label>Périmètre propre à cette norme</label><textarea name="scope" rows="2" placeholder="Laisser vide si le périmètre est celui du système de management (Contexte)">{{ r.of.scope or '' }}</textarea></div>
-      <div class="form-grid">
+{% set active = rows|selectattr('on')|list %}{% set available = rows|rejectattr('on')|list %}
+<p class="muted" style="font-size:12.5px;margin:0 0 16px;max-width:860px;">Activer une norme ajoute son catalogue et ses écrans. La désactiver les masque, sans rien supprimer.</p>
+<h2 class="section-title">Normes actives ({{ active|length }})</h2>
+<div class="fw-grid">
+  {% for r in active %}
+  <div class="fw-card fw-card--on">
+    <div class="fw-card__top"><b>{{ r.fw.name }}</b><span class="appl appl--in">Active</span></div>
+    <div class="fw-card__sub">{{ r.fw.domain }}<br>{{ counts(r) }}</div>
+    <div class="fw-card__meta">{% if r.of.certified_on %}Certifiée le {{ r.of.certified_on|d }}{% elif r.of.target_date %}Certification visée le {{ r.of.target_date|d }}{% else %}Pas d'échéance de certification{% endif %}{% if r.of.certifier %}<br>{{ r.of.certifier }}{% endif %}</div>
+    <details class="fw-card__more">
+      <summary class="btn btn--subtle btn--sm">Périmètre et certification</summary>
+      <form method="post" class="stack" style="gap:10px;margin-top:10px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="code" value="{{ r.fw.code }}"><input type="hidden" name="action" value="save">
+        <div class="field" style="margin:0;"><label>Périmètre propre à cette norme</label><textarea name="scope" rows="2" placeholder="Vide : celui du système de management">{{ r.of.scope or '' }}</textarea></div>
         <div class="field" style="margin:0;"><label>Certification visée le</label><input type="date" name="target_date" value="{{ r.of.target_date.isoformat() if r.of.target_date }}"></div>
-        <div class="field" style="margin:0;"><label>Organisme de certification</label><input type="text" name="certifier" maxlength="200" value="{{ r.of.certifier or '' }}"></div>
         <div class="field" style="margin:0;"><label>Certifiée le</label><input type="date" name="certified_on" value="{{ r.of.certified_on.isoformat() if r.of.certified_on }}"></div>
-      </div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;">
-        <button class="btn btn--primary btn--sm" type="submit">Enregistrer</button>
-        {% if r.core %}<span class="muted" style="font-size:12px;align-self:center;">Norme socle de l'application : toujours active.</span>{% endif %}
-      </div>
-    </form>
-    {% if not r.core %}
-    <form method="post" style="margin-top:10px;" onsubmit="return confirm('Désactiver {{ r.fw.name }} ? Ses données sont conservées.');">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="code" value="{{ r.fw.code }}"><input type="hidden" name="action" value="disable">
-      <button class="btn btn--ghost btn--sm">Désactiver</button></form>
-    {% endif %}
+        <div class="field" style="margin:0;"><label>Organisme de certification</label><input type="text" name="certifier" maxlength="200" value="{{ r.of.certifier or '' }}"></div>
+        <div><button class="btn btn--primary btn--sm" type="submit">Enregistrer</button></div>
+      </form>
+    </details>
+    {% if r.core %}<div class="fw-card__note">Norme socle : toujours active.</div>
     {% else %}
-    <form method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="code" value="{{ r.fw.code }}"><input type="hidden" name="action" value="enable">
-      <button class="btn btn--primary btn--sm">Activer {{ r.fw.short_name }}</button></form>
+    <form method="post" onsubmit="return confirm('Désactiver {{ r.fw.name }} ? Ses données sont conservées.');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="code" value="{{ r.fw.code }}"><input type="hidden" name="action" value="disable">
+      <button class="btn btn--subtle btn--sm" type="submit">Désactiver</button></form>
     {% endif %}
   </div>
+  {% endfor %}
 </div>
-{% endfor %}
+{% if available %}
+<h2 class="section-title" style="margin-top:24px;">Normes disponibles ({{ available|length }})</h2>
+<div class="fw-grid">
+  {% for r in available %}
+  <form method="post" class="fw-card">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="code" value="{{ r.fw.code }}"><input type="hidden" name="action" value="enable">
+    <div class="fw-card__top"><b>{{ r.fw.name }}</b><button class="btn btn--primary btn--sm" type="submit" aria-label="Activer {{ r.fw.name }}">Activer</button></div>
+    <div class="fw-card__sub">{{ r.fw.domain }}<br>{{ counts(r) }}</div>
+  </form>
+  {% endfor %}
+</div>
+{% endif %}
 {% endblock %}
