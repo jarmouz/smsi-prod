@@ -378,6 +378,16 @@ ouvre directement sa fiche. La bibliothèque est aussi proposée depuis
 les références sont contrôlées par les tests contre les catalogues de
 l'application.
 
+### Liens courts dans leur cadre (3.20.2)
+
+- Toute URL, quelle que soit sa longueur, se coupe si elle dépasse son cadre ; dans
+  les fiches, c'est le cas de toute valeur (adresse e-mail, chemin).
+- Une adresse e-mail se coupe aussi dans les cartes ; dans un tableau, elle garde
+  ses mots entiers pour ne pas élargir la colonne.
+- Petits écrans : le formulaire d'ajout de pièce jointe et les lignes « Risques liés »
+  passent à la ligne au lieu de sortir de l'écran ; sous 360 px, dans les fiches, le
+  libellé se place au-dessus de sa valeur.
+
 ### Liens et textes longs dans leur cadre (3.20.1)
 
 - Une URL, un chemin ou toute chaîne de plus de 32 caractères sans espace se coupe

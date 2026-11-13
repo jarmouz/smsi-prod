@@ -57,10 +57,10 @@
     </tbody></table></div>
     {% else %}<div class="empty" style="padding:20px;"><p>Aucune pièce jointe.</p></div>{% endif %}
     {% if can_edit %}
-    <form method="post" action="{{ url_for('attachments.upload', entity_type=entity_type, entity_id=entity_id) }}" enctype="multipart/form-data" style="display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--line);">
+    <form method="post" action="{{ url_for('attachments.upload', entity_type=entity_type, entity_id=entity_id) }}" enctype="multipart/form-data" style="display:flex;flex-wrap:wrap;gap:8px;padding:12px 16px;border-top:1px solid var(--line);">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       {% if extra %}<input type="hidden" name="audit_id" value="{{ extra }}">{% endif %}
-      <input type="file" name="file" required style="flex:1;font-size:12.5px;">
+      <input type="file" name="file" required style="flex:1 1 180px;min-width:0;font-size:12.5px;">
       <button class="btn btn--subtle btn--sm" type="submit">Téléverser</button>
     </form>
     {% endif %}

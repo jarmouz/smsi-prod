@@ -6,9 +6,9 @@
   <div class="panel__head"><h2>Risques liés</h2><span class="rail__badge">{{ _rows|length }}</span></div>
   <div class="panel__body">
     {% for link, r in _rows %}
-    <div style="display:flex;align-items:center;gap:8px;padding:3px 0;font-size:12.5px;">
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;padding:3px 0;font-size:12.5px;">
       <a href="{{ url_for('risks.detail', risk_id=r.id) }}" class="ref">{{ r.ref }}</a>
-      <span style="flex:1;">{{ r.title }}{% if r.reassess_at %} <span class="appl appl--out">À réévaluer</span>{% endif %}</span>
+      <span style="flex:1 1 140px;min-width:0;overflow-wrap:break-word;">{{ r.title }}{% if r.reassess_at %} <span class="appl appl--out">À réévaluer</span>{% endif %}</span>
       {{ risk_chip(r.display_level) }}
       {% if current_user.can_edit %}<form method="post" action="{{ url_for('risks.delete_link', link_id=link.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="next" value="{{ request.path }}#risques-lies"><button class="btn btn--ghost btn--sm" type="submit" title="Retirer le lien" style="padding:0 6px;">×</button></form>{% endif %}
     </div>
@@ -19,7 +19,7 @@
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <input type="hidden" name="entity_type" value="{{ _etype }}"><input type="hidden" name="entity_id" value="{{ lr_entity.id }}">
       <input type="hidden" name="next" value="{{ request.path }}#risques-lies">
-      <select name="risk_id" required style="flex:1;font-size:12.5px;"><option value="">Lier un risque du registre…</option>
+      <select name="risk_id" required style="flex:1;min-width:0;font-size:12.5px;"><option value="">Lier un risque du registre…</option>
         {% for r in risk_choices() if r.id not in _linked %}<option value="{{ r.id }}">{{ risk_label(r) }}</option>{% endfor %}</select>
       <button class="btn btn--subtle btn--sm" type="submit">+ Lier</button>
     </form>
